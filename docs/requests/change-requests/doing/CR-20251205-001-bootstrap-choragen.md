@@ -32,13 +32,16 @@ Choragen is being extracted from itinerary-planner to become a standalone, reusa
 - `@choragen/core`: Tasks, chains, governance, locks
 - `@choragen/cli`: Command-line interface
 - `@choragen/contracts`: DesignContract, ApiError, HttpStatus
-- `@choragen/eslint-plugin`: Placeholder for rules
+- `@choragen/eslint-plugin`: Core traceability rules
 - `@choragen/test-utils`: unsafeCast utility
 - Unit tests for core modules
 - Architecture documentation
+- Git hooks (commit-msg, pre-commit)
+- Document templates (CR, FR, ADR, feature)
+- Self-hosted documentation structure
 
 **Out of Scope**:
-- ESLint rule extraction (Phase 3)
+- Full ESLint rule extraction from itinerary-planner (Phase 3)
 - Validation script extraction (Phase 3)
 - Integration with itinerary-planner (Phase 4)
 
@@ -49,6 +52,8 @@ Choragen is being extracted from itinerary-planner to become a standalone, reusa
 - `d2d4655` feat: bootstrap choragen monorepo structure
 - `fc05b16` feat: implement task chain system (Phase 2)
 - `13d2764` test: add unit tests for core modules
+- `3339d4b` docs: add self-hosted documentation structure
+- `28c2f26` feat: add enforcement infrastructure
 
 ---
 
@@ -65,8 +70,21 @@ Governance is defined in `choragen.governance.yaml` with allow/approve/deny rule
 
 ## Linked ADRs
 
-- ADR-001: Task file format and directory structure
-- ADR-002: Governance schema design
+- [ADR-001: Task file format](../../adr/done/ADR-001-task-file-format.md)
+- [ADR-002: Governance schema](../../adr/done/ADR-002-governance-schema.md)
+- [ADR-003: File locking](../../adr/done/ADR-003-file-locking.md)
+
+---
+
+## Remaining Work
+
+Before this CR can be closed:
+
+- [ ] Add more ESLint rules (require-design-contract, no-magic-numbers-http)
+- [ ] Add validation scripts (validate:links, validate:adr-traceability)
+- [ ] Add hooks:install CLI command
+- [ ] Add eslint.config.mjs for choragen itself
+- [ ] Ensure all source files have ADR references
 
 ---
 
