@@ -1,0 +1,111 @@
+#!/bin/bash
+#
+# Commit message validation hook
+# Enforces semantic commit format and CR/FR traceability
+#
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Semantic commit pattern
+# type(scope): description
+SEMANTIC_PATTERN='^(feat|fix|docs|test|refactor|chore|style|perf|ci|build|revert)(\([a-z0-9_-]+\))?: .+'
+
+# CR/FR reference pattern
+CR_FR_PATTERN='(CR|FR)-[0-9]{8}-[0-9]{3}'
+
+# Exempt commit types (don't require CR/FR)
+EXEMPT_TYPES=(
+  "chore(deps)"
+  "chore(format)"
+  "chore(tooling)"
+  "chore(planning)"
+  "chore(metrics)"
+  "ci"
+  "build"
+  "revert"
+)
+
+# Get the first line (subject)
+SUBJECT=$(echo "$COMMIT_MSG" | head -n 1)
+
+# Check semantic format
+if ! echo "$SUBJECT" | grep -qE "$SEMANTIC_PATTERN"; then
+  echo -e "${RED}[commit-msg] Invalid commit message format${NC}"
+  echo ""
+  echo "Expected: <type>(<scope>): <description>"
+  echo "Got: $SUBJECT"
+  echo ""
+  echo "Valid types: feat, fix, docs, test, refactor, chore, style, perf, ci, build, revert"
+  exit 1
+fi
+
+# Extract type and scope
+TYPE=$(echo "$SUBJECT" | sed -E 's/^([a-z]+)(\([^)]+\))?: .+/\1/')
+SCOPE=$(echo "$SUBJECT" | sed -E 's/^[a-z]+\(([^)]+)\): .+/\1/' | grep -v "^$SUBJECT$" || echo "")
+TYPE_WITH_SCOPE="$TYPE"
+if [ -n "$SCOPE" ]; then
+  TYPE_WITH_SCOPE="$TYPE($SCOPE)"
+fi
+
+# Check if exempt
+IS_EXEMPT=false
+for exempt in "${EXEMPT_TYPES[@]}"; do
+  if [[ "$TYPE_WITH_SCOPE" == "$exempt"* ]] || [[ "$TYPE" == "$exempt" ]]; then
+    IS_EXEMPT=true
+    break
+  fi
+done
+
+if [ "$IS_EXEMPT" = true ]; then
+  echo -e "${GREEN}[commit-msg] Commit type '$TYPE_WITH_SCOPE' is exempt from CR/FR requirement${NC}"
+  exit 0
+fi
+
+# Check for CR/FR reference
+if ! echo "$COMMIT_MSG" | grep -qE "$CR_FR_PATTERN"; then
+  echo -e "${RED}[commit-msg] Missing CR/FR reference${NC}"
+  echo ""
+  echo "Non-exempt commits must reference a Change Request or Fix Request."
+  echo "Add one of the following to your commit message:"
+  echo "  CR-YYYYMMDD-NNN (for new features/changes)"
+  echo "  FR-YYYYMMDD-NNN (for bug fixes)"
+  echo ""
+  echo "Or use an exempt commit type:"
+  echo "  chore(deps), chore(format), chore(tooling), chore(planning), ci, build, revert"
+  exit 1
+fi
+
+# Extract the CR/FR ID
+CR_FR_ID=$(echo "$COMMIT_MSG" | grep -oE "$CR_FR_PATTERN" | head -n 1)
+
+# Check if the CR/FR exists (in doing/ or done/)
+CR_PATH="docs/requests/change-requests"
+FR_PATH="docs/requests/fix-requests"
+
+if [[ "$CR_FR_ID" == CR-* ]]; then
+  if [ -f "$CR_PATH/doing/$CR_FR_ID"*.md ] || [ -f "$CR_PATH/done/$CR_FR_ID"*.md ]; then
+    echo -e "${GREEN}[commit-msg] Found $CR_FR_ID in doing/ or done/${NC}"
+  elif [ -f "$CR_PATH/todo/$CR_FR_ID"*.md ]; then
+    echo -e "${YELLOW}[commit-msg] Warning: $CR_FR_ID is still in todo/ - should be in doing/${NC}"
+  else
+    echo -e "${YELLOW}[commit-msg] Warning: Could not find $CR_FR_ID document${NC}"
+  fi
+elif [[ "$CR_FR_ID" == FR-* ]]; then
+  if [ -f "$FR_PATH/doing/$CR_FR_ID"*.md ] || [ -f "$FR_PATH/done/$CR_FR_ID"*.md ]; then
+    echo -e "${GREEN}[commit-msg] Found $CR_FR_ID in doing/ or done/${NC}"
+  elif [ -f "$FR_PATH/todo/$CR_FR_ID"*.md ]; then
+    echo -e "${YELLOW}[commit-msg] Warning: $CR_FR_ID is still in todo/ - should be in doing/${NC}"
+  else
+    echo -e "${YELLOW}[commit-msg] Warning: Could not find $CR_FR_ID document${NC}"
+  fi
+fi
+
+echo -e "${GREEN}[commit-msg] Commit message validated${NC}"
+exit 0

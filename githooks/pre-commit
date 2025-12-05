@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+# Pre-commit hook
+# Runs lint and format checks on staged files
+#
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo -e "${YELLOW}[pre-commit] Running checks...${NC}"
+
+# Get staged TypeScript files
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' | grep -v 'node_modules' || true)
+
+if [ -n "$STAGED_TS" ]; then
+  echo -e "[pre-commit] Checking TypeScript files..."
+  
+  # Type check
+  if ! pnpm build > /dev/null 2>&1; then
+    echo -e "${RED}[pre-commit] Build failed${NC}"
+    echo "Run 'pnpm build' to see errors"
+    exit 1
+  fi
+  echo -e "${GREEN}[pre-commit] Build passed${NC}"
+fi
+
+# Check for console.log in non-test files
+CONSOLE_LOGS=$(echo "$STAGED_TS" | xargs grep -l 'console\.log' 2>/dev/null | grep -v '\.test\.' | grep -v '__tests__' || true)
+if [ -n "$CONSOLE_LOGS" ]; then
+  echo -e "${YELLOW}[pre-commit] Warning: console.log found in:${NC}"
+  echo "$CONSOLE_LOGS"
+fi
+
+# Check for TODO/FIXME without issue reference
+TODOS=$(git diff --cached --diff-filter=ACM -U0 | grep -E '^\+.*\b(TODO|FIXME)\b' | grep -v 'CR-\|FR-\|#[0-9]' || true)
+if [ -n "$TODOS" ]; then
+  echo -e "${YELLOW}[pre-commit] Warning: TODO/FIXME without CR/FR reference:${NC}"
+  echo "$TODOS"
+fi
+
+echo -e "${GREEN}[pre-commit] All checks passed${NC}"
+exit 0
