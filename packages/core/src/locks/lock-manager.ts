@@ -13,21 +13,7 @@ import type {
   LockConfig,
 } from "./types.js";
 import { DEFAULT_LOCK_CONFIG, EMPTY_LOCK_FILE } from "./types.js";
-
-/**
- * Simple glob pattern matcher
- */
-function matchGlob(pattern: string, filePath: string): boolean {
-  let regex = pattern
-    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*\*/g, "{{GLOBSTAR}}")
-    .replace(/\*/g, "[^/]*")
-    .replace(/\?/g, ".")
-    .replace(/{{GLOBSTAR}}/g, ".*");
-
-  regex = `^${regex}$`;
-  return new RegExp(regex).test(filePath);
-}
+import { matchGlob } from "../utils/index.js";
 
 /**
  * Check if two glob patterns could match the same file

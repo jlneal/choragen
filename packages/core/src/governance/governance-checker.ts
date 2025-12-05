@@ -11,25 +11,7 @@ import type {
   GovernanceCheckSummary,
   MutationRule,
 } from "./types.js";
-
-/**
- * Simple glob pattern matcher
- * Supports: *, **, ?
- */
-function matchGlob(pattern: string, path: string): boolean {
-  // Escape regex special chars except our glob chars
-  let regex = pattern
-    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*\*/g, "{{GLOBSTAR}}")
-    .replace(/\*/g, "[^/]*")
-    .replace(/\?/g, ".")
-    .replace(/{{GLOBSTAR}}/g, ".*");
-
-  // Anchor the pattern
-  regex = `^${regex}$`;
-
-  return new RegExp(regex).test(path);
-}
+import { matchGlob } from "../utils/index.js";
 
 /**
  * Check a single file mutation against governance rules
