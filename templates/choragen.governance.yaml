@@ -1,0 +1,42 @@
+# Choragen Governance Schema
+# Defines rules for file mutations: allow, approve, deny
+
+mutations:
+  # Files that can be modified without approval
+  allow:
+    - pattern: "components/**/*.tsx"
+      actions: [create, modify]
+    - pattern: "components/**/*.ts"
+      actions: [create, modify]
+    - pattern: "app/**/*.tsx"
+      actions: [create, modify]
+    - pattern: "app/**/*.ts"
+      actions: [create, modify]
+    - pattern: "__tests__/**/*"
+      actions: [create, modify, delete]
+    - pattern: "docs/**/*.md"
+      actions: [create, modify]
+
+  # Files that require human approval before modification
+  approve:
+    - pattern: "supabase/migrations/*.sql"
+      actions: [create, modify]
+      reason: "Database schema changes require review"
+    - pattern: "package.json"
+      actions: [modify]
+      reason: "Dependency changes require review"
+    - pattern: "*.config.*"
+      actions: [modify]
+      reason: "Configuration changes require review"
+
+  # Files that should never be modified by agents
+  deny:
+    - pattern: "*.key"
+    - pattern: "*.pem"
+    - pattern: ".env*"
+    - pattern: ".git/**"
+
+# How to handle parallel chain collisions
+collision_detection:
+  strategy: "file-lock"
+  on_collision: "block"

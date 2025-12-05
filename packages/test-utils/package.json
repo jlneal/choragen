@@ -1,0 +1,33 @@
+{
+  "name": "@choragen/test-utils",
+  "version": "0.0.1",
+  "description": "Test utilities for agentic development",
+  "keywords": [
+    "testing",
+    "utilities",
+    "mocks",
+    "agentic"
+  ],
+  "license": "MIT",
+  "author": "Justin Neal",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

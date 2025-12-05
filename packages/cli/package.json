@@ -1,0 +1,32 @@
+{
+  "name": "@choragen/cli",
+  "version": "0.0.1",
+  "description": "CLI for task chain management, governance, and validation",
+  "keywords": [
+    "cli",
+    "agentic",
+    "tasks",
+    "validation"
+  ],
+  "license": "MIT",
+  "author": "Justin Neal",
+  "type": "module",
+  "bin": {
+    "choragen": "./dist/bin.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@choragen/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "typescript": "^5.7.2"
+  }
+}

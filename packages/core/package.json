@@ -1,0 +1,49 @@
+{
+  "name": "@choragen/core",
+  "version": "0.0.1",
+  "description": "Core task chain, governance, and coordination primitives",
+  "keywords": [
+    "agentic",
+    "tasks",
+    "governance",
+    "coordination"
+  ],
+  "license": "MIT",
+  "author": "Justin Neal",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./tasks": {
+      "types": "./dist/tasks/index.d.ts",
+      "import": "./dist/tasks/index.js"
+    },
+    "./governance": {
+      "types": "./dist/governance/index.d.ts",
+      "import": "./dist/governance/index.js"
+    },
+    "./locks": {
+      "types": "./dist/locks/index.d.ts",
+      "import": "./dist/locks/index.js"
+    },
+    "./protocol": {
+      "types": "./dist/protocol/index.d.ts",
+      "import": "./dist/protocol/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}
