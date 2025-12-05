@@ -1,0 +1,58 @@
+# Choragen Governance Schema
+# Self-hosted: Choragen governs its own development
+
+mutations:
+  allow:
+    # Source code
+    - pattern: "packages/**/src/**/*.ts"
+      actions: [create, modify]
+    
+    # Tests
+    - pattern: "packages/**/__tests__/**/*.ts"
+      actions: [create, modify, delete]
+    
+    # Documentation
+    - pattern: "docs/**/*.md"
+      actions: [create, modify]
+    
+    # Templates
+    - pattern: "templates/**/*"
+      actions: [create, modify]
+
+  approve:
+    # Package configuration
+    - pattern: "packages/*/package.json"
+      actions: [modify]
+      reason: "Package config changes require review"
+    
+    # Root configuration
+    - pattern: "package.json"
+      actions: [modify]
+      reason: "Root package changes require review"
+    
+    # TypeScript config
+    - pattern: "**/tsconfig*.json"
+      actions: [modify]
+      reason: "TypeScript config changes require review"
+    
+    # This governance file
+    - pattern: "choragen.governance.yaml"
+      actions: [modify]
+      reason: "Governance changes require review"
+
+  deny:
+    # Secrets
+    - pattern: "*.key"
+    - pattern: "*.pem"
+    - pattern: ".env*"
+    
+    # Git internals
+    - pattern: ".git/**"
+    
+    # Build artifacts
+    - pattern: "**/dist/**"
+    - pattern: "**/node_modules/**"
+
+collision_detection:
+  strategy: "file-lock"
+  on_collision: "block"
