@@ -130,6 +130,26 @@ The control agent manages work but **does not implement**:
 - Approves or sends back for rework
 - Commits and pushes completed work
 
+### Commit Policy
+
+Control agents commit after each chain completion:
+
+1. After moving all tasks to `done/`
+2. Before starting the next chain
+3. Use this commit message format:
+
+```
+<type>(<scope>): complete <CHAIN-ID>
+
+- Task 1 summary
+- Task 2 summary
+- ...
+
+<CR-xxx | FR-xxx>
+```
+
+Types: `feat` (new feature), `fix` (bug fix), `docs` (documentation), `chore` (maintenance)
+
 ### Implementation Agent
 The impl agent executes tasks:
 - Reads task file for full context

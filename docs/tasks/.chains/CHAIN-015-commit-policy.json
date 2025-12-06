@@ -1,0 +1,12 @@
+{
+  "chainId": "CHAIN-015-commit-policy",
+  "requestId": "FR-20251206-007",
+  "title": "Add Commit Policy After Chain Completion",
+  "type": "implementation",
+  "status": "done",
+  "createdAt": "2025-12-06",
+  "tasks": [
+    "001-update-agents-md",
+    "002-verify-close"
+  ]
+}

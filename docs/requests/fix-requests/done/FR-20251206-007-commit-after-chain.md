@@ -2,7 +2,7 @@
 
 **ID**: FR-20251206-007  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Severity**: medium  
 **Created**: 2025-12-06  
 **Owner**: Justin  
@@ -51,9 +51,9 @@ AGENTS.md defines control agent responsibilities but doesn't include committing 
 
 ## Acceptance Criteria
 
-- [ ] AGENTS.md updated with commit policy
-- [ ] Commit message format documented
-- [ ] Clear that control agent owns commits (not impl agent)
+- [x] AGENTS.md updated with commit policy
+- [x] Commit message format documented
+- [x] Clear that control agent owns commits (not impl agent)
 
 ---
 
@@ -65,4 +65,8 @@ AGENTS.md defines control agent responsibilities but doesn't include committing 
 
 ## Completion Notes
 
-[To be added when moved to done/]
+**Completed**: 2025-12-06
+
+Added "Commit Policy" section to AGENTS.md under Agent Roles. Documents that control agents commit after each chain completion with standardized commit message format.
+
+**Task Chain**: CHAIN-015-commit-policy (2 tasks completed)
