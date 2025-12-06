@@ -79,6 +79,21 @@ Create the API routes for user profile CRUD operations.
 
 ---
 
+## Linked Personas
+
+- [AI Agent](../personas/ai-agent.md) (as Implementation Agent)
+- [Solo Developer](../personas/solo-developer.md)
+- [Open Source Maintainer](../personas/open-source-maintainer.md)
+
+---
+
+## Linked Use Cases
+
+- [Create and Execute Task Chain](../use-cases/create-execute-task-chain.md)
+- [Debug Failed Task](../use-cases/debug-failed-task.md)
+
+---
+
 ## Linked Features
 
 - [Task Chain Management](../features/task-chain-management.md)

@@ -69,6 +69,25 @@ docs/tasks/
 
 ---
 
+## Linked Personas
+
+- [AI Agent](../personas/ai-agent.md)
+- [Solo Developer](../personas/solo-developer.md)
+- [Team Lead](../personas/team-lead.md)
+- [Open Source Maintainer](../personas/open-source-maintainer.md)
+
+---
+
+## Linked Use Cases
+
+- [Create and Execute Task Chain](../use-cases/create-execute-task-chain.md)
+- [Review and Approve Work](../use-cases/review-approve-work.md)
+- [Debug Failed Task](../use-cases/debug-failed-task.md)
+- [Bootstrap New Project](../use-cases/bootstrap-new-project.md)
+- [Onboard New Contributor](../use-cases/onboard-new-contributor.md)
+
+---
+
 ## Linked Scenarios
 
 - [Control Agent Workflow](../scenarios/control-agent-workflow.md)

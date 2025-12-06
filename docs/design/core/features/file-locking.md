@@ -68,6 +68,20 @@ Error: Lock conflict: app/api/** overlaps with app/api/profile/** (held by CHAIN
 
 ---
 
+## Linked Personas
+
+- [AI Agent](../personas/ai-agent.md)
+- [Team Lead](../personas/team-lead.md)
+- [Open Source Maintainer](../personas/open-source-maintainer.md)
+
+---
+
+## Linked Use Cases
+
+- [Create and Execute Task Chain](../use-cases/create-execute-task-chain.md)
+
+---
+
 ## Linked Scenarios
 
 - [Control Agent Workflow](../scenarios/control-agent-workflow.md)

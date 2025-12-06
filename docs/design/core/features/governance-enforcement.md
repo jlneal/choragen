@@ -81,6 +81,22 @@ mutations:
 
 ---
 
+## Linked Personas
+
+- [AI Agent](../personas/ai-agent.md)
+- [Solo Developer](../personas/solo-developer.md)
+- [Team Lead](../personas/team-lead.md)
+- [Open Source Maintainer](../personas/open-source-maintainer.md)
+
+---
+
+## Linked Use Cases
+
+- [Create and Execute Task Chain](../use-cases/create-execute-task-chain.md)
+- [Review and Approve Work](../use-cases/review-approve-work.md)
+
+---
+
 ## Linked Scenarios
 
 - [Implementation Agent Workflow](../scenarios/implementation-agent-workflow.md)
