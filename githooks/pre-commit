@@ -1,45 +1,161 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Pre-commit hook
-# Runs lint and format checks on staged files
+# Runs lint, build, and contextual validation checks on staged files
 #
+set -eu
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# Ensure Homebrew binaries are in PATH (needed for node, npx, pnpm on Mac)
+if [ -d "/opt/homebrew/bin" ]; then
+  export PATH="/opt/homebrew/bin:$PATH"
+fi
 
-echo -e "${YELLOW}[pre-commit] Running checks...${NC}"
+echo "[pre-commit] Running checks..." 1>&2
 
-# Get staged TypeScript files
+# =============================================================================
+# 1) Package.json ↔ pnpm-lock.yaml sync check
+# =============================================================================
+changed_packages=$(git diff --name-only --cached -- "**/package.json" | tr -d '\r' || true)
+lock_changed=$(git diff --name-only --cached -- pnpm-lock.yaml | tr -d '\r' || true)
+
+if [ -n "${changed_packages:-}" ] && [ -z "${lock_changed:-}" ]; then
+  echo "" 1>&2
+  echo "❌ [pre-commit] package.json changed but pnpm-lock.yaml is not staged." 1>&2
+  echo "   Run 'pnpm install' and add pnpm-lock.yaml to your commit." 1>&2
+  echo "   If you intentionally changed only non-dependency fields, re-run after staging the lock or split the commit." 1>&2
+  echo "" 1>&2
+  exit 1
+fi
+
+# =============================================================================
+# 2) Lint staged TypeScript files
+# =============================================================================
 STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' | grep -v 'node_modules' || true)
 
 if [ -n "$STAGED_TS" ]; then
-  echo -e "[pre-commit] Checking TypeScript files..."
-  
-  # Type check
-  if ! pnpm build > /dev/null 2>&1; then
-    echo -e "${RED}[pre-commit] Build failed${NC}"
-    echo "Run 'pnpm build' to see errors"
+  echo "[pre-commit] Running ESLint on staged TypeScript files..." 1>&2
+  # shellcheck disable=SC2086
+  if ! pnpm lint $STAGED_TS 2>/dev/null; then
+    echo "" 1>&2
+    echo "❌ [pre-commit] ESLint failed" 1>&2
+    echo "   Run: pnpm lint" 1>&2
+    echo "" 1>&2
     exit 1
   fi
-  echo -e "${GREEN}[pre-commit] Build passed${NC}"
+  echo "✅ ESLint passed" 1>&2
 fi
 
+# =============================================================================
+# 3) Build check (if TypeScript files changed)
+# =============================================================================
+if [ -n "$STAGED_TS" ]; then
+  echo "[pre-commit] Running build check..." 1>&2
+  if ! pnpm build > /dev/null 2>&1; then
+    echo "" 1>&2
+    echo "❌ [pre-commit] Build failed" 1>&2
+    echo "   Run: pnpm build" 1>&2
+    echo "" 1>&2
+    exit 1
+  fi
+  echo "✅ Build passed" 1>&2
+fi
+
+# =============================================================================
+# 4) Contextual validation based on changed files
+# =============================================================================
+
+# 4a) If docs/design/** or docs/adr/** changed → run validate-links.mjs
+docs_changed=$(git diff --name-only --cached -- "docs/design/**" "docs/adr/**" | tr -d '\r' || true)
+if [ -n "${docs_changed:-}" ]; then
+  echo "📋 Documentation files changed. Validating links..." 1>&2
+  if ! node scripts/validate-links.mjs 2>/dev/null; then
+    echo "" 1>&2
+    echo "❌ Link validation failed" 1>&2
+    echo "   Run: node scripts/validate-links.mjs" 1>&2
+    echo "" 1>&2
+    exit 1
+  fi
+  echo "✅ Link validation passed" 1>&2
+fi
+
+# 4b) If docs/adr/** changed → run validate-adr-traceability.mjs
+adr_changed=$(git diff --name-only --cached -- "docs/adr/**" | tr -d '\r' || true)
+if [ -n "${adr_changed:-}" ]; then
+  echo "📋 ADR files changed. Validating traceability..." 1>&2
+  if ! node scripts/validate-adr-traceability.mjs 2>/dev/null; then
+    echo "" 1>&2
+    echo "❌ ADR traceability validation failed" 1>&2
+    echo "   Run: node scripts/validate-adr-traceability.mjs" 1>&2
+    echo "" 1>&2
+    exit 1
+  fi
+  echo "✅ ADR traceability validated" 1>&2
+fi
+
+# 4c) If source .ts files changed → run validate-source-adr-references.mjs
+source_ts_changed=$(git diff --name-only --cached -- "*.ts" "*.tsx" | grep -vE "__tests__|\.test\." | tr -d '\r' || true)
+if [ -n "${source_ts_changed:-}" ]; then
+  echo "📋 Source files changed. Validating ADR references..." 1>&2
+  if ! node scripts/validate-source-adr-references.mjs 2>/dev/null; then
+    echo "" 1>&2
+    echo "❌ Source ADR reference validation failed" 1>&2
+    echo "   Run: node scripts/validate-source-adr-references.mjs" 1>&2
+    echo "" 1>&2
+    exit 1
+  fi
+  echo "✅ Source ADR references validated" 1>&2
+fi
+
+# 4d) If docs/design/**/*.md changed → run validate-design-doc-content.mjs
+design_docs_staged=$(git diff --name-only --cached -- "docs/design/**/*.md" | tr -d '\r' || true)
+if [ -n "${design_docs_staged:-}" ]; then
+  echo "📝 Design docs staged. Validating content completeness..." 1>&2
+  if ! node scripts/validate-design-doc-content.mjs 2>/dev/null; then
+    echo "" 1>&2
+    echo "❌ Design doc content validation failed" 1>&2
+    echo "   Run: node scripts/validate-design-doc-content.mjs" 1>&2
+    echo "" 1>&2
+    exit 1
+  fi
+  echo "✅ Design doc content validated" 1>&2
+fi
+
+# 4e) If docs/requests/** changed → run validate-request-completion.mjs
+requests_changed=$(git diff --name-only --cached -- "docs/requests/**" | tr -d '\r' || true)
+if [ -n "${requests_changed:-}" ]; then
+  echo "📋 Request files changed. Validating request completion..." 1>&2
+  if ! node scripts/validate-request-completion.mjs 2>/dev/null; then
+    echo "" 1>&2
+    echo "❌ Request completion validation failed" 1>&2
+    echo "   Run: node scripts/validate-request-completion.mjs" 1>&2
+    echo "" 1>&2
+    exit 1
+  fi
+  echo "✅ Request completion validated" 1>&2
+fi
+
+# =============================================================================
+# 5) Warnings (non-blocking)
+# =============================================================================
+
 # Check for console.log in non-test files
-CONSOLE_LOGS=$(echo "$STAGED_TS" | xargs grep -l 'console\.log' 2>/dev/null | grep -v '\.test\.' | grep -v '__tests__' || true)
-if [ -n "$CONSOLE_LOGS" ]; then
-  echo -e "${YELLOW}[pre-commit] Warning: console.log found in:${NC}"
-  echo "$CONSOLE_LOGS"
+if [ -n "$STAGED_TS" ]; then
+  # shellcheck disable=SC2086
+  CONSOLE_LOGS=$(echo $STAGED_TS | xargs grep -l 'console\.log' 2>/dev/null | grep -v '\.test\.' | grep -v '__tests__' || true)
+  if [ -n "$CONSOLE_LOGS" ]; then
+    echo "" 1>&2
+    echo "⚠️  [pre-commit] Warning: console.log found in:" 1>&2
+    echo "$CONSOLE_LOGS" 1>&2
+  fi
 fi
 
 # Check for TODO/FIXME without issue reference
 TODOS=$(git diff --cached --diff-filter=ACM -U0 | grep -E '^\+.*\b(TODO|FIXME)\b' | grep -v 'CR-\|FR-\|#[0-9]' || true)
 if [ -n "$TODOS" ]; then
-  echo -e "${YELLOW}[pre-commit] Warning: TODO/FIXME without CR/FR reference:${NC}"
-  echo "$TODOS"
+  echo "" 1>&2
+  echo "⚠️  [pre-commit] Warning: TODO/FIXME without CR/FR reference:" 1>&2
+  echo "$TODOS" 1>&2
 fi
 
-echo -e "${GREEN}[pre-commit] All checks passed${NC}"
-exit 0
+echo "" 1>&2
+echo "✅ [pre-commit] All checks passed" 1>&2

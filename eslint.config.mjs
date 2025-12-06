@@ -49,10 +49,8 @@ export default [
       "@choragen/require-adr-reference": "error",
       "@choragen/no-as-unknown": "error",
       "@choragen/no-magic-numbers-http": "error",
-
-      // Disabled for now - not all files need these yet
-      // "@choragen/require-test-metadata": "warn",
-      // "@choragen/require-design-contract": "warn",
+      "@choragen/no-untracked-todos": "warn",
+      "@choragen/require-eslint-disable-justification": "warn",
     },
   },
 
@@ -80,6 +78,8 @@ export default [
       // Test-specific rules
       "@choragen/require-test-metadata": "error",
       "@choragen/no-as-unknown": "off", // Tests may need unsafe casts
+      "@choragen/no-untracked-todos": "warn",
+      "@choragen/require-eslint-disable-justification": "warn",
     },
   },
 ];

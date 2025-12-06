@@ -11,7 +11,20 @@ import {
   formatCheckSummary,
 } from "@choragen/core";
 import { initProject, formatInitResult, InitOptions } from "./commands/init.js";
+import {
+  createCR,
+  closeCR,
+  createFR,
+  createADR,
+  archiveADR,
+  createDesignDoc,
+  formatCreateResult,
+  DESIGN_TYPES,
+  type DesignType,
+} from "./commands/docs.js";
 import * as readline from "node:readline";
+import { spawn } from "node:child_process";
+import { join } from "node:path";
 
 /**
  * Prompt user for text input with optional default
@@ -57,6 +70,249 @@ async function promptYesNo(question: string): Promise<boolean> {
       resolve(normalized === "" || normalized === "y" || normalized === "yes");
     });
   });
+}
+
+// Validator definitions
+interface ValidatorDef {
+  name: string;
+  script: string;
+  description: string;
+}
+
+const VALIDATORS: ValidatorDef[] = [
+  { name: "links", script: "validate-links.mjs", description: "Bidirectional links" },
+  { name: "adr-traceability", script: "validate-adr-traceability.mjs", description: "ADR traceability" },
+  { name: "adr-staleness", script: "validate-adr-staleness.mjs", description: "ADR staleness" },
+  { name: "source-adr-references", script: "validate-source-adr-references.mjs", description: "Source ADR refs" },
+  { name: "design-doc-content", script: "validate-design-doc-content.mjs", description: "Design doc content" },
+  { name: "request-staleness", script: "validate-request-staleness.mjs", description: "Request staleness" },
+  { name: "request-completion", script: "validate-request-completion.mjs", description: "Request completion" },
+  { name: "commit-traceability", script: "validate-commit-traceability.mjs", description: "Commit traceability" },
+  { name: "complete-traceability", script: "validate-complete-traceability.mjs", description: "Complete traceability" },
+  { name: "contract-coverage", script: "validate-contract-coverage.mjs", description: "Contract coverage" },
+  { name: "test-coverage", script: "validate-test-coverage.mjs", description: "Test coverage" },
+  { name: "chain-types", script: "validate-chain-types.mjs", description: "Chain type constraints" },
+  { name: "agents-md", script: "validate-agents-md.mjs", description: "AGENTS.md presence" },
+];
+
+const ALL_VALIDATORS = VALIDATORS.map(v => v.script);
+const QUICK_VALIDATORS = ["validate-links.mjs", "validate-agents-md.mjs"];
+const CI_VALIDATORS = [
+  "validate-links.mjs",
+  "validate-adr-traceability.mjs",
+  "validate-agents-md.mjs",
+  "validate-chain-types.mjs",
+  "validate-request-completion.mjs",
+];
+
+/**
+ * Run a single validation script and stream output
+ * @param scriptName - Name of the script in scripts/ directory
+ * @returns Exit code from the script
+ */
+async function runValidator(scriptName: string): Promise<number> {
+  const scriptPath = join(projectRoot, "scripts", scriptName);
+  
+  return new Promise((resolve) => {
+    const child = spawn("node", [scriptPath], {
+      cwd: projectRoot,
+      stdio: "inherit",
+    });
+
+    child.on("error", (err) => {
+      console.error(`Failed to run ${scriptName}: ${err.message}`);
+      resolve(1);
+    });
+
+    child.on("close", (code) => {
+      resolve(code ?? 1);
+    });
+  });
+}
+
+/**
+ * Result from running a validator
+ */
+interface ValidatorResult {
+  name: string;
+  exitCode: number;
+  hasWarnings: boolean;
+}
+
+/**
+ * Run multiple validators and report summary
+ * @param scripts - Array of script names to run
+ * @returns Exit code (0 if all pass, 1 if any fail)
+ */
+async function runAllValidators(scripts: string[]): Promise<number> {
+  const results: ValidatorResult[] = [];
+  
+  console.log("Running validators...\n");
+  
+  for (const script of scripts) {
+    const validator = VALIDATORS.find(v => v.script === script);
+    const name = validator?.name ?? script.replace("validate-", "").replace(".mjs", "");
+    
+    console.log(`\n${"─".repeat(60)}`);
+    console.log(`Running: ${name}`);
+    console.log("─".repeat(60));
+    
+    const exitCode = await runValidator(script);
+    results.push({ name, exitCode, hasWarnings: false });
+  }
+  
+  // Print summary
+  console.log("\n" + "═".repeat(60));
+  console.log("Validation Results:");
+  console.log("═".repeat(60));
+  
+  let passed = 0;
+  let failed = 0;
+  
+  for (const result of results) {
+    if (result.exitCode === 0) {
+      console.log(`  ✅ ${result.name}`);
+      passed++;
+    } else {
+      console.log(`  ❌ ${result.name}`);
+      failed++;
+    }
+  }
+  
+  console.log("─".repeat(60));
+  console.log(`${failed} failed, ${passed} passed`);
+  
+  return failed > 0 ? 1 : 0;
+}
+
+/**
+ * Show incomplete work items
+ */
+async function showIncompleteWork(): Promise<void> {
+  const { readdirSync, existsSync, statSync } = await import("node:fs");
+  const { execSync } = await import("node:child_process");
+  
+  const now = Date.now();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  
+  console.log("Incomplete Work Items\n");
+  console.log("═".repeat(60));
+  
+  // 1. TODOs/FIXMEs without CR/FR reference
+  console.log("\n📝 TODOs/FIXMEs without CR/FR reference:");
+  console.log("─".repeat(40));
+  
+  try {
+    const grepResult = execSync(
+      'grep -rn "TODO\\|FIXME" --include="*.ts" --include="*.mjs" packages/ scripts/ 2>/dev/null || true',
+      { cwd: projectRoot, encoding: "utf-8" }
+    );
+    
+    const lines = grepResult.split("\n").filter(Boolean);
+    const untracked = lines.filter(line => !/(CR-|FR-)/.test(line));
+    
+    if (untracked.length === 0) {
+      console.log("  None found ✓");
+    } else {
+      for (const line of untracked.slice(0, 10)) {
+        console.log(`  ${line.slice(0, 80)}${line.length > 80 ? "..." : ""}`);
+      }
+      if (untracked.length > 10) {
+        console.log(`  ... and ${untracked.length - 10} more`);
+      }
+    }
+  } catch {
+    console.log("  Unable to search for TODOs");
+  }
+  
+  // 2. CRs/FRs in doing/ for >3 days
+  console.log("\n📋 Stale requests (in doing/ > 3 days):");
+  console.log("─".repeat(40));
+  
+  const requestDirs = [
+    join(projectRoot, "docs/requests/change-requests/doing"),
+    join(projectRoot, "docs/requests/fix-requests/doing"),
+  ];
+  
+  let staleRequests = 0;
+  for (const dir of requestDirs) {
+    if (!existsSync(dir)) continue;
+    
+    const files = readdirSync(dir).filter(f => f.endsWith(".md"));
+    for (const file of files) {
+      const filePath = join(dir, file);
+      const stat = statSync(filePath);
+      const ageInDays = (now - stat.mtimeMs) / DAY_MS;
+      
+      if (ageInDays > 3) {
+        console.log(`  ${file} (${Math.floor(ageInDays)} days)`);
+        staleRequests++;
+      }
+    }
+  }
+  
+  if (staleRequests === 0) {
+    console.log("  None found ✓");
+  }
+  
+  // 3. ADRs in doing/ for >7 days
+  console.log("\n📐 Stale ADRs (in doing/ > 7 days):");
+  console.log("─".repeat(40));
+  
+  const adrDoingDir = join(projectRoot, "docs/adr/doing");
+  let staleADRs = 0;
+  
+  if (existsSync(adrDoingDir)) {
+    const files = readdirSync(adrDoingDir).filter(f => f.endsWith(".md"));
+    for (const file of files) {
+      const filePath = join(adrDoingDir, file);
+      const stat = statSync(filePath);
+      const ageInDays = (now - stat.mtimeMs) / DAY_MS;
+      
+      if (ageInDays > 7) {
+        console.log(`  ${file} (${Math.floor(ageInDays)} days)`);
+        staleADRs++;
+      }
+    }
+  }
+  
+  if (staleADRs === 0) {
+    console.log("  None found ✓");
+  }
+  
+  // 4. Tasks in todo/ for >7 days
+  console.log("\n📌 Stale tasks (in todo/ > 7 days):");
+  console.log("─".repeat(40));
+  
+  const tasksTodoDir = join(projectRoot, "docs/tasks/todo");
+  let staleTasks = 0;
+  
+  if (existsSync(tasksTodoDir)) {
+    const chains = readdirSync(tasksTodoDir, { withFileTypes: true })
+      .filter(d => d.isDirectory());
+    
+    for (const chain of chains) {
+      const chainDir = join(tasksTodoDir, chain.name);
+      const files = readdirSync(chainDir).filter(f => f.endsWith(".md"));
+      
+      for (const file of files) {
+        const filePath = join(chainDir, file);
+        const stat = statSync(filePath);
+        const ageInDays = (now - stat.mtimeMs) / DAY_MS;
+        
+        if (ageInDays > 7) {
+          console.log(`  ${chain.name}/${file} (${Math.floor(ageInDays)} days)`);
+          staleTasks++;
+        }
+      }
+    }
+  }
+  
+  if (staleTasks === 0) {
+    console.log("  None found ✓");
+  }
+  
+  console.log("\n" + "═".repeat(60));
 }
 
 interface CommandDef {
@@ -657,6 +913,330 @@ const commands: Record<string, CommandDef> = {
     },
   },
 
+  // Document creation
+  "cr:new": {
+    description: "Create a new Change Request",
+    usage: "cr:new <slug> [title] [--domain=<domain>]",
+    handler: async (args) => {
+      const positionalArgs: string[] = [];
+      let domain: string | undefined;
+
+      for (const arg of args) {
+        if (arg.startsWith("--domain=")) {
+          domain = arg.slice("--domain=".length);
+        } else {
+          positionalArgs.push(arg);
+        }
+      }
+
+      const [slug, ...titleParts] = positionalArgs;
+      if (!slug) {
+        console.error("Usage: choragen cr:new <slug> [title] [--domain=<domain>]");
+        process.exit(1);
+      }
+
+      const title = titleParts.length > 0 ? titleParts.join(" ") : undefined;
+      const result = await createCR(projectRoot, { slug, title, domain });
+      console.log(formatCreateResult(result, "Change Request"));
+
+      if (!result.success) {
+        process.exit(1);
+      }
+    },
+  },
+
+  "cr:close": {
+    description: "Close a Change Request (move to done)",
+    usage: "cr:close <cr-id>",
+    handler: async (args) => {
+      const [crId] = args;
+      if (!crId) {
+        console.error("Usage: choragen cr:close <cr-id>");
+        process.exit(1);
+      }
+
+      const result = await closeCR(projectRoot, crId);
+      if (result.success) {
+        console.log(`✓ Closed CR: ${result.id}`);
+        console.log(`  Moved to: ${result.filePath}`);
+      } else {
+        console.error(`❌ Failed to close CR: ${result.error}`);
+        process.exit(1);
+      }
+    },
+  },
+
+  "fr:new": {
+    description: "Create a new Fix Request",
+    usage: "fr:new <slug> [title] [--domain=<domain>] [--severity=high|medium|low]",
+    handler: async (args) => {
+      const positionalArgs: string[] = [];
+      let domain: string | undefined;
+      let severity: "high" | "medium" | "low" | undefined;
+
+      for (const arg of args) {
+        if (arg.startsWith("--domain=")) {
+          domain = arg.slice("--domain=".length);
+        } else if (arg.startsWith("--severity=")) {
+          const sev = arg.slice("--severity=".length);
+          if (sev === "high" || sev === "medium" || sev === "low") {
+            severity = sev;
+          } else {
+            console.error("Severity must be one of: high, medium, low");
+            process.exit(1);
+          }
+        } else {
+          positionalArgs.push(arg);
+        }
+      }
+
+      const [slug, ...titleParts] = positionalArgs;
+      if (!slug) {
+        console.error("Usage: choragen fr:new <slug> [title] [--domain=<domain>] [--severity=high|medium|low]");
+        process.exit(1);
+      }
+
+      const title = titleParts.length > 0 ? titleParts.join(" ") : undefined;
+      const result = await createFR(projectRoot, { slug, title, domain, severity });
+      console.log(formatCreateResult(result, "Fix Request"));
+
+      if (!result.success) {
+        process.exit(1);
+      }
+    },
+  },
+
+  "adr:new": {
+    description: "Create a new Architecture Decision Record",
+    usage: "adr:new <slug> [title] [--linked=<cr-or-fr-id>]",
+    handler: async (args) => {
+      const positionalArgs: string[] = [];
+      let linkedRequest: string | undefined;
+
+      for (const arg of args) {
+        if (arg.startsWith("--linked=")) {
+          linkedRequest = arg.slice("--linked=".length);
+        } else {
+          positionalArgs.push(arg);
+        }
+      }
+
+      const [slug, ...titleParts] = positionalArgs;
+      if (!slug) {
+        console.error("Usage: choragen adr:new <slug> [title] [--linked=<cr-or-fr-id>]");
+        process.exit(1);
+      }
+
+      const title = titleParts.length > 0 ? titleParts.join(" ") : undefined;
+      const result = await createADR(projectRoot, { slug, title, linkedRequest });
+      console.log(formatCreateResult(result, "ADR"));
+
+      if (!result.success) {
+        process.exit(1);
+      }
+    },
+  },
+
+  "adr:archive": {
+    description: "Archive an ADR (move to archive/YYYY-MM/)",
+    usage: "adr:archive <adr-file-or-id>",
+    handler: async (args) => {
+      const [adrFile] = args;
+      if (!adrFile) {
+        console.error("Usage: choragen adr:archive <adr-file-or-id>");
+        process.exit(1);
+      }
+
+      const result = await archiveADR(projectRoot, adrFile);
+      if (result.success) {
+        console.log(`✓ Archived ADR: ${result.id}`);
+        console.log(`  Moved to: ${result.filePath}`);
+      } else {
+        console.error(`❌ Failed to archive ADR: ${result.error}`);
+        process.exit(1);
+      }
+    },
+  },
+
+  "design:new": {
+    description: "Create a new design document",
+    usage: "design:new <type> <slug> [title] [--domain=<domain>]\n" +
+           "                         Types: persona, scenario, use-case, feature, enhancement",
+    handler: async (args) => {
+      const positionalArgs: string[] = [];
+      let domain: string | undefined;
+
+      for (const arg of args) {
+        if (arg.startsWith("--domain=")) {
+          domain = arg.slice("--domain=".length);
+        } else {
+          positionalArgs.push(arg);
+        }
+      }
+
+      const [type, slug, ...titleParts] = positionalArgs;
+      if (!type || !slug) {
+        console.error("Usage: choragen design:new <type> <slug> [title] [--domain=<domain>]");
+        console.error(`  Types: ${DESIGN_TYPES.join(", ")}`);
+        process.exit(1);
+      }
+
+      if (!DESIGN_TYPES.includes(type as DesignType)) {
+        console.error(`Invalid type: ${type}`);
+        console.error(`  Valid types: ${DESIGN_TYPES.join(", ")}`);
+        process.exit(1);
+      }
+
+      const title = titleParts.length > 0 ? titleParts.join(" ") : undefined;
+      const result = await createDesignDoc(projectRoot, type as DesignType, { slug, title, domain });
+      
+      // Capitalize type for display
+      const typeDisplay = type.charAt(0).toUpperCase() + type.slice(1);
+      console.log(formatCreateResult(result, `${typeDisplay} Document`));
+
+      if (!result.success) {
+        process.exit(1);
+      }
+    },
+  },
+
+  // Validation commands
+  "validate:links": {
+    description: "Validate bidirectional links between docs and implementation",
+    handler: async () => {
+      const exitCode = await runValidator("validate-links.mjs");
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:adr-traceability": {
+    description: "Validate ADR links to CR/FR and design docs",
+    handler: async () => {
+      const exitCode = await runValidator("validate-adr-traceability.mjs");
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:adr-staleness": {
+    description: "Check for stale ADRs in doing/ status",
+    handler: async () => {
+      const exitCode = await runValidator("validate-adr-staleness.mjs");
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:source-adr-references": {
+    description: "Validate source files reference their governing ADRs",
+    handler: async () => {
+      const exitCode = await runValidator("validate-source-adr-references.mjs");
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:design-doc-content": {
+    description: "Validate design document structure and content",
+    handler: async () => {
+      const exitCode = await runValidator("validate-design-doc-content.mjs");
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:request-staleness": {
+    description: "Check for stale CRs/FRs in doing/ status",
+    handler: async () => {
+      const exitCode = await runValidator("validate-request-staleness.mjs");
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:request-completion": {
+    description: "Validate completed requests have required fields",
+    handler: async () => {
+      const exitCode = await runValidator("validate-request-completion.mjs");
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:commit-traceability": {
+    description: "Validate commits reference CR/FR IDs",
+    handler: async () => {
+      const exitCode = await runValidator("validate-commit-traceability.mjs");
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:complete-traceability": {
+    description: "Validate complete traceability chain",
+    handler: async () => {
+      const exitCode = await runValidator("validate-complete-traceability.mjs");
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:contract-coverage": {
+    description: "Validate contract coverage for API endpoints",
+    handler: async () => {
+      const exitCode = await runValidator("validate-contract-coverage.mjs");
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:test-coverage": {
+    description: "Validate test coverage requirements",
+    handler: async () => {
+      const exitCode = await runValidator("validate-test-coverage.mjs");
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:chain-types": {
+    description: "Validate chain type constraints (design before impl)",
+    handler: async () => {
+      const exitCode = await runValidator("validate-chain-types.mjs");
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:agents-md": {
+    description: "Validate AGENTS.md presence in key directories",
+    handler: async () => {
+      const exitCode = await runValidator("validate-agents-md.mjs");
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:all": {
+    description: "Run all validators and report summary",
+    handler: async () => {
+      const exitCode = await runAllValidators(ALL_VALIDATORS);
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:quick": {
+    description: "Run fast validators only (links, agents-md)",
+    handler: async () => {
+      const exitCode = await runAllValidators(QUICK_VALIDATORS);
+      process.exit(exitCode);
+    },
+  },
+
+  "validate:ci": {
+    description: "Run CI-appropriate validators (all blocking ones)",
+    handler: async () => {
+      const exitCode = await runAllValidators(CI_VALIDATORS);
+      process.exit(exitCode);
+    },
+  },
+
+  // Utility commands
+  "work:incomplete": {
+    description: "List incomplete work items (stale requests, tasks, TODOs)",
+    handler: async () => {
+      await showIncompleteWork();
+    },
+  },
+
   // Help
   help: {
     description: "Show help",
@@ -667,7 +1247,7 @@ const commands: Record<string, CommandDef> = {
       console.log("Usage: choragen <command> [options]\n");
       console.log("Commands:");
       for (const [cmd, def] of Object.entries(commands)) {
-        console.log(`  ${cmd.padEnd(24)} ${def.description}`);
+        console.log(`  ${cmd.padEnd(30)} ${def.description}`);
       }
     },
   },

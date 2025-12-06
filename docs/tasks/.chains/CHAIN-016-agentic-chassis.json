@@ -1,0 +1,18 @@
+{
+  "chainId": "CHAIN-016-agentic-chassis",
+  "requestId": "CR-20251206-007",
+  "title": "Complete Agentic Chassis Port",
+  "type": "implementation",
+  "status": "done",
+  "createdAt": "2025-12-06",
+  "tasks": [
+    "001-strengthen-pre-commit",
+    "002-strengthen-commit-msg",
+    "003-eslint-enforcement",
+    "004-cli-doc-commands",
+    "005-cli-validate-commands",
+    "006-expand-agents-md",
+    "007-task-runner",
+    "008-verify-close"
+  ]
+}

@@ -46,9 +46,9 @@ But there's no procedure for tasks that are **inherently control agent work** (n
 
 ## Acceptance Criteria
 
-- [ ] AGENTS.md updated with "Control-Only Tasks" section
-- [ ] Task template includes optional `**Type**` field
-- [ ] Procedure clearly states control agent moves own tasks to done/
+- [x] AGENTS.md updated with "Control-Only Tasks" section
+- [x] Task template includes optional `**Type**` field
+- [x] Procedure clearly states control agent moves own tasks to done/
 
 ---
 

@@ -47,7 +47,7 @@ AGENTS.md files are the primary way agents receive context about a codebase area
 - [x] Each package has an AGENTS.md explaining its purpose
 - [x] Each AGENTS.md includes common patterns and conventions
 - [x] Each AGENTS.md references relevant ADRs
-- [ ] Validation script checks for AGENTS.md presence (deferred to CR-20251206-002)
+- [x] Validation script checks for AGENTS.md presence (completed in CR-20251206-002)
 
 ---
 
