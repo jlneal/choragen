@@ -2,7 +2,7 @@
 
 **Chain**: CHAIN-007-test-quality-rules  
 **Task**: 005-test-for-lib-export  
-**Status**: backlog  
+**Status**: done  
 **Created**: 2025-12-06
 
 ---
@@ -15,23 +15,22 @@ Add ESLint rule that ensures lib exports have corresponding test files.
 
 ## Expected Files
 
-Create:
+- `Create:`
 - `packages/eslint-plugin/src/rules/require-test-for-lib-export.ts`
-
-Update:
-- `packages/eslint-plugin/src/rules/index.ts` - Export rule
-- `packages/eslint-plugin/src/index.ts` - Add to configs
+- `Update:`
+- `packages/eslint-plugin/src/rules/index.ts - Export rule`
+- `packages/eslint-plugin/src/index.ts - Add to configs`
 
 ---
 
 ## Acceptance Criteria
 
 - [ ] Rule implemented
-- [ ] Checks `lib/**/*.ts` files with exports have tests
-- [ ] Looks for test file in `lib/__tests__/` or colocated
+- [ ] Checks lib/**/*.ts files with exports have tests
+- [ ] Looks for test file in lib/__tests__/ or colocated
 - [ ] Rule exported and added to configs
 - [ ] ADR reference comment included
-- [ ] `pnpm build` passes
+- [ ] pnpm build passes
 
 ---
 

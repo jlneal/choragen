@@ -24,6 +24,11 @@ import requireAdrRelevance from "./require-adr-relevance.js";
 import requireMeaningfulTestCoverage from "./require-meaningful-test-coverage.js";
 import requireSemanticUserIntent from "./require-semantic-user-intent.js";
 import requireSignificantChangeTraceability from "./require-significant-change-traceability.js";
+import requireTestExercisesComponent from "./require-test-exercises-component.js";
+import requireTestExercisesRoute from "./require-test-exercises-route.js";
+import requireTestForApiRoute from "./require-test-for-api-route.js";
+import requireTestForComponent from "./require-test-for-component.js";
+import requireTestForLibExport from "./require-test-for-lib-export.js";
 
 export const rules = {
   // Traceability rules
@@ -53,6 +58,11 @@ export const rules = {
   "require-bidirectional-test-links": requireBidirectionalTestLinks,
   "require-meaningful-test-coverage": requireMeaningfulTestCoverage,
   "require-semantic-user-intent": requireSemanticUserIntent,
+  "require-test-exercises-component": requireTestExercisesComponent,
+  "require-test-exercises-route": requireTestExercisesRoute,
+  "require-test-for-api-route": requireTestForApiRoute,
+  "require-test-for-component": requireTestForComponent,
+  "require-test-for-lib-export": requireTestForLibExport,
 };
 
 export default rules;

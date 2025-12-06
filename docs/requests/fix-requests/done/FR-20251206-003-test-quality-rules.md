@@ -2,7 +2,7 @@
 
 **ID**: FR-20251206-003  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-06  
 **Owner**: Justin  
 
@@ -28,11 +28,11 @@ We're missing lint rules that ensure tests actually exercise the code they claim
 
 ## Acceptance Criteria
 
-- [ ] All 5 rules implemented
-- [ ] Rules exported and added to configs
-- [ ] Rules have ADR reference comments
-- [ ] `pnpm build` passes
-- [ ] `pnpm lint` passes (or violations documented)
+- [x] All 5 rules implemented
+- [x] Rules exported and added to configs
+- [x] Rules have ADR reference comments
+- [x] `pnpm build` passes
+- [x] `pnpm lint` passes (or violations documented)
 
 ---
 
@@ -49,4 +49,26 @@ Consider which rules are relevant for a CLI/library project vs web app.
 
 ## Completion Notes
 
-[To be added when moved to done/]
+**Completed**: 2025-12-06  
+**Chain**: CHAIN-007-test-quality-rules (6 tasks)
+
+### Rules Added (5)
+
+1. **require-test-exercises-component** - Component tests must render and interact
+2. **require-test-exercises-route** - Route tests must call HTTP methods
+3. **require-test-for-api-route** - API routes need test files
+4. **require-test-for-component** - Components need test files
+5. **require-test-for-lib-export** - Lib exports need test files
+
+### Verification
+
+```
+✅ pnpm build - passes
+✅ pnpm lint - passes  
+✅ pnpm test - passes (32 tests)
+```
+
+### Rule Count
+
+- Before: 21 rules
+- After: 26 rules (+5)

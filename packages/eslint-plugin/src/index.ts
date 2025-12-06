@@ -48,6 +48,11 @@ export const configs = {
       "@choragen/require-test-assertions": "warn",
       "@choragen/require-meaningful-test-coverage": "warn",
       "@choragen/require-semantic-user-intent": "warn",
+      "@choragen/require-test-exercises-component": "warn",
+      "@choragen/require-test-exercises-route": "warn",
+      "@choragen/require-test-for-api-route": "warn",
+      "@choragen/require-test-for-component": "warn",
+      "@choragen/require-test-for-lib-export": "warn",
     },
   },
 
@@ -84,6 +89,11 @@ export const configs = {
       "@choragen/require-test-assertions": "error",
       "@choragen/require-meaningful-test-coverage": "error",
       "@choragen/require-semantic-user-intent": "error",
+      "@choragen/require-test-exercises-component": "error",
+      "@choragen/require-test-exercises-route": "error",
+      "@choragen/require-test-for-api-route": "error",
+      "@choragen/require-test-for-component": "error",
+      "@choragen/require-test-for-lib-export": "error",
     },
   },
 };

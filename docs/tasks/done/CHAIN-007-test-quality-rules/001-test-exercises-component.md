@@ -2,7 +2,7 @@
 
 **Chain**: CHAIN-007-test-quality-rules  
 **Task**: 001-test-exercises-component  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-06
 
 ---

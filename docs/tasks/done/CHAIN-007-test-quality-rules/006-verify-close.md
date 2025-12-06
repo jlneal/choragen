@@ -2,7 +2,7 @@
 
 **Chain**: CHAIN-007-test-quality-rules  
 **Task**: 006-verify-close  
-**Status**: backlog  
+**Status**: done  
 **Created**: 2025-12-06
 
 ---
@@ -15,15 +15,15 @@ Verify all 5 test quality rules work, run full validation, and close FR-20251206
 
 ## Expected Files
 
-Update:
+- `Update:`
 - `docs/requests/fix-requests/done/FR-20251206-003-test-quality-rules.md`
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] `pnpm build` passes
-- [ ] `pnpm lint` passes (or violations documented)
+- [ ] pnpm build passes
+- [ ] pnpm lint passes (or violations documented)
 - [ ] All 5 rules are exported and configured
 - [ ] FR moved to done/ with completion notes
 
