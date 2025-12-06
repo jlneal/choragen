@@ -6,6 +6,7 @@
 |------|---------|
 | `pre-commit` | Build check, lint warnings |
 | `commit-msg` | Semantic format, CR/FR traceability |
+| `pre-push` | Build and test validation before push |
 
 ## Commit Message Format
 
@@ -56,6 +57,23 @@ Or use the CLI:
 
 ```bash
 choragen hooks:install
+```
+
+## Pre-push Hook
+
+The pre-push hook runs before code is pushed to the remote:
+
+1. **Build** - Runs `pnpm build` to ensure code compiles
+2. **Tests** - Runs `pnpm test` to ensure tests pass
+
+If either step fails, the push is blocked.
+
+### Skipping Pre-push
+
+In emergencies only:
+
+```bash
+SKIP_PRE_PUSH=1 git push
 ```
 
 ## Bypassing Hooks

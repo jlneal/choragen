@@ -27,7 +27,9 @@
     "typecheck": "turbo run typecheck",
     "validate:links": "node scripts/validate-links.mjs",
     "validate:adr-traceability": "node scripts/validate-adr-traceability.mjs",
-    "validate:all": "npm run validate:links && npm run validate:adr-traceability"
+    "validate:commits": "node scripts/validate-commit-traceability.mjs",
+    "validate:agents": "node scripts/validate-agents-md.mjs",
+    "validate:all": "npm run validate:links && npm run validate:adr-traceability && npm run validate:commits && npm run validate:agents"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",

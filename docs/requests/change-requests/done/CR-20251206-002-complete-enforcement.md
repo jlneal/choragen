@@ -2,7 +2,7 @@
 
 **ID**: CR-20251206-002  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-06  
 **Owner**: Justin  
 
@@ -64,11 +64,11 @@ Choragen's value proposition is **deterministic control of agents through lint**
 
 ## Acceptance Criteria
 
-- [ ] All listed ESLint rules implemented and tested
-- [ ] All validation scripts implemented
-- [ ] pre-push hook added
-- [ ] `pnpm lint` runs without errors on choragen itself
-- [ ] Documentation updated
+- [x] All listed ESLint rules implemented and tested
+- [x] All validation scripts implemented
+- [x] pre-push hook added
+- [x] `pnpm lint` runs without errors on choragen itself
+- [x] Documentation updated
 
 ---
 
@@ -91,4 +91,38 @@ Each rule needs:
 
 ## Completion Notes
 
-[To be added when moved to done/]
+**Completed**: 2025-12-06
+
+### ESLint Rules Implemented (11 total)
+
+**Traceability Rules**:
+- `require-adr-reference` - Source files must reference governing ADR
+- `require-new-file-traceability` - New files need CR/FR context
+- `require-test-metadata` - Tests must have @design-doc and @user-intent
+- `no-untracked-todos` - TODOs must reference CR/FR
+
+**Test Quality Rules**:
+- `no-trivial-assertions` - Tests must have meaningful assertions
+- `require-test-assertions` - Tests must have assertions
+- `require-design-contract` - API routes need DesignContract wrapper
+
+**Code Hygiene Rules**:
+- `require-eslint-disable-justification` - eslint-disable needs comment
+- `max-eslint-disables-per-file` - Limit eslint-disable usage
+- `no-as-unknown` - Avoid `as unknown` casts
+- `no-magic-numbers-http` - Use HttpStatus enum
+
+### Validation Scripts Implemented (4 total)
+- `validate:links` - Check documentation links
+- `validate:adr-traceability` - Check ADR ↔ implementation links
+- `validate:commits` - Check commits reference CR/FR
+- `validate:agents` - Check AGENTS.md presence
+
+### Git Hooks Added
+- `pre-push` - Run tests before push
+
+### Verification Results
+- `pnpm build` ✅ passes
+- `pnpm test` ✅ passes (32 tests)
+- `pnpm validate:all` ✅ passes
+- `pnpm lint` ✅ passes (0 errors, 29 warnings for missing ADR refs)

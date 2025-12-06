@@ -24,6 +24,8 @@ export const configs = {
       // Traceability
       "@choragen/require-adr-reference": "warn",
       "@choragen/require-test-metadata": "warn",
+      "@choragen/no-untracked-todos": "warn",
+      "@choragen/require-new-file-traceability": "warn",
 
       // Contracts
       "@choragen/require-design-contract": "warn",
@@ -31,6 +33,12 @@ export const configs = {
       // Code hygiene
       "@choragen/no-as-unknown": "warn",
       "@choragen/no-magic-numbers-http": "warn",
+      "@choragen/require-eslint-disable-justification": "warn",
+      "@choragen/max-eslint-disables-per-file": "warn",
+
+      // Test quality
+      "@choragen/no-trivial-assertions": "warn",
+      "@choragen/require-test-assertions": "warn",
     },
   },
 
@@ -43,6 +51,8 @@ export const configs = {
       // Traceability
       "@choragen/require-adr-reference": "error",
       "@choragen/require-test-metadata": "error",
+      "@choragen/no-untracked-todos": "error",
+      "@choragen/require-new-file-traceability": "error",
 
       // Contracts
       "@choragen/require-design-contract": "error",
@@ -50,6 +60,12 @@ export const configs = {
       // Code hygiene
       "@choragen/no-as-unknown": "error",
       "@choragen/no-magic-numbers-http": "error",
+      "@choragen/require-eslint-disable-justification": "error",
+      "@choragen/max-eslint-disables-per-file": "error",
+
+      // Test quality
+      "@choragen/no-trivial-assertions": "error",
+      "@choragen/require-test-assertions": "error",
     },
   },
 };
