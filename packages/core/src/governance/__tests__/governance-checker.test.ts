@@ -1,3 +1,8 @@
+/**
+ * @design-doc docs/design/core/features/governance-enforcement.md
+ * @user-intent "Verify governance rules are correctly checked and enforced"
+ */
+
 import { describe, it, expect } from "vitest";
 import {
   checkMutation,

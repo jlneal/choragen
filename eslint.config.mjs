@@ -46,9 +46,9 @@ export default [
       "@typescript-eslint/no-explicit-any": "off", // We use any in ESLint rules
 
       // Choragen rules (self-hosted)
-      "@choragen/require-adr-reference": "warn",
-      "@choragen/no-as-unknown": "warn",
-      "@choragen/no-magic-numbers-http": "warn",
+      "@choragen/require-adr-reference": "error",
+      "@choragen/no-as-unknown": "error",
+      "@choragen/no-magic-numbers-http": "error",
 
       // Disabled for now - not all files need these yet
       // "@choragen/require-test-metadata": "warn",
@@ -78,7 +78,7 @@ export default [
       "@typescript-eslint/no-explicit-any": "off",
 
       // Test-specific rules
-      "@choragen/require-test-metadata": "warn",
+      "@choragen/require-test-metadata": "error",
       "@choragen/no-as-unknown": "off", // Tests may need unsafe casts
     },
   },

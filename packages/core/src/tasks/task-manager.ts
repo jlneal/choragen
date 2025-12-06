@@ -21,7 +21,6 @@ import {
   parseTaskMarkdown,
   serializeTaskMarkdown,
   formatTaskId,
-  parseTaskId,
 } from "./task-parser.js";
 
 export class TaskManager {
@@ -124,7 +123,6 @@ export class TaskManager {
         const files = await fs.readdir(chainDir);
         for (const file of files) {
           if (!file.endsWith(".md")) continue;
-          const taskId = file.replace(".md", "");
           const content = await fs.readFile(
             path.join(chainDir, file),
             "utf-8"
@@ -152,7 +150,7 @@ export class TaskManager {
     if (!task) {
       return {
         success: false,
-        task: null as unknown as Task,
+        task: null!,
         previousStatus: "backlog",
         newStatus,
         error: `Task ${taskId} not found in chain ${chainId}`,

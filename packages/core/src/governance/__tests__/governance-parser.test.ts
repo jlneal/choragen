@@ -1,3 +1,8 @@
+/**
+ * @design-doc docs/design/core/features/governance-enforcement.md
+ * @user-intent "Verify governance YAML files are correctly parsed and serialized"
+ */
+
 import { describe, it, expect } from "vitest";
 import {
   parseGovernanceYaml,

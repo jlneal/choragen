@@ -13,7 +13,7 @@
 
 import type { Rule } from "eslint";
 
-const ADR_PATTERN = /(?:\/\/|\/\*|\*)\s*(?:ADR:|@adr)\s*(ADR-\d{3}-[\w-]+)/;
+const ADR_PATTERN = /(?:ADR:|@adr)\s*(ADR-\d+-[\w-]+)/;
 
 const rule: Rule.RuleModule = {
   meta: {
@@ -86,11 +86,11 @@ const rule: Rule.RuleModule = {
 };
 
 function matchPattern(pattern: string, filename: string): boolean {
-  // Simple glob matching
+  // Simple glob matching - escape dots BEFORE replacing globs
   const regex = pattern
+    .replace(/\./g, "\\.")
     .replace(/\*\*/g, ".*")
-    .replace(/\*/g, "[^/]*")
-    .replace(/\./g, "\\.");
+    .replace(/\*/g, "[^/]*");
   return new RegExp(regex).test(filename);
 }
 

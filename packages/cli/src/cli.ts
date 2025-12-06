@@ -4,7 +4,7 @@
  * CLI implementation
  */
 
-import { ChainManager, TaskManager, LockManager } from "@choragen/core";
+import { ChainManager, LockManager } from "@choragen/core";
 import {
   parseGovernanceFile,
   GovernanceChecker,

@@ -1,3 +1,8 @@
+/**
+ * @design-doc docs/design/core/features/task-lifecycle.md
+ * @user-intent "Verify task IDs and markdown are correctly parsed and serialized"
+ */
+
 import { describe, it, expect } from "vitest";
 import {
   parseTaskId,
