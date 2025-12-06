@@ -2,7 +2,7 @@
 
 **Chain**: CHAIN-006-traceability-rules  
 **Task**: 001-bidirectional-test-links  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-06
 
 ---

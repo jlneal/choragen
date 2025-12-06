@@ -15,6 +15,9 @@ import noTrivialAssertions from "./no-trivial-assertions.js";
 import requireTestAssertions from "./require-test-assertions.js";
 import requireEslintDisableJustification from "./require-eslint-disable-justification.js";
 import maxEslintDisablesPerFile from "./max-eslint-disables-per-file.js";
+import requireBidirectionalTestLinks from "./require-bidirectional-test-links.js";
+import requireCrFrExists from "./require-cr-fr-exists.js";
+import requireDesignDocChain from "./require-design-doc-chain.js";
 
 export const rules = {
   // Traceability rules
@@ -22,6 +25,8 @@ export const rules = {
   "require-test-metadata": requireTestMetadata,
   "no-untracked-todos": noUntrackedTodos,
   "require-new-file-traceability": requireNewFileTraceability,
+  "require-cr-fr-exists": requireCrFrExists,
+  "require-design-doc-chain": requireDesignDocChain,
 
   // Contract rules
   "require-design-contract": requireDesignContract,
@@ -35,6 +40,7 @@ export const rules = {
   // Test quality rules
   "no-trivial-assertions": noTrivialAssertions,
   "require-test-assertions": requireTestAssertions,
+  "require-bidirectional-test-links": requireBidirectionalTestLinks,
 };
 
 export default rules;

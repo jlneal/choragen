@@ -2,7 +2,7 @@
 
 **Chain**: CHAIN-006-traceability-rules  
 **Task**: 003-design-doc-chain  
-**Status**: backlog  
+**Status**: done  
 **Created**: 2025-12-06
 
 ---
@@ -15,23 +15,22 @@ Add ESLint rule that enforces design docs link to their governing ADRs. Design d
 
 ## Expected Files
 
-Create:
+- `Create:`
 - `packages/eslint-plugin/src/rules/require-design-doc-chain.ts`
-
-Update:
-- `packages/eslint-plugin/src/rules/index.ts` - Export rule
-- `packages/eslint-plugin/src/index.ts` - Add to configs
+- `Update:`
+- `packages/eslint-plugin/src/rules/index.ts - Export rule`
+- `packages/eslint-plugin/src/index.ts - Add to configs`
 
 ---
 
 ## Acceptance Criteria
 
 - [ ] Rule implemented
-- [ ] Checks design doc files in `docs/design/`
-- [ ] Requires ADR reference (e.g., `ADR-001-*`)
+- [ ] Checks design doc files in docs/design/
+- [ ] Requires ADR reference (e.g., ADR-001-*)
 - [ ] Rule exported and added to configs
 - [ ] ADR reference comment included
-- [ ] `pnpm build` passes
+- [ ] pnpm build passes
 
 ---
 

@@ -26,6 +26,9 @@ export const configs = {
       "@choragen/require-test-metadata": "warn",
       "@choragen/no-untracked-todos": "warn",
       "@choragen/require-new-file-traceability": "warn",
+      "@choragen/require-bidirectional-test-links": "warn",
+      "@choragen/require-cr-fr-exists": "warn",
+      "@choragen/require-design-doc-chain": "warn",
 
       // Contracts
       "@choragen/require-design-contract": "warn",
@@ -53,6 +56,9 @@ export const configs = {
       "@choragen/require-test-metadata": "error",
       "@choragen/no-untracked-todos": "error",
       "@choragen/require-new-file-traceability": "error",
+      "@choragen/require-bidirectional-test-links": "error",
+      "@choragen/require-cr-fr-exists": "error",
+      "@choragen/require-design-doc-chain": "error",
 
       // Contracts
       "@choragen/require-design-contract": "error",

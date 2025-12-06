@@ -2,7 +2,7 @@
 
 **Chain**: CHAIN-006-traceability-rules  
 **Task**: 004-design-doc-completeness  
-**Status**: backlog  
+**Status**: todo  
 **Created**: 2025-12-06
 
 ---
@@ -15,12 +15,11 @@ Add ESLint rule that enforces design docs have required sections based on their 
 
 ## Expected Files
 
-Create:
+- `Create:`
 - `packages/eslint-plugin/src/rules/require-design-doc-completeness.ts`
-
-Update:
-- `packages/eslint-plugin/src/rules/index.ts` - Export rule
-- `packages/eslint-plugin/src/index.ts` - Add to configs
+- `Update:`
+- `packages/eslint-plugin/src/rules/index.ts - Export rule`
+- `packages/eslint-plugin/src/index.ts - Add to configs`
 
 ---
 
@@ -32,7 +31,7 @@ Update:
 - [ ] Scenarios require: Context, Steps
 - [ ] Rule exported and added to configs
 - [ ] ADR reference comment included
-- [ ] `pnpm build` passes
+- [ ] pnpm build passes
 
 ---
 
