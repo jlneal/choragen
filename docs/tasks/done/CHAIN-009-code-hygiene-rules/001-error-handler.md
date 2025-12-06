@@ -2,7 +2,7 @@
 
 **Chain**: CHAIN-009-code-hygiene-rules  
 **Task**: 001-error-handler  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-06
 
 ---

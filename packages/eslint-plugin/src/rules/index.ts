@@ -15,6 +15,7 @@ import noTrivialAssertions from "./no-trivial-assertions.js";
 import requireTestAssertions from "./require-test-assertions.js";
 import requireEslintDisableJustification from "./require-eslint-disable-justification.js";
 import maxEslintDisablesPerFile from "./max-eslint-disables-per-file.js";
+import maxEslintDisablesRatio from "./max-eslint-disables-ratio.js";
 import requireBidirectionalTestLinks from "./require-bidirectional-test-links.js";
 import requireCrFrExists from "./require-cr-fr-exists.js";
 import requireDesignDocChain from "./require-design-doc-chain.js";
@@ -32,6 +33,10 @@ import requireTestForLibExport from "./require-test-for-lib-export.js";
 import requirePostconditionSemantics from "./require-postcondition-semantics.js";
 import requirePreconditionSemantics from "./require-precondition-semantics.js";
 import noTrivialContractConditions from "./no-trivial-contract-conditions.js";
+import requireErrorHandler from "./require-error-handler.js";
+import requireTryCatchInAsync from "./require-try-catch-in-async.js";
+import requireErrorBoundary from "./require-error-boundary.js";
+import requireReadonlyProperties from "./require-readonly-properties.js";
 
 export const rules = {
   // Traceability rules
@@ -57,6 +62,11 @@ export const rules = {
   "no-magic-numbers-http": noMagicNumbersHttp,
   "require-eslint-disable-justification": requireEslintDisableJustification,
   "max-eslint-disables-per-file": maxEslintDisablesPerFile,
+  "max-eslint-disables-ratio": maxEslintDisablesRatio,
+  "require-error-handler": requireErrorHandler,
+  "require-try-catch-in-async": requireTryCatchInAsync,
+  "require-error-boundary": requireErrorBoundary,
+  "require-readonly-properties": requireReadonlyProperties,
 
   // Test quality rules
   "no-trivial-assertions": noTrivialAssertions,

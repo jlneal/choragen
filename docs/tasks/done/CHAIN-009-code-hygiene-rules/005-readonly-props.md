@@ -2,7 +2,7 @@
 
 **Chain**: CHAIN-009-code-hygiene-rules  
 **Task**: 005-readonly-props  
-**Status**: backlog  
+**Status**: done  
 **Created**: 2025-12-06
 
 ---

@@ -29,7 +29,15 @@
     "validate:adr-traceability": "node scripts/validate-adr-traceability.mjs",
     "validate:commits": "node scripts/validate-commit-traceability.mjs",
     "validate:agents": "node scripts/validate-agents-md.mjs",
-    "validate:all": "npm run validate:links && npm run validate:adr-traceability && npm run validate:commits && npm run validate:agents"
+    "validate:complete-traceability": "node scripts/validate-complete-traceability.mjs",
+    "validate:test-coverage": "node scripts/validate-test-coverage.mjs",
+    "validate:design-doc-content": "node scripts/validate-design-doc-content.mjs",
+    "validate:contract-coverage": "node scripts/validate-contract-coverage.mjs",
+    "validate:adr-staleness": "node scripts/validate-adr-staleness.mjs",
+    "validate:request-staleness": "node scripts/validate-request-staleness.mjs",
+    "validate:request-completion": "node scripts/validate-request-completion.mjs",
+    "validate:source-adr-refs": "node scripts/validate-source-adr-references.mjs",
+    "validate:all": "npm run validate:links && npm run validate:adr-traceability && npm run validate:commits && npm run validate:agents && npm run validate:complete-traceability && npm run validate:test-coverage && npm run validate:design-doc-content && npm run validate:contract-coverage && npm run validate:adr-staleness && npm run validate:request-staleness && npm run validate:request-completion && npm run validate:source-adr-refs"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",

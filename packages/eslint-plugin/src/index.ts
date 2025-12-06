@@ -45,6 +45,11 @@ export const configs = {
       "@choragen/no-magic-numbers-http": "warn",
       "@choragen/require-eslint-disable-justification": "warn",
       "@choragen/max-eslint-disables-per-file": "warn",
+      "@choragen/max-eslint-disables-ratio": "warn",
+      "@choragen/require-error-handler": "warn",
+      "@choragen/require-try-catch-in-async": "warn",
+      "@choragen/require-error-boundary": "warn",
+      "@choragen/require-readonly-properties": "warn",
 
       // Test quality
       "@choragen/no-trivial-assertions": "warn",
@@ -89,6 +94,11 @@ export const configs = {
       "@choragen/no-magic-numbers-http": "error",
       "@choragen/require-eslint-disable-justification": "error",
       "@choragen/max-eslint-disables-per-file": "error",
+      "@choragen/max-eslint-disables-ratio": "error",
+      "@choragen/require-error-handler": "error",
+      "@choragen/require-try-catch-in-async": "error",
+      "@choragen/require-error-boundary": "error",
+      "@choragen/require-readonly-properties": "error",
 
       // Test quality
       "@choragen/no-trivial-assertions": "error",

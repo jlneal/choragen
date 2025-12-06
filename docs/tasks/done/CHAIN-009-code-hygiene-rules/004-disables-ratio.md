@@ -2,7 +2,7 @@
 
 **Chain**: CHAIN-009-code-hygiene-rules  
 **Task**: 004-disables-ratio  
-**Status**: backlog  
+**Status**: done  
 **Created**: 2025-12-06
 
 ---
@@ -15,12 +15,11 @@ Add ESLint rule that limits eslint-disable comments as a percentage of file line
 
 ## Expected Files
 
-Create:
+- `Create:`
 - `packages/eslint-plugin/src/rules/max-eslint-disables-ratio.ts`
-
-Update:
-- `packages/eslint-plugin/src/rules/index.ts` - Export rule
-- `packages/eslint-plugin/src/index.ts` - Add to configs
+- `Update:`
+- `packages/eslint-plugin/src/rules/index.ts - Export rule`
+- `packages/eslint-plugin/src/index.ts - Add to configs`
 
 ---
 
@@ -31,7 +30,7 @@ Update:
 - [ ] Counts eslint-disable comments vs total lines
 - [ ] Rule exported and added to configs
 - [ ] ADR reference comment included
-- [ ] `pnpm build` passes
+- [ ] pnpm build passes
 
 ---
 
