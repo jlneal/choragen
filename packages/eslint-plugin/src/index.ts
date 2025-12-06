@@ -29,6 +29,10 @@ export const configs = {
       "@choragen/require-bidirectional-test-links": "warn",
       "@choragen/require-cr-fr-exists": "warn",
       "@choragen/require-design-doc-chain": "warn",
+      "@choragen/require-design-doc-completeness": "warn",
+      "@choragen/require-adr-implementation": "warn",
+      "@choragen/require-adr-relevance": "warn",
+      "@choragen/require-significant-change-traceability": "warn",
 
       // Contracts
       "@choragen/require-design-contract": "warn",
@@ -42,6 +46,8 @@ export const configs = {
       // Test quality
       "@choragen/no-trivial-assertions": "warn",
       "@choragen/require-test-assertions": "warn",
+      "@choragen/require-meaningful-test-coverage": "warn",
+      "@choragen/require-semantic-user-intent": "warn",
     },
   },
 
@@ -59,6 +65,10 @@ export const configs = {
       "@choragen/require-bidirectional-test-links": "error",
       "@choragen/require-cr-fr-exists": "error",
       "@choragen/require-design-doc-chain": "error",
+      "@choragen/require-design-doc-completeness": "error",
+      "@choragen/require-adr-implementation": "error",
+      "@choragen/require-adr-relevance": "error",
+      "@choragen/require-significant-change-traceability": "error",
 
       // Contracts
       "@choragen/require-design-contract": "error",
@@ -72,6 +82,8 @@ export const configs = {
       // Test quality
       "@choragen/no-trivial-assertions": "error",
       "@choragen/require-test-assertions": "error",
+      "@choragen/require-meaningful-test-coverage": "error",
+      "@choragen/require-semantic-user-intent": "error",
     },
   },
 };

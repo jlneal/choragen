@@ -18,6 +18,12 @@ import maxEslintDisablesPerFile from "./max-eslint-disables-per-file.js";
 import requireBidirectionalTestLinks from "./require-bidirectional-test-links.js";
 import requireCrFrExists from "./require-cr-fr-exists.js";
 import requireDesignDocChain from "./require-design-doc-chain.js";
+import requireDesignDocCompleteness from "./require-design-doc-completeness.js";
+import requireAdrImplementation from "./require-adr-implementation.js";
+import requireAdrRelevance from "./require-adr-relevance.js";
+import requireMeaningfulTestCoverage from "./require-meaningful-test-coverage.js";
+import requireSemanticUserIntent from "./require-semantic-user-intent.js";
+import requireSignificantChangeTraceability from "./require-significant-change-traceability.js";
 
 export const rules = {
   // Traceability rules
@@ -27,6 +33,10 @@ export const rules = {
   "require-new-file-traceability": requireNewFileTraceability,
   "require-cr-fr-exists": requireCrFrExists,
   "require-design-doc-chain": requireDesignDocChain,
+  "require-design-doc-completeness": requireDesignDocCompleteness,
+  "require-adr-implementation": requireAdrImplementation,
+  "require-adr-relevance": requireAdrRelevance,
+  "require-significant-change-traceability": requireSignificantChangeTraceability,
 
   // Contract rules
   "require-design-contract": requireDesignContract,
@@ -41,6 +51,8 @@ export const rules = {
   "no-trivial-assertions": noTrivialAssertions,
   "require-test-assertions": requireTestAssertions,
   "require-bidirectional-test-links": requireBidirectionalTestLinks,
+  "require-meaningful-test-coverage": requireMeaningfulTestCoverage,
+  "require-semantic-user-intent": requireSemanticUserIntent,
 };
 
 export default rules;

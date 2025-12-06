@@ -2,7 +2,7 @@
 
 **Chain**: CHAIN-006-traceability-rules  
 **Task**: 007-meaningful-test-coverage  
-**Status**: backlog  
+**Status**: done  
 **Created**: 2025-12-06
 
 ---
@@ -15,12 +15,11 @@ Add ESLint rule that ensures tests cover the design intents specified in their `
 
 ## Expected Files
 
-Create:
+- `Create:`
 - `packages/eslint-plugin/src/rules/require-meaningful-test-coverage.ts`
-
-Update:
-- `packages/eslint-plugin/src/rules/index.ts` - Export rule
-- `packages/eslint-plugin/src/index.ts` - Add to configs
+- `Update:`
+- `packages/eslint-plugin/src/rules/index.ts - Export rule`
+- `packages/eslint-plugin/src/index.ts - Add to configs`
 
 ---
 
@@ -30,7 +29,7 @@ Update:
 - [ ] Checks test covers acceptance criteria from design doc
 - [ ] Rule exported and added to configs
 - [ ] ADR reference comment included
-- [ ] `pnpm build` passes
+- [ ] pnpm build passes
 
 ---
 

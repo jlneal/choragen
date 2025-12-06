@@ -2,7 +2,7 @@
 
 **Chain**: CHAIN-006-traceability-rules  
 **Task**: 008-semantic-user-intent  
-**Status**: backlog  
+**Status**: done  
 **Created**: 2025-12-06
 
 ---
@@ -15,12 +15,11 @@ Add ESLint rule that ensures `@user-intent` metadata is meaningful, not boilerpl
 
 ## Expected Files
 
-Create:
+- `Create:`
 - `packages/eslint-plugin/src/rules/require-semantic-user-intent.ts`
-
-Update:
-- `packages/eslint-plugin/src/rules/index.ts` - Export rule
-- `packages/eslint-plugin/src/index.ts` - Add to configs
+- `Update:`
+- `packages/eslint-plugin/src/rules/index.ts - Export rule`
+- `packages/eslint-plugin/src/index.ts - Add to configs`
 
 ---
 
@@ -31,7 +30,7 @@ Update:
 - [ ] Requires specific, actionable intent
 - [ ] Rule exported and added to configs
 - [ ] ADR reference comment included
-- [ ] `pnpm build` passes
+- [ ] pnpm build passes
 
 ---
 

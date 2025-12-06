@@ -2,7 +2,7 @@
 
 **ID**: FR-20251206-002  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-06  
 **Owner**: Justin  
 
@@ -34,11 +34,11 @@ Without these rules, we can't enforce the traceability chain we require of other
 
 ## Acceptance Criteria
 
-- [ ] All 9 rules implemented
-- [ ] Rules exported and added to configs
-- [ ] Rules have ADR reference comments
-- [ ] `pnpm build` passes
-- [ ] `pnpm lint` passes (or violations documented)
+- [x] All 9 rules implemented
+- [x] Rules exported and added to configs
+- [x] Rules have ADR reference comments
+- [x] `pnpm build` passes
+- [x] `pnpm lint` passes (or violations documented)
 
 ---
 
@@ -55,4 +55,32 @@ These rules may need adaptation for choragen's structure.
 
 ## Completion Notes
 
-[To be added when moved to done/]
+**Completed**: 2025-12-06  
+**Chain**: CHAIN-006-traceability-rules (10 tasks)
+
+### Rules Added (9)
+
+All rules ported from itinerary-planner and adapted for choragen:
+
+1. **require-bidirectional-test-links** - Tests ↔ design docs bidirectional linking
+2. **require-cr-fr-exists** - Validates CR/FR references exist as files
+3. **require-design-doc-chain** - Design docs must link to ADRs
+4. **require-design-doc-completeness** - Required sections by doc type
+5. **require-adr-implementation** - ADRs in done/ have source refs
+6. **require-adr-relevance** - ADR refs match file context
+7. **require-meaningful-test-coverage** - Tests have substantive coverage
+8. **require-semantic-user-intent** - @user-intent is meaningful
+9. **require-significant-change-traceability** - Large changes need CR/FR
+
+### Verification
+
+```
+✅ pnpm build - passes
+✅ pnpm lint - passes  
+✅ pnpm test - passes (32 tests)
+```
+
+### Rule Count
+
+- Before: 12 rules
+- After: 21 rules (+9)

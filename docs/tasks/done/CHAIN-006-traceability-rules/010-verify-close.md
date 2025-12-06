@@ -2,7 +2,7 @@
 
 **Chain**: CHAIN-006-traceability-rules  
 **Task**: 010-verify-close  
-**Status**: backlog  
+**Status**: done  
 **Created**: 2025-12-06
 
 ---
@@ -15,15 +15,15 @@ Verify all 9 traceability rules work, run full validation, and close FR-20251206
 
 ## Expected Files
 
-Update:
+- `Update:`
 - `docs/requests/fix-requests/done/FR-20251206-002-traceability-rules.md`
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] `pnpm build` passes
-- [ ] `pnpm lint` passes (or violations documented)
+- [ ] pnpm build passes
+- [ ] pnpm lint passes (or violations documented)
 - [ ] All 9 rules are exported and configured
 - [ ] FR moved to done/ with completion notes
 
