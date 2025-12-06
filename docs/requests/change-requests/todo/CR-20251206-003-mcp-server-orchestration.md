@@ -1,4 +1,4 @@
-# Change Request: MCP Server for Agent Orchestration
+# Change Request: Agent Runner for Automated Task Execution
 
 **ID**: CR-20251206-003  
 **Domain**: core  
@@ -10,7 +10,7 @@
 
 ## What
 
-Create an MCP (Model Context Protocol) server that enables control agents to orchestrate implementation agent sessions programmatically.
+Create a custom agent runner that enables control agents to delegate tasks to implementation agents via direct API calls (Anthropic/OpenAI). The MCP server exposes a `task:delegate` tool that spawns an impl agent subprocess.
 
 ---
 
@@ -22,89 +22,146 @@ Currently, the control agent → impl agent handoff requires human intervention:
 3. Impl agent completes work
 4. Human reports completion back to control agent
 
-An MCP server would automate this:
-1. Control agent calls `task:delegate` tool
-2. MCP server spawns impl agent session with task context
-3. Impl agent calls `task:signal-complete` when done
-4. Control agent receives notification and reviews
+With an agent runner:
+1. Control agent calls `task:delegate` MCP tool
+2. MCP server spawns impl agent subprocess (API-based)
+3. Impl agent executes task using 6 core tools
+4. MCP server returns result to control agent
+5. Control agent reviews and approves
+
+---
+
+## Architecture
+
+```
+┌─────────────────┐     MCP      ┌─────────────────┐
+│  Control Agent  │◄────────────►│   MCP Server    │
+│   (Windsurf)    │              │  (@choragen/)   │
+└─────────────────┘              └────────┬────────┘
+                                          │
+                                          │ spawns
+                                          ▼
+                                 ┌─────────────────┐
+                                 │   Impl Agent    │
+                                 │ (API subprocess)│
+                                 └─────────────────┘
+```
+
+---
+
+## Design Decisions
+
+**Resolved:**
+
+1. **Custom agent loop** (not Aider) - Full control, minimal dependencies
+2. **Multi-provider** - Support both Anthropic and OpenAI APIs
+3. **Single repo scope** - No cross-repo operations
+4. **Impl agents don't commit** - Control agent handles git
+5. **6 core tools** for impl agent:
+   - `read_file` - Read any file
+   - `write_file` - Create new files
+   - `edit_file` - Modify existing files (search/replace)
+   - `run_command` - Build, lint, test, git status/diff/checkout
+   - `list_directory` - Explore structure
+   - `grep_search` - Find patterns (fallback)
 
 ---
 
 ## Scope
 
 **In Scope**:
-- MCP server package (`@choragen/mcp-server`)
-- Tools for task delegation and signaling
+- `@choragen/agent-runner` package - Core agent loop
+- MCP server with `task:delegate` tool
+- Provider abstraction (Anthropic + OpenAI)
+- 6 impl agent tools
+- System prompt for impl agent
 - Integration with choragen CLI
-- Documentation
 
-**Out of Scope** (for now):
-- Automatic agent session spawning (requires IDE integration)
-- Remote/distributed agent coordination
+**Out of Scope**:
+- IDE integration (Windsurf/VS Code)
+- Remote/distributed coordination
 - Authentication/authorization
+- Streaming responses (wait for full completion)
+- Token management (fail if context too long)
 
 ---
 
-## Open Design Questions
-
-These need discussion before implementation:
-
-1. **Transport**: stdio (local) or HTTP (remote)?
-2. **Session spawning**: How to start impl agent sessions?
-   - Windsurf API (if available)
-   - VS Code extension
-   - Manual with prepared context
-3. **Notification mechanism**: How does impl agent notify control agent?
-   - Polling
-   - WebSocket
-   - File-based signaling
-4. **State management**: Where does shared state live?
-   - Lock files (current)
-   - SQLite
-   - In-memory
-
----
-
-## Proposed Tools
+## Impl Agent Tools
 
 ```typescript
-// Control agent tools
-"task:delegate" - Prepare task for impl agent
-"task:await-completion" - Wait for impl agent signal
-"task:review" - Review completed work
+const TOOLS = {
+  read_file: {
+    description: "Read file contents",
+    parameters: { path: "string" },
+  },
+  write_file: {
+    description: "Create a new file",
+    parameters: { path: "string", content: "string" },
+  },
+  edit_file: {
+    description: "Edit existing file with search/replace",
+    parameters: { path: "string", old_string: "string", new_string: "string" },
+  },
+  run_command: {
+    description: "Run shell command",
+    parameters: { command: "string", cwd?: "string" },
+  },
+  list_directory: {
+    description: "List directory contents",
+    parameters: { path: "string" },
+  },
+  grep_search: {
+    description: "Search for pattern in files",
+    parameters: { pattern: "string", path: "string" },
+  },
+};
+```
 
-// Impl agent tools  
-"task:get-context" - Get current task details
-"task:signal-complete" - Signal work is done
-"task:request-help" - Escalate to control agent
+---
 
-// Shared tools
-"chain:status" - Get chain progress
-"lock:status" - Get lock status
+## MCP Tools (for Control Agent)
+
+```typescript
+"task:delegate" - Spawn impl agent to execute task
+  params: { chainId, taskId, provider, model }
+  returns: { success, messages, filesChanged }
+
+"chain:status" - Get chain progress (existing CLI wrapper)
+"task:list" - List tasks in chain (existing CLI wrapper)
 ```
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] MCP server package created
-- [ ] Core tools implemented
-- [ ] Integration with existing CLI
-- [ ] Documentation for setup and usage
-- [ ] Example workflow demonstrated
+- [ ] `@choragen/agent-runner` package created
+- [ ] Provider abstraction (Anthropic + OpenAI)
+- [ ] 6 impl agent tools implemented
+- [ ] Agent loop with tool execution
+- [ ] MCP server with `task:delegate`
+- [ ] System prompt for impl agent
+- [ ] End-to-end test with real task
+- [ ] Documentation
+
+---
+
+## Estimated Effort
+
+| Component | Lines | Time |
+|-----------|-------|------|
+| Agent loop | ~200 | 2-3 hours |
+| Provider abstraction | ~150 | 2-3 hours |
+| Tools (6) | ~300 | 3-4 hours |
+| MCP integration | ~100 | 1-2 hours |
+| System prompt | ~50 | 1 hour |
+| Error handling | ~100 | 1-2 hours |
+| **Total** | **~900** | **~2-3 days** |
 
 ---
 
 ## Linked ADRs
 
-- (ADR to be created during implementation)
-
----
-
-## Implementation Notes
-
-Start with file-based signaling and manual session spawning.
-Iterate toward more automation as IDE integration becomes available.
+- ADR-004-agent-runner (to be created)
 
 ---
 
