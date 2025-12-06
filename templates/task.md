@@ -3,6 +3,7 @@
 **Chain**: {{CHAIN_ID}}  
 **Task**: {{TASK_ID}}  
 **Status**: todo  
+**Type**: implementation  
 **Created**: {{DATE}}
 
 ---
@@ -43,3 +44,10 @@
 ## Notes
 
 {{NOTES}}
+
+---
+
+## Task Type Reference
+
+- **implementation** (default): Handed off to impl agent for execution
+- **control**: Executed by control agent directly (e.g., verification, review, closure tasks)

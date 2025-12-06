@@ -137,6 +137,20 @@ The impl agent executes tasks:
 - Runs verification commands
 - Reports completion (does NOT move task files)
 
+### Control-Only Tasks
+
+Some tasks are control agent responsibilities with no impl handoff:
+- Verification tasks (e.g., "verify and close CR")
+- Review tasks
+- CR/FR closure tasks
+
+For these tasks:
+1. Control agent executes the task directly
+2. Control agent updates task status to `done`
+3. Control agent moves task file to `done/<CHAIN-ID>/`
+
+Mark control-only tasks with `**Type**: control` in the task header.
+
 ## CRITICAL: Never Skip the System
 
 **Control agents must NEVER implement code directly.** Even for "quick fixes":
