@@ -1,0 +1,15 @@
+{
+  "chainId": "CHAIN-014-chain-types",
+  "requestId": "CR-20251206-006",
+  "title": "Add Chain Types (Design vs Implementation)",
+  "type": "implementation",
+  "status": "done",
+  "createdAt": "2025-12-06",
+  "tasks": [
+    "001-update-chain-schema",
+    "002-update-cli-commands",
+    "003-add-validation",
+    "004-migrate-existing",
+    "005-verify-close"
+  ]
+}

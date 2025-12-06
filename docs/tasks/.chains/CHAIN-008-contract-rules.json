@@ -4,6 +4,7 @@
   "slug": "contract-rules",
   "requestId": "FR-20251206-004",
   "title": "Add Contract Enforcement Lint Rules",
+  "type": "implementation",
   "description": "",
   "createdAt": "2025-12-06T03:38:32.780Z",
   "updatedAt": "2025-12-06T03:38:32.780Z"

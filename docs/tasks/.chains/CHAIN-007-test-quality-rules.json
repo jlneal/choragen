@@ -4,6 +4,7 @@
   "slug": "test-quality-rules",
   "requestId": "FR-20251206-003",
   "title": "Add Test Quality Lint Rules",
+  "type": "implementation",
   "description": "",
   "createdAt": "2025-12-06T03:25:55.545Z",
   "updatedAt": "2025-12-06T03:25:55.545Z"

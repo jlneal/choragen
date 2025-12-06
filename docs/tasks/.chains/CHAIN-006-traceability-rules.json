@@ -4,6 +4,7 @@
   "slug": "traceability-rules",
   "requestId": "FR-20251206-002",
   "title": "Add Complete Traceability Lint Rules",
+  "type": "implementation",
   "description": "",
   "createdAt": "2025-12-06T02:35:26.154Z",
   "updatedAt": "2025-12-06T02:35:26.154Z"

@@ -4,6 +4,7 @@
   "slug": "fix-adr-regex",
   "requestId": "FR-20251206-001",
   "title": "Fix ADR reference regex and pay down lint warnings",
+  "type": "implementation",
   "description": "",
   "createdAt": "2025-12-06T01:41:44.608Z",
   "updatedAt": "2025-12-06T01:41:44.608Z"

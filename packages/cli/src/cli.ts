@@ -4,12 +4,60 @@
  * CLI implementation
  */
 
-import { ChainManager, LockManager } from "@choragen/core";
+import { ChainManager, LockManager, CHAIN_TYPES, type ChainType } from "@choragen/core";
 import {
   parseGovernanceFile,
   GovernanceChecker,
   formatCheckSummary,
 } from "@choragen/core";
+import { initProject, formatInitResult, InitOptions } from "./commands/init.js";
+import * as readline from "node:readline";
+
+/**
+ * Prompt user for text input with optional default
+ * @param question - The question to ask
+ * @param defaultValue - Default value if user presses enter
+ * @returns The user's input or the default value
+ */
+async function prompt(question: string, defaultValue?: string): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  const displayQuestion = defaultValue
+    ? `${question} (${defaultValue}): `
+    : `${question}: `;
+
+  return new Promise((resolve) => {
+    rl.question(displayQuestion, (answer) => {
+      rl.close();
+      const trimmed = answer.trim();
+      resolve(trimmed || defaultValue || "");
+    });
+  });
+}
+
+/**
+ * Prompt user for yes/no confirmation
+ * @param question - The question to ask
+ * @returns true if user answers yes (or presses enter for default yes)
+ */
+async function promptYesNo(question: string): Promise<boolean> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question(question + " ", (answer) => {
+      rl.close();
+      const normalized = answer.trim().toLowerCase();
+      // Default to yes if empty, otherwise check for explicit yes
+      resolve(normalized === "" || normalized === "y" || normalized === "yes");
+    });
+  });
+}
 
 interface CommandDef {
   description: string;
@@ -28,11 +76,31 @@ const commands: Record<string, CommandDef> = {
   // Chain lifecycle
   "chain:new": {
     description: "Create a new task chain from a CR/FR",
-    usage: "chain:new <request-id> <slug> [title]",
+    usage: "chain:new <request-id> <slug> [title] [--type=design|implementation] [--depends-on=CHAIN-xxx]",
     handler: async (args) => {
-      const [requestId, slug, ...titleParts] = args;
+      // Parse flags from args
+      const positionalArgs: string[] = [];
+      let type: ChainType | undefined;
+      let dependsOn: string | undefined;
+
+      for (const arg of args) {
+        if (arg.startsWith("--type=")) {
+          const typeValue = arg.slice("--type=".length);
+          if (!CHAIN_TYPES.includes(typeValue as ChainType)) {
+            console.error(`Invalid type: ${typeValue}. Must be one of: ${CHAIN_TYPES.join(", ")}`);
+            process.exit(1);
+          }
+          type = typeValue as ChainType;
+        } else if (arg.startsWith("--depends-on=")) {
+          dependsOn = arg.slice("--depends-on=".length);
+        } else {
+          positionalArgs.push(arg);
+        }
+      }
+
+      const [requestId, slug, ...titleParts] = positionalArgs;
       if (!requestId || !slug) {
-        console.error("Usage: choragen chain:new <request-id> <slug> [title]");
+        console.error("Usage: choragen chain:new <request-id> <slug> [title] [--type=design|implementation]");
         process.exit(1);
       }
       const title = titleParts.join(" ") || slug;
@@ -40,10 +108,96 @@ const commands: Record<string, CommandDef> = {
         requestId,
         slug,
         title,
+        type,
+        dependsOn,
       });
       console.log(`Created chain: ${chain.id}`);
       console.log(`  Request: ${chain.requestId}`);
       console.log(`  Title: ${chain.title}`);
+      if (chain.type) {
+        console.log(`  Type: ${chain.type}`);
+      }
+      if (chain.dependsOn) {
+        console.log(`  Depends on: ${chain.dependsOn}`);
+      }
+    },
+  },
+
+  "chain:new:design": {
+    description: "Create a new design chain (shorthand for --type=design)",
+    usage: "chain:new:design <request-id> <slug> [title]",
+    handler: async (args) => {
+      const [requestId, slug, ...titleParts] = args;
+      if (!requestId || !slug) {
+        console.error("Usage: choragen chain:new:design <request-id> <slug> [title]");
+        process.exit(1);
+      }
+      const title = titleParts.join(" ") || slug;
+      const chain = await chainManager.createChain({
+        requestId,
+        slug,
+        title,
+        type: "design",
+      });
+      console.log(`Created design chain: ${chain.id}`);
+      console.log(`  Request: ${chain.requestId}`);
+      console.log(`  Title: ${chain.title}`);
+      console.log(`  Type: design`);
+    },
+  },
+
+  "chain:new:impl": {
+    description: "Create a new implementation chain (shorthand for --type=implementation)",
+    usage: "chain:new:impl <request-id> <slug> [title] [--depends-on=CHAIN-xxx] [--skip-design=\"justification\"]",
+    handler: async (args) => {
+      // Parse flags from args
+      const positionalArgs: string[] = [];
+      let dependsOn: string | undefined;
+      let skipDesignJustification: string | undefined;
+
+      for (const arg of args) {
+        if (arg.startsWith("--depends-on=")) {
+          dependsOn = arg.slice("--depends-on=".length);
+        } else if (arg.startsWith("--skip-design=")) {
+          skipDesignJustification = arg.slice("--skip-design=".length);
+        } else {
+          positionalArgs.push(arg);
+        }
+      }
+
+      const [requestId, slug, ...titleParts] = positionalArgs;
+      if (!requestId || !slug) {
+        console.error("Usage: choragen chain:new:impl <request-id> <slug> [title] [--depends-on=CHAIN-xxx]");
+        process.exit(1);
+      }
+
+      // Require either --depends-on or --skip-design
+      if (!dependsOn && !skipDesignJustification) {
+        console.error("Error: Implementation chains require either --depends-on=<design-chain-id> or --skip-design=\"justification\"");
+        console.error("  --depends-on: Link to the design chain this implements");
+        console.error("  --skip-design: Justification for skipping design (e.g., hotfix, trivial change)");
+        process.exit(1);
+      }
+
+      const title = titleParts.join(" ") || slug;
+      const chain = await chainManager.createChain({
+        requestId,
+        slug,
+        title,
+        type: "implementation",
+        dependsOn,
+      });
+
+      console.log(`Created implementation chain: ${chain.id}`);
+      console.log(`  Request: ${chain.requestId}`);
+      console.log(`  Title: ${chain.title}`);
+      console.log(`  Type: implementation`);
+      if (chain.dependsOn) {
+        console.log(`  Depends on: ${chain.dependsOn}`);
+      }
+      if (skipDesignJustification) {
+        console.log(`  Skip design justification: ${skipDesignJustification}`);
+      }
     },
   },
 
@@ -63,8 +217,9 @@ const commands: Record<string, CommandDef> = {
         for (const chain of chains) {
           const summary = await chainManager.getChainSummary(chain.id);
           if (summary) {
+            const typeStr = chain.type ? ` [${chain.type}]` : "";
             console.log(
-              `  ${chain.id}: ${summary.status} (${summary.progress.toFixed(0)}% complete)`
+              `  ${chain.id}${typeStr}: ${summary.status} (${summary.progress.toFixed(0)}% complete)`
             );
           }
         }
@@ -80,6 +235,12 @@ const commands: Record<string, CommandDef> = {
       console.log(`Chain: ${summary.chain.id}`);
       console.log(`  Request: ${summary.chain.requestId}`);
       console.log(`  Title: ${summary.chain.title}`);
+      if (summary.chain.type) {
+        console.log(`  Type: ${summary.chain.type}`);
+      }
+      if (summary.chain.dependsOn) {
+        console.log(`  Depends on: ${summary.chain.dependsOn}`);
+      }
       console.log(`  Status: ${summary.status}`);
       console.log(`  Progress: ${summary.progress.toFixed(0)}%`);
       console.log(`  Tasks:`);
@@ -103,7 +264,9 @@ const commands: Record<string, CommandDef> = {
       for (const chain of chains) {
         const summary = await chainManager.getChainSummary(chain.id);
         const status = summary ? summary.status : "unknown";
-        console.log(`${chain.id} [${status}] - ${chain.title}`);
+        const typeStr = chain.type ? `[${chain.type}]` : "";
+        const typeCol = typeStr.padEnd(16);
+        console.log(`${chain.id} ${typeCol} [${status}] - ${chain.title}`);
       }
     },
   },
@@ -413,6 +576,83 @@ const commands: Record<string, CommandDef> = {
       } catch (error) {
         console.error("Failed to install hooks:", (error as Error).message);
         process.exit(1);
+      }
+    },
+  },
+
+  // Init
+  init: {
+    description: "Initialize a new Choragen project",
+    usage: "init [--non-interactive] [--skip-hooks] [--name <name>] [--domain <domain>]",
+    handler: async (args) => {
+      const options: InitOptions = {};
+      let nonInteractive = false;
+      let nameProvided = false;
+      let domainProvided = false;
+
+      // Parse arguments
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === "--skip-hooks") {
+          options.skipHooks = true;
+        } else if (arg === "--non-interactive") {
+          nonInteractive = true;
+        } else if (arg === "--name" && args[i + 1]) {
+          options.projectName = args[++i];
+          nameProvided = true;
+        } else if (arg.startsWith("--name=")) {
+          options.projectName = arg.slice("--name=".length);
+          nameProvided = true;
+        } else if (arg === "--domain" && args[i + 1]) {
+          options.domain = args[++i];
+          domainProvided = true;
+        } else if (arg.startsWith("--domain=")) {
+          options.domain = arg.slice("--domain=".length);
+          domainProvided = true;
+        }
+      }
+
+      // Get directory name as default project name
+      const { basename } = await import("node:path");
+      const defaultProjectName = basename(projectRoot);
+      const defaultDomain = "core";
+
+      // Interactive mode: prompt for values not provided via flags
+      if (!nonInteractive) {
+        // Prompt for project name if not provided
+        if (!nameProvided) {
+          options.projectName = await prompt("Project name", defaultProjectName);
+        }
+
+        // Prompt for domain if not provided
+        if (!domainProvided) {
+          options.domain = await prompt("Primary domain", defaultDomain);
+        }
+
+        // Prompt for git hooks if not skipping
+        if (!options.skipHooks) {
+          const answer = await promptYesNo("Install git hooks? (Y/n)");
+          options.installHooks = answer;
+        }
+      } else {
+        // Non-interactive: use defaults for unprovided values
+        if (!nameProvided) {
+          options.projectName = defaultProjectName;
+        }
+        if (!domainProvided) {
+          options.domain = defaultDomain;
+        }
+        // Don't install hooks in non-interactive mode unless explicitly requested
+        options.installHooks = false;
+      }
+
+      const result = await initProject(projectRoot, options);
+      console.log(formatInitResult(result));
+
+      // Show hint if hooks were created but not installed
+      if (result.hooksCreated.length > 0 && !result.hooksInstalled) {
+        console.log("");
+        console.log("To install hooks later, run: choragen hooks:install");
       }
     },
   },

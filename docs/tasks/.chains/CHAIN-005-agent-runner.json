@@ -4,6 +4,7 @@
   "slug": "agent-runner",
   "requestId": "CR-20251206-003",
   "title": "Agent Runner for Automated Task Execution",
+  "type": "implementation",
   "description": "",
   "createdAt": "2025-12-06T02:20:25.885Z",
   "updatedAt": "2025-12-06T02:20:25.885Z"

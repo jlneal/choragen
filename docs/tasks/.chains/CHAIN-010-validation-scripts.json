@@ -4,6 +4,7 @@
   "slug": "validation-scripts",
   "requestId": "FR-20251206-006",
   "title": "Add Missing Validation Scripts",
+  "type": "implementation",
   "description": "Port remaining validation scripts from itinerary-planner",
   "createdAt": "2025-12-06T04:12:00.000Z",
   "updatedAt": "2025-12-06T04:12:00.000Z"

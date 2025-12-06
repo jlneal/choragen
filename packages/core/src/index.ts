@@ -12,3 +12,4 @@ export * from "./tasks/index.js";
 export * from "./governance/index.js";
 export * from "./locks/index.js";
 export * from "./protocol/index.js";
+export * from "./validation/index.js";

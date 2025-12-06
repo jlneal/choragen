@@ -49,7 +49,7 @@ export class ChainManager {
    * Create a new chain
    */
   async createChain(options: CreateChainOptions): Promise<Chain> {
-    const { requestId, slug, title, description } = options;
+    const { requestId, slug, title, description, type, dependsOn } = options;
 
     // Find the next sequence number
     const existingChains = await this.getAllChains();
@@ -69,6 +69,8 @@ export class ChainManager {
       requestId,
       title,
       description: description || "",
+      type,
+      dependsOn,
       tasks: [],
       createdAt: now,
       updatedAt: now,
@@ -146,6 +148,8 @@ export class ChainManager {
       requestId: metadata.requestId || "",
       title: metadata.title || chainId,
       description: metadata.description || "",
+      type: metadata.type,
+      dependsOn: metadata.dependsOn,
       tasks,
       createdAt: metadata.createdAt ? new Date(metadata.createdAt) : new Date(),
       updatedAt: new Date(),
@@ -160,7 +164,7 @@ export class ChainManager {
     await fs.mkdir(chainsDir, { recursive: true });
 
     const metadataPath = path.join(chainsDir, `${chain.id}.json`);
-    const metadata = {
+    const metadata: Record<string, unknown> = {
       id: chain.id,
       sequence: chain.sequence,
       slug: chain.slug,
@@ -170,6 +174,14 @@ export class ChainManager {
       createdAt: chain.createdAt.toISOString(),
       updatedAt: chain.updatedAt.toISOString(),
     };
+
+    // Only include optional fields if they have values
+    if (chain.type) {
+      metadata.type = chain.type;
+    }
+    if (chain.dependsOn) {
+      metadata.dependsOn = chain.dependsOn;
+    }
 
     await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2), "utf-8");
   }
@@ -320,7 +332,7 @@ export class ChainManager {
    */
   async updateChain(
     chainId: string,
-    updates: Partial<Pick<Chain, "title" | "description" | "requestId">>
+    updates: Partial<Pick<Chain, "title" | "description" | "requestId" | "type" | "dependsOn">>
   ): Promise<Chain | null> {
     const chain = await this.getChain(chainId);
     if (!chain) return null;

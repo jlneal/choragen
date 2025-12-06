@@ -4,6 +4,15 @@
  * ADR: ADR-001-task-file-format
  */
 
+/** Chain type distinguishes design chains from implementation chains */
+export type ChainType = "design" | "implementation";
+
+/** All valid chain type values */
+export const CHAIN_TYPES: readonly ChainType[] = [
+  "design",
+  "implementation",
+] as const;
+
 /** Task status follows kanban-style directories */
 export type TaskStatus =
   | "backlog"
@@ -75,6 +84,10 @@ export interface Chain {
   title: string;
   /** Chain description */
   description: string;
+  /** Chain type - design or implementation (optional for backward compatibility) */
+  type?: ChainType;
+  /** Chain ID this chain depends on (e.g., impl chain depends on design chain) */
+  dependsOn?: string;
   /** All tasks in this chain */
   tasks: Task[];
   /** Created timestamp */
@@ -89,6 +102,10 @@ export interface CreateChainOptions {
   slug: string;
   title: string;
   description?: string;
+  /** Chain type - design or implementation */
+  type?: ChainType;
+  /** Chain ID this chain depends on */
+  dependsOn?: string;
 }
 
 /** Options for creating a new task */
