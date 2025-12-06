@@ -1,3 +1,5 @@
+// ADR: ADR-002-governance-schema
+
 /**
  * HTTP Status codes as an enum to avoid magic numbers
  */

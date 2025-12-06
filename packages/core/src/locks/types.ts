@@ -1,5 +1,7 @@
 /**
  * Lock type definitions
+ *
+ * ADR: ADR-003-file-locking
  */
 
 export interface FileLock {

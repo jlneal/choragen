@@ -1,5 +1,7 @@
 /**
  * Governance type definitions
+ *
+ * ADR: ADR-002-governance-schema
  */
 
 export type MutationAction = "create" | "modify" | "delete";

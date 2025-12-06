@@ -3,6 +3,8 @@
  *
  * Handles task CRUD operations and status transitions.
  * Tasks are stored as markdown files in status directories.
+ *
+ * ADR: ADR-001-task-file-format
  */
 
 import * as fs from "node:fs/promises";

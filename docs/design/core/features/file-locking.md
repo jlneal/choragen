@@ -74,6 +74,17 @@ Error: Lock conflict: app/api/** overlaps with app/api/profile/** (held by CHAIN
 
 ---
 
+## Acceptance Criteria
+
+- [ ] `lock:acquire` command acquires locks for specified file patterns
+- [ ] `lock:release` command releases all locks for a chain
+- [ ] `lock:status` command shows all active locks
+- [ ] Lock conflicts are detected when patterns overlap
+- [ ] Locks expire after 24 hours by default
+- [ ] Lock state is persisted in `.choragen/locks.json`
+
+---
+
 ## Implementation
 
 - `packages/core/src/locks/`

@@ -87,6 +87,18 @@ mutations:
 
 ---
 
+## Acceptance Criteria
+
+- [ ] `governance:check` command validates file mutations against policy rules
+- [ ] Allow rules permit mutations without intervention
+- [ ] Approve rules require human approval before proceeding
+- [ ] Deny rules block mutations entirely
+- [ ] Rule priority is enforced: deny > approve > allow > default deny
+- [ ] Glob patterns match files correctly (*, **, ?, etc.)
+- [ ] Configuration is read from `choragen.governance.yaml`
+
+---
+
 ## Implementation
 
 - `packages/core/src/governance/`

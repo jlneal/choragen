@@ -1,3 +1,5 @@
+// ADR: ADR-001-task-file-format
+
 /**
  * CLI implementation
  */
@@ -374,6 +376,44 @@ const commands: Record<string, CommandDef> = {
     handler: async () => {
       const status = await lockManager.formatStatus();
       console.log(status);
+    },
+  },
+
+  // Hooks
+  "hooks:install": {
+    description: "Install git hooks",
+    handler: async () => {
+      const { execSync } = await import("node:child_process");
+      const { chmodSync, existsSync } = await import("node:fs");
+      const { join } = await import("node:path");
+
+      const hooksDir = join(projectRoot, "githooks");
+
+      if (!existsSync(hooksDir)) {
+        console.error("No githooks directory found");
+        process.exit(1);
+      }
+
+      try {
+        // Make hooks executable
+        const hooks = ["commit-msg", "pre-commit", "pre-push"];
+        for (const hook of hooks) {
+          const hookPath = join(hooksDir, hook);
+          if (existsSync(hookPath)) {
+            chmodSync(hookPath, 0o755);
+          }
+        }
+
+        // Configure git to use the hooks directory
+        execSync("git config core.hooksPath githooks", { cwd: projectRoot });
+
+        console.log("✓ Git hooks installed");
+        console.log("  Hooks directory: githooks/");
+        console.log("  Active hooks: commit-msg, pre-commit");
+      } catch (error) {
+        console.error("Failed to install hooks:", (error as Error).message);
+        process.exit(1);
+      }
     },
   },
 

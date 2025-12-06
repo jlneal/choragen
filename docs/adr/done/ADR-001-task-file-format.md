@@ -3,6 +3,7 @@
 **Status**: Done  
 **Created**: 2025-12-05  
 **Linked CR**: CR-20251205-001  
+**Linked Design Docs**: docs/design/core/features/task-chain-management.md
 
 ---
 

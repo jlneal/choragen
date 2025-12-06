@@ -2,6 +2,8 @@
  * Governance checker
  *
  * Checks file mutations against governance rules.
+ *
+ * ADR: ADR-002-governance-schema
  */
 
 import type {

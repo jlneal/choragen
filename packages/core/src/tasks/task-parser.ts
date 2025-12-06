@@ -1,7 +1,9 @@
 /**
- * Task file parsing and serialization
+ * Task markdown parsing and serialization
  *
  * Tasks are stored as markdown files with YAML frontmatter.
+ *
+ * ADR: ADR-001-task-file-format
  */
 
 import type { Task, TaskStatus } from "./types.js";

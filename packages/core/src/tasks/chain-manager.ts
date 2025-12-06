@@ -3,6 +3,8 @@
  *
  * Chains are sequences of tasks derived from a CR/FR.
  * Chain state is derived from the aggregate state of its tasks.
+ *
+ * ADR: ADR-001-task-file-format
  */
 
 import * as fs from "node:fs/promises";

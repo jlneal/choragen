@@ -1,3 +1,4 @@
+// @adr ADR-001-task-file-format
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({

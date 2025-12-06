@@ -2,7 +2,7 @@
 
 **ID**: CR-20251205-001  
 **Domain**: core  
-**Status**: doing  
+**Status**: done  
 **Created**: 2025-12-05  
 **Owner**: Justin  
 
@@ -78,16 +78,31 @@ Governance is defined in `choragen.governance.yaml` with allow/approve/deny rule
 
 ## Remaining Work
 
-Before this CR can be closed:
+All items completed:
 
-- [ ] Add more ESLint rules (require-design-contract, no-magic-numbers-http)
-- [ ] Add validation scripts (validate:links, validate:adr-traceability)
-- [ ] Add hooks:install CLI command
-- [ ] Add eslint.config.mjs for choragen itself
-- [ ] Ensure all source files have ADR references
+- [x] Add more ESLint rules (require-design-contract, no-magic-numbers-http)
+- [x] Add validation scripts (validate:links, validate:adr-traceability)
+- [x] Add hooks:install CLI command
+- [x] Add eslint.config.mjs for choragen itself
+- [x] Ensure all source files have ADR references
 
 ---
 
 ## Completion Notes
 
-[To be added when moved to done/]
+**Completed**: 2025-12-06
+
+The choragen monorepo has been successfully bootstrapped with:
+
+1. **Package Structure**: 5 packages (`@choragen/core`, `@choragen/cli`, `@choragen/contracts`, `@choragen/eslint-plugin`, `@choragen/test-utils`)
+2. **Core Task Chain System**: Task parsing, chain management, governance enforcement, file locking
+3. **Unit Tests**: 32 tests passing across 3 test files
+4. **Validation Infrastructure**: `validate:links` and `validate:adr-traceability` scripts
+5. **ESLint Plugin**: Core traceability rules including `require-adr-reference`
+6. **Documentation**: ADRs, design docs, and self-hosted documentation structure
+7. **Git Hooks**: commit-msg and pre-commit hooks
+
+All validation commands pass:
+- `pnpm build`: ✅ 5 packages built
+- `pnpm test`: ✅ 32 tests passing
+- `pnpm validate:all`: ✅ 0 warnings

@@ -2,6 +2,8 @@
  * Governance schema parser
  *
  * Parses choragen.governance.yaml files into GovernanceSchema objects.
+ *
+ * ADR: ADR-002-governance-schema
  */
 
 import * as fs from "node:fs/promises";

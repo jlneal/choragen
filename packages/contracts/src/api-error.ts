@@ -1,3 +1,5 @@
+// ADR: ADR-002-governance-schema
+
 import { HttpStatus } from "./http-status.js";
 
 /**

@@ -1,3 +1,5 @@
+// ADR: ADR-002-governance-schema
+
 /**
  * Rule: require-test-metadata
  *

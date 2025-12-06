@@ -76,6 +76,20 @@ docs/tasks/
 
 ---
 
+## Acceptance Criteria
+
+- [ ] `chain:new` command creates a new chain from a CR/FR
+- [ ] `chain:status` command shows chain status and progress
+- [ ] `chain:list` command lists all chains
+- [ ] `task:add` command adds a task to a chain
+- [ ] Task status transitions follow the defined flow (backlog → todo → in-progress → in-review → done)
+- [ ] `task:block` can mark any task as blocked
+- [ ] `task:rework` sends a task back to in-progress
+- [ ] `task:next` shows the next available task in a chain
+- [ ] Task files are organized in the correct directory structure
+
+---
+
 ## Implementation
 
 - `packages/core/src/tasks/`

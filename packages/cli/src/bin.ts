@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// ADR: ADR-001-task-file-format
+
 /**
  * Choragen CLI
  *

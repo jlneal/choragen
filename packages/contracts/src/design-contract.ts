@@ -1,3 +1,5 @@
+// ADR: ADR-002-governance-schema
+
 import type { ContractOptions, ContractResult } from "./types.js";
 
 /**

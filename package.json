@@ -22,12 +22,17 @@
     "build": "turbo run build",
     "clean": "turbo run clean",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "turbo run test",
     "test:watch": "vitest",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "validate:links": "node scripts/validate-links.mjs",
+    "validate:adr-traceability": "node scripts/validate-adr-traceability.mjs",
+    "validate:all": "npm run validate:links && npm run validate:adr-traceability"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
     "eslint": "^9.16.0",
     "prettier": "^3.4.2",
     "turbo": "^2.3.3",

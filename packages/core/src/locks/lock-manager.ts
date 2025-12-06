@@ -2,6 +2,8 @@
  * Lock manager
  *
  * Manages advisory file locks for parallel chain coordination.
+ *
+ * ADR: ADR-003-file-locking
  */
 
 import * as fs from "node:fs/promises";

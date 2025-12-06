@@ -1,5 +1,7 @@
 /**
  * Task and Chain type definitions
+ *
+ * ADR: ADR-001-task-file-format
  */
 
 /** Task status follows kanban-style directories */
