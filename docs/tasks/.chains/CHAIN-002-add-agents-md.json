@@ -1,0 +1,10 @@
+{
+  "id": "CHAIN-002-add-agents-md",
+  "sequence": 2,
+  "slug": "add-agents-md",
+  "requestId": "CR-20251206-001",
+  "title": "Add AGENTS.md files throughout repository",
+  "description": "",
+  "createdAt": "2025-12-06T00:27:31.829Z",
+  "updatedAt": "2025-12-06T00:27:31.829Z"
+}

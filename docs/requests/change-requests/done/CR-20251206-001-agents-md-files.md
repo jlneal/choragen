@@ -2,7 +2,7 @@
 
 **ID**: CR-20251206-001  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-06  
 **Owner**: Justin  
 
@@ -44,10 +44,10 @@ AGENTS.md files are the primary way agents receive context about a codebase area
 
 ## Acceptance Criteria
 
-- [ ] Each package has an AGENTS.md explaining its purpose
-- [ ] Each AGENTS.md includes common patterns and conventions
-- [ ] Each AGENTS.md references relevant ADRs
-- [ ] Validation script checks for AGENTS.md presence
+- [x] Each package has an AGENTS.md explaining its purpose
+- [x] Each AGENTS.md includes common patterns and conventions
+- [x] Each AGENTS.md references relevant ADRs
+- [ ] Validation script checks for AGENTS.md presence (deferred to CR-20251206-002)
 
 ---
 
@@ -66,4 +66,20 @@ Follow the pattern established in the root AGENTS.md and githooks/AGENTS.md.
 
 ## Completion Notes
 
-[To be added when moved to done/]
+**Completed**: 2025-12-06
+
+Added 8 AGENTS.md files via CHAIN-002-add-agents-md:
+
+**Packages** (5 files):
+- `packages/core/AGENTS.md` - Tasks, governance, locks
+- `packages/cli/AGENTS.md` - CLI commands
+- `packages/contracts/AGENTS.md` - DesignContract, ApiError, HttpStatus
+- `packages/eslint-plugin/AGENTS.md` - ESLint rules
+- `packages/test-utils/AGENTS.md` - unsafeCast utility
+
+**Supporting directories** (3 files):
+- `scripts/AGENTS.md` - Validation scripts
+- `docs/AGENTS.md` - Documentation structure
+- `templates/AGENTS.md` - Template usage
+
+Each file includes purpose, key exports, patterns, and ADR references.
