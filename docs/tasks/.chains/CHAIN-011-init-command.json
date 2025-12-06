@@ -1,0 +1,11 @@
+{
+  "id": "CHAIN-011-init-command",
+  "sequence": 11,
+  "slug": "init-command",
+  "requestId": "CR-20251206-004",
+  "title": "Add choragen init Command",
+  "type": "implementation",
+  "description": "Scaffold directory structures and files for new projects",
+  "createdAt": "2025-12-06T04:35:00.000Z",
+  "updatedAt": "2025-12-06T04:35:00.000Z"
+}
