@@ -29,6 +29,9 @@ import requireTestExercisesRoute from "./require-test-exercises-route.js";
 import requireTestForApiRoute from "./require-test-for-api-route.js";
 import requireTestForComponent from "./require-test-for-component.js";
 import requireTestForLibExport from "./require-test-for-lib-export.js";
+import requirePostconditionSemantics from "./require-postcondition-semantics.js";
+import requirePreconditionSemantics from "./require-precondition-semantics.js";
+import noTrivialContractConditions from "./no-trivial-contract-conditions.js";
 
 export const rules = {
   // Traceability rules
@@ -45,6 +48,9 @@ export const rules = {
 
   // Contract rules
   "require-design-contract": requireDesignContract,
+  "require-postcondition-semantics": requirePostconditionSemantics,
+  "require-precondition-semantics": requirePreconditionSemantics,
+  "no-trivial-contract-conditions": noTrivialContractConditions,
 
   // Code hygiene rules
   "no-as-unknown": noAsUnknown,

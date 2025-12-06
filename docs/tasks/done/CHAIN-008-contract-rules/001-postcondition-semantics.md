@@ -2,7 +2,7 @@
 
 **Chain**: CHAIN-008-contract-rules  
 **Task**: 001-postcondition-semantics  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-06
 
 ---

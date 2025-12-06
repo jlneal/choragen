@@ -36,6 +36,9 @@ export const configs = {
 
       // Contracts
       "@choragen/require-design-contract": "warn",
+      "@choragen/require-postcondition-semantics": "warn",
+      "@choragen/require-precondition-semantics": "warn",
+      "@choragen/no-trivial-contract-conditions": "warn",
 
       // Code hygiene
       "@choragen/no-as-unknown": "warn",
@@ -77,6 +80,9 @@ export const configs = {
 
       // Contracts
       "@choragen/require-design-contract": "error",
+      "@choragen/require-postcondition-semantics": "error",
+      "@choragen/require-precondition-semantics": "error",
+      "@choragen/no-trivial-contract-conditions": "error",
 
       // Code hygiene
       "@choragen/no-as-unknown": "error",

@@ -2,7 +2,7 @@
 
 **ID**: FR-20251206-004  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-06  
 **Owner**: Justin  
 
@@ -26,11 +26,11 @@ We have `require-design-contract` but lack rules that ensure contract conditions
 
 ## Acceptance Criteria
 
-- [ ] All 3 rules implemented
-- [ ] Rules exported and added to configs
-- [ ] Rules have ADR reference comments
-- [ ] `pnpm build` passes
-- [ ] `pnpm lint` passes
+- [x] All 3 rules implemented
+- [x] Rules exported and added to configs
+- [x] Rules have ADR reference comments
+- [x] `pnpm build` passes
+- [x] `pnpm lint` passes
 
 ---
 
@@ -53,4 +53,24 @@ preconditions: [(req) => req.body?.userId != null]
 
 ## Completion Notes
 
-[To be added when moved to done/]
+**Completed**: 2025-12-06  
+**Chain**: CHAIN-008-contract-rules (4 tasks)
+
+### Rules Added (3)
+
+1. **require-postcondition-semantics** - Postconditions must check meaningful response properties
+2. **require-precondition-semantics** - Preconditions must validate meaningful request properties
+3. **no-trivial-contract-conditions** - Catches always-true conditions
+
+### Verification
+
+```
+✅ pnpm build - passes
+✅ pnpm lint - passes  
+✅ pnpm test - passes (32 tests)
+```
+
+### Rule Count
+
+- Before: 26 rules
+- After: 29 rules (+3)
