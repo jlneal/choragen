@@ -77,7 +77,9 @@ function parseGitLog(output: string): GitLogEntry[] {
 
   for (const line of lines) {
     if (line.startsWith("commit:")) {
-      const [, hash, timestamp] = line.split("\t");
+      const parts = line.split("\t");
+      const hash = parts[0].slice("commit:".length);
+      const timestamp = parts[1];
       currentCommit = { hash, timestamp };
     } else if (currentCommit && line.match(/^[AMDRC]/)) {
       // Git name-status format: STATUS\tpath or R100\told\tnew
@@ -248,9 +250,9 @@ function classifyGitEntry(entry: GitLogEntry): ReconstructedEvent | null {
     return null;
   }
 
-  // Chain directories (detected via chain.yaml or first task)
-  if (filePath.match(/docs\/tasks\/\.chains\/CHAIN-\d+-[^/]+\.yaml$/)) {
-    const chainMatch = filePath.match(/(CHAIN-\d+-[^/]+)\.yaml$/);
+  // Chain directories (detected via chain.yaml/.json or first task)
+  if (filePath.match(/docs\/tasks\/\.chains\/CHAIN-\d+-[^/]+\.(yaml|json)$/)) {
+    const chainMatch = filePath.match(/(CHAIN-\d+-[^/]+)\.(yaml|json)$/);
     if (!chainMatch) return null;
 
     const chainId = chainMatch[1];
@@ -379,6 +381,7 @@ export async function importMetrics(
         entityId: event.entityId,
         chainId: event.chainId,
         requestId: event.requestId,
+        timestamp: new Date(event.timestamp).toISOString(),
         metadata: {
           importedFromGit: true,
           commitHash: event.commitHash,

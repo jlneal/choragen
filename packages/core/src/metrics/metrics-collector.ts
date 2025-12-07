@@ -104,17 +104,18 @@ export class MetricsCollector {
 
   /**
    * Record a new pipeline event
-   * @param event - Event data (id and timestamp will be auto-generated)
+   * @param event - Event data (id and timestamp will be auto-generated if not provided)
    */
   async record(
-    event: Omit<PipelineEvent, "id" | "timestamp">
+    event: Omit<PipelineEvent, "id" | "timestamp"> & { timestamp?: string }
   ): Promise<PipelineEvent> {
     await this.ensureMetricsDir();
 
+    const { timestamp, ...rest } = event;
     const fullEvent: PipelineEvent = {
+      ...rest,
       id: randomUUID(),
-      timestamp: new Date().toISOString(),
-      ...event,
+      timestamp: timestamp ?? new Date().toISOString(),
     };
 
     const line = JSON.stringify(fullEvent) + "\n";
