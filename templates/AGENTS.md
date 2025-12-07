@@ -11,6 +11,7 @@ This directory contains document templates for the Choragen development pipeline
 | `adr.md` | Architecture decisions | `docs/adr/todo/` |
 | `feature.md` | Feature design docs | `docs/design/core/features/` |
 | `task.md` | Task chain tasks | `docs/tasks/todo/<chain-id>/` |
+| `rework-task.md` | Rework tasks for completed tasks | `docs/tasks/todo/<chain-id>/` |
 | `choragen.config.js` | Project configuration | Project root |
 | `choragen.governance.yaml` | Governance rules | Project root |
 
@@ -60,6 +61,17 @@ Templates use `{{VARIABLE}}` syntax for placeholders:
 | `{{TASK_ID}}` | Task identifier |
 | `{{OBJECTIVE}}` | Task objective |
 | `{{CRITERION_N}}` | Acceptance criteria |
+
+### Rework-Task-Specific Variables
+
+| Variable | Description |
+|----------|-------------|
+| `{{TITLE}}` | Original task title |
+| `{{TASK_ID}}` | Rework task identifier |
+| `{{CHAIN_ID}}` | Parent chain ID |
+| `{{ORIGINAL_TASK_ID}}` | ID of the task being reworked |
+| `{{ORIGINAL_TASK_FILE}}` | Filename of the original task |
+| `{{REWORK_REASON}}` | Reason for the rework |
 
 ## Using Templates
 

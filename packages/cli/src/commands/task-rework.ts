@@ -6,6 +6,7 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { ChainManager, type Task, type TaskStatus } from "@choragen/core";
 
 export interface ReworkTaskResult {
@@ -32,6 +33,44 @@ function getTaskPath(
   status: TaskStatus
 ): string {
   return path.join(projectRoot, "docs/tasks", status, chainId, `${taskId}.md`);
+}
+
+/**
+ * Get the path to the templates directory
+ */
+function getTemplatesDir(): string {
+  const currentFile = fileURLToPath(import.meta.url);
+  // Navigate from packages/cli/src/commands/ to project root, then to templates/
+  return path.resolve(path.dirname(currentFile), "../../../../..", "templates");
+}
+
+/**
+ * Load and populate the rework task template
+ */
+async function loadReworkTemplate(
+  templateVars: {
+    TITLE: string;
+    TASK_ID: string;
+    CHAIN_ID: string;
+    ORIGINAL_TASK_ID: string;
+    ORIGINAL_TASK_FILE: string;
+    REWORK_REASON: string;
+  }
+): Promise<string> {
+  const templatesDir = getTemplatesDir();
+  const templatePath = path.join(templatesDir, "rework-task.md");
+  
+  let template = await fs.readFile(templatePath, "utf-8");
+  
+  // Replace all placeholders
+  template = template.replace(/\{\{TITLE\}\}/g, templateVars.TITLE);
+  template = template.replace(/\{\{TASK_ID\}\}/g, templateVars.TASK_ID);
+  template = template.replace(/\{\{CHAIN_ID\}\}/g, templateVars.CHAIN_ID);
+  template = template.replace(/\{\{ORIGINAL_TASK_ID\}\}/g, templateVars.ORIGINAL_TASK_ID);
+  template = template.replace(/\{\{ORIGINAL_TASK_FILE\}\}/g, templateVars.ORIGINAL_TASK_FILE);
+  template = template.replace(/\{\{REWORK_REASON\}\}/g, templateVars.REWORK_REASON);
+  
+  return template;
 }
 
 /**
@@ -138,40 +177,16 @@ export async function createReworkTask(
   const originalSequence = parseInt(idMatch[1], 10);
   const reworkSlug = `${idMatch[2]}-rework-${reworkNumber}`;
 
-  // Create task content
+  // Create task content from template
   const now = new Date();
-  const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-
-  const reworkTaskContent = `# Task: ${task.title} (Rework ${reworkNumber})
-
-**Chain**: ${chainId}  
-**Task**: ${reworkTaskId}  
-**Status**: todo  
-**Created**: ${dateStr}
-**Rework-Of**: ${taskId}  
-**Rework-Reason**: ${reason}  
-
----
-
-## Objective
-
-Rework of task ${taskId}: ${task.title}
-
-**Rework Reason**: ${reason}
-
-## Original Task Reference
-
-See original task for full context: ${taskId}
-
-## Acceptance Criteria
-
-${task.acceptance.length > 0 ? task.acceptance.map((a) => `- [ ] ${a}`).join("\n") : "- [ ] Address rework feedback"}
-- [ ] Verify rework reason has been addressed
-
-## Notes
-
-This is rework ${reworkNumber} for the original task.
-`;
+  const reworkTaskContent = await loadReworkTemplate({
+    TITLE: task.title,
+    TASK_ID: reworkTaskId,
+    CHAIN_ID: chainId,
+    ORIGINAL_TASK_ID: taskId,
+    ORIGINAL_TASK_FILE: `${taskId}.md`,
+    REWORK_REASON: reason,
+  });
 
   // Write the rework task file
   const reworkTaskDir = path.join(projectRoot, "docs/tasks/todo", chainId);
