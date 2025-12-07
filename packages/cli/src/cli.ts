@@ -24,6 +24,7 @@ import {
 } from "./commands/docs.js";
 import { closeRequest } from "./commands/request-close.js";
 import { createReworkTask, formatReworkResult } from "./commands/task-rework.js";
+import { getMetricsSummary, formatMetricsSummary, formatMetricsSummaryJson } from "./commands/metrics-summary.js";
 import * as readline from "node:readline";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
@@ -1459,6 +1460,44 @@ const commands: Record<string, CommandDef> = {
     description: "List incomplete work items (stale requests, tasks, TODOs)",
     handler: async () => {
       await showIncompleteWork();
+    },
+  },
+
+  // Metrics commands
+  "metrics:summary": {
+    description: "Display pipeline metrics summary",
+    usage: "metrics:summary [--since <duration>] [--chain <id>] [--json]",
+    handler: async (args) => {
+      let since: string | undefined;
+      let chainId: string | undefined;
+      let jsonOutput = false;
+
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === "--since" && args[i + 1]) {
+          since = args[++i];
+        } else if (arg.startsWith("--since=")) {
+          since = arg.slice("--since=".length);
+        } else if (arg === "--chain" && args[i + 1]) {
+          chainId = args[++i];
+        } else if (arg.startsWith("--chain=")) {
+          chainId = arg.slice("--chain=".length);
+        } else if (arg === "--json") {
+          jsonOutput = true;
+        }
+      }
+
+      try {
+        const summary = await getMetricsSummary(projectRoot, { since, chainId });
+        if (jsonOutput) {
+          console.log(formatMetricsSummaryJson(summary));
+        } else {
+          console.log(formatMetricsSummary(summary));
+        }
+      } catch (error) {
+        console.error(`Failed to get metrics: ${(error as Error).message}`);
+        process.exit(1);
+      }
     },
   },
 
