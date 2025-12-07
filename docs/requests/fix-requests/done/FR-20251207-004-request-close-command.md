@@ -2,9 +2,10 @@
 
 **ID**: FR-20251207-004  
 **Domain**: cli  
-**Status**: todo  
+**Status**: done  
 **Severity**: medium  
 **Created**: 2025-12-07  
+**Completed**: 2025-12-07
 **Owner**: agent  
 
 ---
@@ -15,9 +16,9 @@ The traceability chain is incomplete:
 - Commits reference requests (CR/FR ID in commit message) ✅
 - Requests don't list their implementing commits ❌
 
-The `## Commits` section in request docs is always empty, breaking bi-directional traceability.
+The `## Commits
 
----
+- 9dd0233 feat(cli): add request:close command
 
 ## Impact
 
