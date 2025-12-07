@@ -20,6 +20,20 @@ if [ "${SKIP_PRE_PUSH:-0}" = "1" ]; then
   exit 0
 fi
 
+# =============================================================================
+# 1) Check for uncommitted request work
+# =============================================================================
+echo "[pre-push] Checking for uncommitted request work..." 1>&2
+if ! node scripts/validate-uncommitted-requests.mjs; then
+  echo "" 1>&2
+  echo -e "${RED}❌ [pre-push] Uncommitted request work detected${NC}" 1>&2
+  echo "   Commit your changes before pushing." 1>&2
+  echo "   Run: node scripts/validate-uncommitted-requests.mjs" 1>&2
+  echo "" 1>&2
+  exit 1
+fi
+echo -e "${GREEN}✅ No uncommitted request work${NC}" 1>&2
+
 # Run build
 echo -e "[pre-push] Running build..."
 if ! pnpm build; then

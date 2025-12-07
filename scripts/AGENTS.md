@@ -8,6 +8,7 @@ This directory contains validation and utility scripts for the Choragen project.
 |--------|---------|
 | `validate-links.mjs` | Validate bidirectional links between docs and implementation |
 | `validate-adr-traceability.mjs` | Validate ADR links to CR/FR and design docs |
+| `validate-uncommitted-requests.mjs` | Detect done requests with uncommitted work |
 
 ## Running Scripts
 
