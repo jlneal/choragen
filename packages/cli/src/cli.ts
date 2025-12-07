@@ -4,7 +4,7 @@
  * CLI implementation
  */
 
-import { ChainManager, LockManager, CHAIN_TYPES, type ChainType } from "@choragen/core";
+import { ChainManager, LockManager, CHAIN_TYPES, type ChainType, MetricsCollector, type TokenUsage } from "@choragen/core";
 import {
   parseGovernanceFile,
   GovernanceChecker,
@@ -329,6 +329,36 @@ const projectRoot = process.cwd();
 const chainManager = new ChainManager(projectRoot);
 const taskManager = chainManager.getTaskManager();
 const lockManager = new LockManager(projectRoot);
+const metricsCollector = new MetricsCollector(projectRoot);
+
+/**
+ * Parse tokens string in format "input,output" to TokenUsage
+ */
+function parseTokens(tokensStr: string): TokenUsage | undefined {
+  const parts = tokensStr.split(",");
+  if (parts.length !== 2) {
+    return undefined;
+  }
+  const input = parseInt(parts[0], 10);
+  const output = parseInt(parts[1], 10);
+  if (isNaN(input) || isNaN(output)) {
+    return undefined;
+  }
+  return { input, output };
+}
+
+/**
+ * Emit a metrics event, gracefully handling errors
+ */
+async function emitEvent(
+  event: Parameters<typeof metricsCollector.record>[0]
+): Promise<void> {
+  try {
+    await metricsCollector.record(event);
+  } catch {
+    // Gracefully ignore metrics errors - don't fail the command
+  }
+}
 
 const commands: Record<string, CommandDef> = {
   // Chain lifecycle
@@ -369,6 +399,14 @@ const commands: Record<string, CommandDef> = {
         type,
         dependsOn,
       });
+      // Emit chain:created event
+      await emitEvent({
+        eventType: "chain:created",
+        entityType: "chain",
+        entityId: chain.id,
+        requestId: chain.requestId,
+      });
+
       console.log(`Created chain: ${chain.id}`);
       console.log(`  Request: ${chain.requestId}`);
       console.log(`  Title: ${chain.title}`);
@@ -585,6 +623,15 @@ const commands: Record<string, CommandDef> = {
         console.error(`Failed to start task: ${result.error}`);
         process.exit(1);
       }
+
+      // Emit task:started event
+      await emitEvent({
+        eventType: "task:started",
+        entityType: "task",
+        entityId: taskId,
+        chainId,
+      });
+
       console.log(`Started task: ${result.task.id}`);
       console.log(`  ${result.previousStatus} → ${result.newStatus}`);
     },
@@ -592,20 +639,65 @@ const commands: Record<string, CommandDef> = {
 
   "task:complete": {
     description: "Complete a task (move to in-review)",
-    usage: "task:complete <chain-id> <task-id>",
+    usage: "task:complete <chain-id> <task-id> [--tokens <input>,<output>] [--model <name>]",
     handler: async (args) => {
-      const [chainId, taskId] = args;
+      // Parse flags from args
+      const positionalArgs: string[] = [];
+      let tokensStr: string | undefined;
+      let model: string | undefined;
+
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === "--tokens" && args[i + 1]) {
+          tokensStr = args[++i];
+        } else if (arg.startsWith("--tokens=")) {
+          tokensStr = arg.slice("--tokens=".length);
+        } else if (arg === "--model" && args[i + 1]) {
+          model = args[++i];
+        } else if (arg.startsWith("--model=")) {
+          model = arg.slice("--model=".length);
+        } else {
+          positionalArgs.push(arg);
+        }
+      }
+
+      const [chainId, taskId] = positionalArgs;
       if (!chainId || !taskId) {
-        console.error("Usage: choragen task:complete <chain-id> <task-id>");
+        console.error("Usage: choragen task:complete <chain-id> <task-id> [--tokens <input>,<output>] [--model <name>]");
         process.exit(1);
       }
+
+      // Parse tokens if provided
+      const tokens = tokensStr ? parseTokens(tokensStr) : undefined;
+      if (tokensStr && !tokens) {
+        console.error("Invalid --tokens format. Expected: <input>,<output> (e.g., 5000,2000)");
+        process.exit(1);
+      }
+
       const result = await taskManager.completeTask(chainId, taskId);
       if (!result.success) {
         console.error(`Failed to complete task: ${result.error}`);
         process.exit(1);
       }
+
+      // Emit task:completed event
+      await emitEvent({
+        eventType: "task:completed",
+        entityType: "task",
+        entityId: taskId,
+        chainId,
+        model,
+        tokens,
+      });
+
       console.log(`Completed task: ${result.task.id}`);
       console.log(`  ${result.previousStatus} → ${result.newStatus}`);
+      if (tokens) {
+        console.log(`  Tokens: ${tokens.input} input, ${tokens.output} output`);
+      }
+      if (model) {
+        console.log(`  Model: ${model}`);
+      }
     },
   },
 
@@ -664,6 +756,19 @@ const commands: Record<string, CommandDef> = {
         taskId,
         reason,
       });
+
+      if (result.success) {
+        // Emit task:rework event
+        await emitEvent({
+          eventType: "task:rework",
+          entityType: "task",
+          entityId: result.reworkTask!.id,
+          chainId,
+          metadata: {
+            originalTaskId: taskId,
+          },
+        });
+      }
 
       console.log(formatReworkResult(result));
 
@@ -1065,6 +1170,13 @@ const commands: Record<string, CommandDef> = {
 
       const result = await closeRequest(projectRoot, requestId);
       if (result.success) {
+        // Emit request:closed event
+        await emitEvent({
+          eventType: "request:closed",
+          entityType: "request",
+          entityId: requestId,
+        });
+
         console.log(`  Found ${result.commits!.length} commits:`);
         for (const commit of result.commits!) {
           console.log(`    ${commit}`);
