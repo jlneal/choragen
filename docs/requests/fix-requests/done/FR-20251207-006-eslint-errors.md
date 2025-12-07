@@ -75,3 +75,7 @@ If existing code violates rules that become errors:
 **If it's worth checking, it's worth enforcing.**
 
 Warnings don't enforce. Errors do. For the deterministic feedback loop that controls probabilistic agents, everything must be an error.
+
+## Commits
+
+- af2c9ac fix(lint): elevate all ESLint warnings to errors

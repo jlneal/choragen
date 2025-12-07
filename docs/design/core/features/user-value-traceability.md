@@ -13,10 +13,17 @@ This feature defines the validation rules that enforce traceability from impleme
 The complete value chain is:
 
 ```
-Persona → Scenario → Use Case → Feature → CR/FR → ADR → Implementation
+Persona → Scenario → Use Case → Feature → CR/FR → ADR → Implementation → Commits
 ```
 
-This validator focuses on the **User Value Layer** links (Persona through Feature) and the **Feature → CR** link. The remaining links (ADR → CR, Source → ADR) are already enforced by existing validators.
+The chain is **bi-directional** at the CR/FR ↔ Commits boundary:
+- Commits reference CR/FR IDs in their messages
+- CR/FR docs list their implementing commits in the `## Commits` section
+
+This validator focuses on the **User Value Layer** links (Persona through Feature) and the **Feature → CR** link. The remaining links are enforced by:
+- ADR → CR: `validate-adr-traceability.mjs`
+- Source → ADR: `validate-source-adr-references.mjs`
+- CR/FR → Commits: `choragen request:close` command
 
 ---
 

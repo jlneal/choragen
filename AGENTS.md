@@ -98,15 +98,15 @@ docs/
 
 ## Traceability Chain
 
-Every artifact links backward:
+Every artifact links backward to user value:
 
 ```
-Request (CR/FR)
-  → Design Doc (WHAT)
-    → ADR (HOW)
-      → Implementation (Code)
-        → Tests
+Persona → Scenario → Use Case → Feature → CR/FR → ADR → Implementation → Commits
 ```
+
+The chain is **bi-directional** at CR/FR ↔ Commits:
+- Commits reference CR/FR IDs in messages
+- CR/FR docs list commits in `## Commits` section (via `choragen request:close`)
 
 ## Commit Message Format
 
@@ -143,6 +143,9 @@ choragen task:add <chain-id> <slug> <title>
 choragen task:start <chain-id> <task-id>
 choragen task:complete <chain-id> <task-id>
 choragen task:next <chain-id>
+
+# Request lifecycle
+choragen request:close <request-id>  # Populates commits, moves to done
 
 # Governance & Locks
 choragen governance:check <action> <file1> [file2...]

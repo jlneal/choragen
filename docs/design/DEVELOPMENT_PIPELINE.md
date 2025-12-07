@@ -178,6 +178,11 @@ Persona ──(1:many)──► Scenario ──(1:many)──► Use Case
                                                 │
                                                 ▼
                                          Implementation
+                                                │
+                                           (1:many)
+                                                │
+                                                ▼
+                                            Commits
 ```
 
 ### Traceability Back to User Value
@@ -186,9 +191,10 @@ Persona ──(1:many)──► Scenario ──(1:many)──► Use Case
 
 | Artifact | Must Link To |
 |----------|--------------|
+| Commits | CR/FR (in commit message) |
 | Implementation | ADR (in source comment) |
 | ADR | CR/FR + Feature design doc |
-| CR/FR | Feature it implements |
+| CR/FR | Feature it implements + Commits (bi-directional) |
 | Feature | Use cases it enables |
 | Use Case | Scenario it fulfills |
 | Scenario | Persona it serves |

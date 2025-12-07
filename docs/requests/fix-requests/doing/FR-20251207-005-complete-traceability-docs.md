@@ -2,7 +2,7 @@
 
 **ID**: FR-20251207-005  
 **Domain**: docs  
-**Status**: todo  
+**Status**: done  
 **Severity**: medium  
 **Created**: 2025-12-07  
 **Owner**: agent  
@@ -57,4 +57,18 @@ Also document the `request:close` command as the mechanism for completing the ch
 
 ## Completion Notes
 
-[Added when moved to done/]
+**Completed**: 2025-12-07
+
+### Files Updated
+
+- `docs/design/core/features/user-value-traceability.md` - Added Commits to chain, explained bi-directional nature
+- `docs/design/DEVELOPMENT_PIPELINE.md` - Added Commits to diagram and traceability table
+- `AGENTS.md` - Updated chain, added `request:close` command
+
+### Complete Chain
+
+```
+Persona → Scenario → Use Case → Feature → CR/FR → ADR → Implementation → Commits
+```
+
+The chain is bi-directional at CR/FR ↔ Commits via `choragen request:close`.
