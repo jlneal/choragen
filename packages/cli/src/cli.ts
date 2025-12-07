@@ -23,6 +23,7 @@ import {
   type DesignType,
 } from "./commands/docs.js";
 import { closeRequest } from "./commands/request-close.js";
+import { createReworkTask, formatReworkResult } from "./commands/task-rework.js";
 import * as readline from "node:readline";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
@@ -628,21 +629,47 @@ const commands: Record<string, CommandDef> = {
   },
 
   "task:rework": {
-    description: "Send a task back for rework",
-    usage: "task:rework <chain-id> <task-id>",
+    description: "Create a rework task for a completed/in-review task",
+    usage: "task:rework <chain-id> <task-id> --reason \"...\"",
     handler: async (args) => {
-      const [chainId, taskId] = args;
+      // Parse args for --reason flag
+      const positionalArgs: string[] = [];
+      let reason: string | undefined;
+
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === "--reason" && args[i + 1]) {
+          reason = args[++i];
+        } else if (arg.startsWith("--reason=")) {
+          reason = arg.slice("--reason=".length);
+        } else {
+          positionalArgs.push(arg);
+        }
+      }
+
+      const [chainId, taskId] = positionalArgs;
       if (!chainId || !taskId) {
-        console.error("Usage: choragen task:rework <chain-id> <task-id>");
+        console.error("Usage: choragen task:rework <chain-id> <task-id> --reason \"...\"");
         process.exit(1);
       }
-      const result = await taskManager.reworkTask(chainId, taskId);
+
+      if (!reason) {
+        console.error("Error: --reason is required");
+        console.error("Usage: choragen task:rework <chain-id> <task-id> --reason \"Description of what needs fixing\"");
+        process.exit(1);
+      }
+
+      const result = await createReworkTask(projectRoot, {
+        chainId,
+        taskId,
+        reason,
+      });
+
+      console.log(formatReworkResult(result));
+
       if (!result.success) {
-        console.error(`Failed to rework task: ${result.error}`);
         process.exit(1);
       }
-      console.log(`Sent task back for rework: ${result.task.id}`);
-      console.log(`  ${result.previousStatus} → ${result.newStatus}`);
     },
   },
 
