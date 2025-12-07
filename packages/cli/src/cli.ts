@@ -26,6 +26,7 @@ import { closeRequest } from "./commands/request-close.js";
 import { createReworkTask, formatReworkResult } from "./commands/task-rework.js";
 import { getMetricsSummary, formatMetricsSummary, formatMetricsSummaryJson } from "./commands/metrics-summary.js";
 import { exportMetrics, writeExport } from "./commands/metrics-export.js";
+import { importMetrics, formatImportSummary } from "./commands/metrics-import.js";
 import * as readline from "node:readline";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
@@ -1547,6 +1548,34 @@ const commands: Record<string, CommandDef> = {
         }
       } catch (error) {
         console.error(`Failed to get metrics: ${(error as Error).message}`);
+        process.exit(1);
+      }
+    },
+  },
+
+  "metrics:import": {
+    description: "Import historical metrics from git history",
+    usage: "metrics:import [--since <date>] [--dry-run]",
+    handler: async (args) => {
+      let since: string | undefined;
+      let dryRun = false;
+
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === "--since" && args[i + 1]) {
+          since = args[++i];
+        } else if (arg.startsWith("--since=")) {
+          since = arg.slice("--since=".length);
+        } else if (arg === "--dry-run") {
+          dryRun = true;
+        }
+      }
+
+      try {
+        const summary = await importMetrics(projectRoot, { since, dryRun });
+        console.log(formatImportSummary(summary, dryRun));
+      } catch (error) {
+        console.error(`Failed to import metrics: ${(error as Error).message}`);
         process.exit(1);
       }
     },
