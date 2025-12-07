@@ -729,8 +729,65 @@ const commands: Record<string, CommandDef> = {
         console.log("No tasks found.");
         return;
       }
+      console.log(`Tasks for ${chainId}:\n`);
       for (const task of tasks) {
-        console.log(`${task.id} [${task.status}] - ${task.title}`);
+        // Build rework indicator
+        let reworkIndicator = "";
+        if (task.reworkOf) {
+          // This is a rework task
+          reworkIndicator = `  [rework of: ${task.reworkOf}]`;
+        } else if (task.reworkCount && task.reworkCount > 0) {
+          // Original task that has been reworked
+          reworkIndicator = `  [reworked: ${task.reworkCount}]`;
+        }
+        console.log(`  ${task.id.padEnd(40)} ${task.status.padEnd(12)}${reworkIndicator}`);
+      }
+    },
+  },
+
+  "task:status": {
+    description: "Show detailed status for a task",
+    usage: "task:status <chain-id> <task-id>",
+    handler: async (args) => {
+      const [chainId, taskId] = args;
+      if (!chainId || !taskId) {
+        console.error("Usage: choragen task:status <chain-id> <task-id>");
+        process.exit(1);
+      }
+      const task = await taskManager.getTask(chainId, taskId);
+      if (!task) {
+        console.error(`Task not found: ${taskId} in chain ${chainId}`);
+        process.exit(1);
+      }
+
+      // Display task info
+      const isRework = !!task.reworkOf;
+      const titleSuffix = isRework ? " (Rework)" : "";
+      console.log(`Task: ${task.id}${titleSuffix}`);
+      console.log(`Status: ${task.status}`);
+      console.log(`Title: ${task.title}`);
+
+      // Show rework relationship info
+      if (task.reworkOf) {
+        console.log(`Rework Of: ${task.reworkOf}`);
+        if (task.reworkReason) {
+          console.log(`Rework Reason: ${task.reworkReason}`);
+        }
+      } else if (task.reworkCount && task.reworkCount > 0) {
+        console.log(`Rework Count: ${task.reworkCount}`);
+        // Find rework tasks for this original task
+        const allTasks = await taskManager.getTasksForChain(chainId);
+        const reworkTasks = allTasks.filter((t) => t.reworkOf === task.id);
+        if (reworkTasks.length > 0) {
+          console.log("Rework Tasks:");
+          for (const rt of reworkTasks) {
+            console.log(`  - ${rt.id} (${rt.status})`);
+          }
+        }
+      }
+
+      if (task.description) {
+        console.log(`Description: ${task.description.slice(0, 200)}${task.description.length > 200 ? "..." : ""}`);
       }
     },
   },

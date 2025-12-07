@@ -270,7 +270,7 @@ describe("CLI Smoke Tests", () => {
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("001-task-one");
-      expect(result.stdout).toContain("Task One");
+      expect(result.stdout).toContain("Tasks for CHAIN-001-list-test");
     });
 
     it("shows error when missing chain-id argument", () => {
@@ -278,6 +278,169 @@ describe("CLI Smoke Tests", () => {
 
       expect(result.exitCode).toBe(1);
       expect(result.stderr).toContain("Usage:");
+    });
+
+    it("shows rework indicators for reworked tasks", async () => {
+      await createTaskDirs(tempDir);
+
+      // Create chain
+      runCli(["chain:new", "CR-001", "rework-list", "Rework List"], tempDir);
+
+      // Manually create original task with reworkCount
+      const origTaskDir = path.join(tempDir, "docs/tasks/in-review/CHAIN-001-rework-list");
+      await fs.mkdir(origTaskDir, { recursive: true });
+      const origTaskContent = `# Task: Implementation Task
+
+**Chain**: CHAIN-001-rework-list  
+**Task**: 001-impl-task  
+**Status**: in-review  
+**Rework-Count**: 1  
+
+---
+
+## Objective
+
+Test task
+`;
+      await fs.writeFile(path.join(origTaskDir, "001-impl-task.md"), origTaskContent);
+
+      // Manually create rework task
+      const reworkTaskDir = path.join(tempDir, "docs/tasks/todo/CHAIN-001-rework-list");
+      await fs.mkdir(reworkTaskDir, { recursive: true });
+      const reworkTaskContent = `# Task: Implementation Task (Rework 1)
+
+**Chain**: CHAIN-001-rework-list  
+**Task**: 001-impl-task-rework-1  
+**Status**: todo  
+**Rework-Of**: 001-impl-task  
+**Rework-Reason**: Needs fixes  
+
+---
+
+## Objective
+
+Rework task
+`;
+      await fs.writeFile(path.join(reworkTaskDir, "001-impl-task-rework-1.md"), reworkTaskContent);
+
+      // List tasks - should show rework indicators
+      const result = runCli(["task:list", "CHAIN-001-rework-list"], tempDir);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("[reworked: 1]");
+      expect(result.stdout).toContain("[rework of: 001-impl-task]");
+    });
+  });
+
+  describe("task:status command", () => {
+    it("shows task status details", async () => {
+      await createTaskDirs(tempDir);
+
+      // Create chain and task
+      runCli(["chain:new", "CR-001", "status-task", "Status Task"], tempDir);
+      runCli(
+        ["task:add", "CHAIN-001-status-task", "my-task", "My Task Title"],
+        tempDir
+      );
+
+      // Get task status
+      const result = runCli(
+        ["task:status", "CHAIN-001-status-task", "001-my-task"],
+        tempDir
+      );
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Task: 001-my-task");
+      expect(result.stdout).toContain("Status: backlog");
+      expect(result.stdout).toContain("Title: My Task Title");
+    });
+
+    it("shows error when missing arguments", () => {
+      const result = runCli(["task:status"], tempDir);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Usage:");
+    });
+
+    it("shows error for non-existent task", async () => {
+      await createTaskDirs(tempDir);
+
+      // Create chain
+      runCli(["chain:new", "CR-001", "status-err", "Status Error"], tempDir);
+
+      const result = runCli(
+        ["task:status", "CHAIN-001-status-err", "999-nonexistent"],
+        tempDir
+      );
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Task not found");
+    });
+
+    it("shows rework relationship for rework task", async () => {
+      await createTaskDirs(tempDir);
+
+      // Create chain
+      runCli(["chain:new", "CR-001", "rework-status", "Rework Status"], tempDir);
+
+      // Manually create original task with reworkCount
+      const origTaskDir = path.join(tempDir, "docs/tasks/in-review/CHAIN-001-rework-status");
+      await fs.mkdir(origTaskDir, { recursive: true });
+      const origTaskContent = `# Task: Original Task
+
+**Chain**: CHAIN-001-rework-status  
+**Task**: 001-orig-task  
+**Status**: in-review  
+**Rework-Count**: 1  
+
+---
+
+## Objective
+
+Original task description
+`;
+      await fs.writeFile(path.join(origTaskDir, "001-orig-task.md"), origTaskContent);
+
+      // Manually create rework task
+      const reworkTaskDir = path.join(tempDir, "docs/tasks/todo/CHAIN-001-rework-status");
+      await fs.mkdir(reworkTaskDir, { recursive: true });
+      const reworkTaskContent = `# Task: Original Task (Rework 1)
+
+**Chain**: CHAIN-001-rework-status  
+**Task**: 001-orig-task-rework-1  
+**Status**: todo  
+**Rework-Of**: 001-orig-task  
+**Rework-Reason**: Missing tests  
+
+---
+
+## Objective
+
+Rework task description
+`;
+      await fs.writeFile(path.join(reworkTaskDir, "001-orig-task-rework-1.md"), reworkTaskContent);
+
+      // Check status of rework task
+      const reworkResult = runCli(
+        ["task:status", "CHAIN-001-rework-status", "001-orig-task-rework-1"],
+        tempDir
+      );
+
+      expect(reworkResult.exitCode).toBe(0);
+      expect(reworkResult.stdout).toContain("(Rework)");
+      expect(reworkResult.stdout).toContain("Rework Of: 001-orig-task");
+      expect(reworkResult.stdout).toContain("Rework Reason: Missing tests");
+
+      // Check status of original task shows rework count
+      const origResult = runCli(
+        ["task:status", "CHAIN-001-rework-status", "001-orig-task"],
+        tempDir
+      );
+
+      expect(origResult.exitCode).toBe(0);
+      expect(origResult.stdout).toContain("Rework Count: 1");
+      expect(origResult.stdout).toContain("Rework Tasks:");
+      expect(origResult.stdout).toContain("001-orig-task-rework-1");
     });
   });
 
