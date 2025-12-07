@@ -25,6 +25,7 @@ import {
 import { closeRequest } from "./commands/request-close.js";
 import { createReworkTask, formatReworkResult } from "./commands/task-rework.js";
 import { getMetricsSummary, formatMetricsSummary, formatMetricsSummaryJson } from "./commands/metrics-summary.js";
+import { exportMetrics, writeExport } from "./commands/metrics-export.js";
 import * as readline from "node:readline";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
@@ -1464,6 +1465,56 @@ const commands: Record<string, CommandDef> = {
   },
 
   // Metrics commands
+  "metrics:export": {
+    description: "Export metrics data for external analysis",
+    usage: "metrics:export --format <json|csv> [--output <file>] [--since <duration>]",
+    handler: async (args) => {
+      let format: "json" | "csv" = "json";
+      let output: string | undefined;
+      let since: string | undefined;
+
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === "--format" && args[i + 1]) {
+          const fmt = args[++i];
+          if (fmt !== "json" && fmt !== "csv") {
+            console.error("Format must be 'json' or 'csv'");
+            process.exit(1);
+          }
+          format = fmt;
+        } else if (arg.startsWith("--format=")) {
+          const fmt = arg.slice("--format=".length);
+          if (fmt !== "json" && fmt !== "csv") {
+            console.error("Format must be 'json' or 'csv'");
+            process.exit(1);
+          }
+          format = fmt as "json" | "csv";
+        } else if (arg === "--output" && args[i + 1]) {
+          output = args[++i];
+        } else if (arg.startsWith("--output=")) {
+          output = arg.slice("--output=".length);
+        } else if (arg === "--since" && args[i + 1]) {
+          since = args[++i];
+        } else if (arg.startsWith("--since=")) {
+          since = arg.slice("--since=".length);
+        }
+      }
+
+      try {
+        const content = await exportMetrics(projectRoot, { format, output, since });
+        await writeExport(content, output);
+
+        // Print confirmation if writing to file
+        if (output) {
+          console.error(`Exported metrics to ${output}`);
+        }
+      } catch (error) {
+        console.error(`Failed to export metrics: ${(error as Error).message}`);
+        process.exit(1);
+      }
+    },
+  },
+
   "metrics:summary": {
     description: "Display pipeline metrics summary",
     usage: "metrics:summary [--since <duration>] [--chain <id>] [--json]",
