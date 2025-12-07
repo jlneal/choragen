@@ -23,3 +23,12 @@ export {
   DEFAULT_METRICS_CONFIG,
   EMPTY_AGGREGATES,
 } from "./types.js";
+
+export { MetricsCollector } from "./metrics-collector.js";
+export type {
+  EventFilter,
+  MetricsOptions,
+  TaskMetrics,
+  ChainMetrics,
+  ReworkMetrics,
+} from "./metrics-collector.js";
