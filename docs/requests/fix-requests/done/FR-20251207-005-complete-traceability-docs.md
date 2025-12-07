@@ -21,9 +21,9 @@ But the full chain now includes **Commits**:
 Persona → Scenario → Use Case → Feature → CR/FR → ADR → Implementation → Commits
 ```
 
-The `request:close` command populates the `## Commits` section, completing the bi-directional link, but docs don't reflect this.
+The `request:close` command populates the `## Commits
 
----
+- f362080 docs: update traceability chain to include Commits
 
 ## Impact
 
