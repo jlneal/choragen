@@ -2,7 +2,7 @@
 
 **ID**: 001-create-adr  
 **Chain**: CHAIN-031-pipeline-metrics  
-**Status**: todo  
+**Status**: done  
 **Agent**: impl  
 
 ---
@@ -32,8 +32,8 @@ Create `docs/adr/doing/ADR-009-pipeline-metrics.md` with:
 
 ## Acceptance Criteria
 
-- [ ] ADR created in `docs/adr/doing/`
-- [ ] Links to CR-20251207-011
-- [ ] Documents event schema
-- [ ] Explains storage format choice
-- [ ] Follows ADR template format
+- [x] ADR created in `docs/adr/doing/`
+- [x] Links to CR-20251207-011
+- [x] Documents event schema
+- [x] Explains storage format choice
+- [x] Follows ADR template format
