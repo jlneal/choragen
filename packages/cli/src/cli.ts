@@ -22,6 +22,7 @@ import {
   DESIGN_TYPES,
   type DesignType,
 } from "./commands/docs.js";
+import { closeRequest } from "./commands/request-close.js";
 import * as readline from "node:readline";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
@@ -961,6 +962,34 @@ const commands: Record<string, CommandDef> = {
         console.log(`  Moved to: ${result.filePath}`);
       } else {
         console.error(`❌ Failed to close CR: ${result.error}`);
+        process.exit(1);
+      }
+    },
+  },
+
+  "request:close": {
+    description: "Close a request (CR or FR) with commit history",
+    usage: "request:close <request-id>",
+    handler: async (args) => {
+      const [requestId] = args;
+      if (!requestId) {
+        console.error("Usage: choragen request:close <request-id>");
+        process.exit(1);
+      }
+
+      console.log(`Closing ${requestId}...`);
+
+      const result = await closeRequest(projectRoot, requestId);
+      if (result.success) {
+        console.log(`  Found ${result.commits!.length} commits:`);
+        for (const commit of result.commits!) {
+          console.log(`    ${commit}`);
+        }
+        console.log(`  Updated ## Commits section`);
+        console.log(`  Moved to ${result.filePath}`);
+        console.log(`✅ Request closed`);
+      } else {
+        console.error(`Error: ${result.error}`);
         process.exit(1);
       }
     },
