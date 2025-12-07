@@ -2,6 +2,7 @@
  * Task and Chain type definitions
  *
  * ADR: ADR-001-task-file-format
+ * ADR: ADR-006-chain-type-system
  */
 
 /** Chain type distinguishes design chains from implementation chains */
@@ -88,6 +89,10 @@ export interface Chain {
   type?: ChainType;
   /** Chain ID this chain depends on (e.g., impl chain depends on design chain) */
   dependsOn?: string;
+  /** If true, this impl chain skips the design chain requirement */
+  skipDesign?: boolean;
+  /** Justification for skipping design (required when skipDesign is true) */
+  skipDesignJustification?: string;
   /** All tasks in this chain */
   tasks: Task[];
   /** Created timestamp */
@@ -106,6 +111,10 @@ export interface CreateChainOptions {
   type?: ChainType;
   /** Chain ID this chain depends on */
   dependsOn?: string;
+  /** If true, this impl chain skips the design chain requirement */
+  skipDesign?: boolean;
+  /** Justification for skipping design (required when skipDesign is true) */
+  skipDesignJustification?: string;
 }
 
 /** Options for creating a new task */

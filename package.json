@@ -37,7 +37,8 @@
     "validate:request-staleness": "node scripts/validate-request-staleness.mjs",
     "validate:request-completion": "node scripts/validate-request-completion.mjs",
     "validate:source-adr-refs": "node scripts/validate-source-adr-references.mjs",
-    "validate:all": "npm run validate:links && npm run validate:adr-traceability && npm run validate:commits && npm run validate:agents && npm run validate:complete-traceability && npm run validate:test-coverage && npm run validate:design-doc-content && npm run validate:contract-coverage && npm run validate:adr-staleness && npm run validate:request-staleness && npm run validate:request-completion && npm run validate:source-adr-refs"
+    "validate:user-value-traceability": "node scripts/validate-user-value-traceability.mjs",
+    "validate:all": "npm run validate:links && npm run validate:adr-traceability && npm run validate:commits && npm run validate:agents && npm run validate:complete-traceability && npm run validate:test-coverage && npm run validate:design-doc-content && npm run validate:contract-coverage && npm run validate:adr-staleness && npm run validate:request-staleness && npm run validate:request-completion && npm run validate:source-adr-refs && npm run validate:user-value-traceability"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",

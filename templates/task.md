@@ -3,7 +3,7 @@
 **Chain**: {{CHAIN_ID}}  
 **Task**: {{TASK_ID}}  
 **Status**: todo  
-**Type**: implementation  
+**Type**: impl  
 **Created**: {{DATE}}
 
 ---
@@ -49,5 +49,5 @@
 
 ## Task Type Reference
 
-- **implementation** (default): Handed off to impl agent for execution
-- **control**: Executed by control agent directly (e.g., verification, review, closure tasks)
+- **impl** (default): Requires handoff to implementation agent in a fresh session
+- **control**: Control agent executes directly (e.g., verification, review, closure tasks)

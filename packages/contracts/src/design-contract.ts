@@ -1,15 +1,105 @@
-// ADR: ADR-002-governance-schema
+// ADR: ADR-005-design-contract-api
 
-import type { ContractOptions, ContractResult } from "./types.js";
+import type { ContractOptions, ContractResult, DesignContractOptions } from "./types.js";
 
 /**
- * Runtime design contract wrapper
- *
- * Validates that implementation matches design intent at runtime boundaries.
- * Used to wrap API route handlers, ensuring preconditions and postconditions
- * are checked against the design document.
+ * Symbol to store design contract metadata on wrapped handlers
  */
-export class DesignContract<TInput, TOutput> {
+const DESIGN_CONTRACT_METADATA = Symbol("designContractMetadata");
+
+/**
+ * Metadata attached to a wrapped handler
+ */
+export interface DesignContractMetadata {
+  designDoc: string;
+}
+
+/**
+ * A handler wrapped with DesignContract
+ */
+export type WrappedHandler<TRequest, TResponse> = ((
+  request: TRequest
+) => TResponse | Promise<TResponse>) & {
+  [DESIGN_CONTRACT_METADATA]: DesignContractMetadata;
+};
+
+/**
+ * Wrap an API route handler with design document traceability.
+ *
+ * This is the primary API for linking handlers to design documents.
+ * The wrapped handler behaves identically to the original but carries
+ * metadata that can be inspected by tooling and tests.
+ *
+ * @example
+ * ```typescript
+ * import { DesignContract } from "@choragen/contracts";
+ *
+ * export const GET = DesignContract({
+ *   designDoc: "docs/design/core/features/task-management.md",
+ *   handler: async (request: Request) => {
+ *     return Response.json({ tasks: [] });
+ *   },
+ * });
+ * ```
+ */
+export function DesignContract<TRequest = Request, TResponse = Response>(
+  options: DesignContractOptions<TRequest, TResponse>
+): WrappedHandler<TRequest, TResponse> {
+  const { designDoc, handler } = options;
+
+  // Create wrapped handler that preserves the original behavior
+  const wrappedHandler = ((request: TRequest) => {
+    return handler(request);
+  }) as WrappedHandler<TRequest, TResponse>;
+
+  // Attach metadata for tooling/testing
+  wrappedHandler[DESIGN_CONTRACT_METADATA] = { designDoc };
+
+  return wrappedHandler;
+}
+
+/**
+ * Check if a handler is wrapped with DesignContract
+ */
+export function isDesignContract<TRequest, TResponse>(
+  handler: unknown
+): handler is WrappedHandler<TRequest, TResponse> {
+  return (
+    typeof handler === "function" &&
+    DESIGN_CONTRACT_METADATA in handler
+  );
+}
+
+/**
+ * Get the design contract metadata from a wrapped handler
+ */
+export function getDesignContractMetadata(
+  handler: unknown
+): DesignContractMetadata | null {
+  if (isDesignContract(handler)) {
+    return handler[DESIGN_CONTRACT_METADATA];
+  }
+  return null;
+}
+
+/**
+ * Advanced contract builder with pre/postcondition validation.
+ *
+ * Use this when you need runtime validation of inputs and outputs
+ * against contract conditions. For simple design doc traceability,
+ * use the `DesignContract` function instead.
+ *
+ * @example
+ * ```typescript
+ * const contract = new DesignContractBuilder<Input, Output>({
+ *   designDoc: "docs/design/...",
+ *   userIntent: "Create a new task",
+ * })
+ *   .pre((input) => input.title ? null : "Title is required")
+ *   .post((output) => output.id ? null : "Must return ID");
+ * ```
+ */
+export class DesignContractBuilder<TInput, TOutput> {
   private readonly options: ContractOptions;
   private preconditions: Array<(input: TInput) => string | null> = [];
   private postconditions: Array<(output: TOutput) => string | null> = [];

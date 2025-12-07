@@ -3,6 +3,8 @@
 # Pre-push hook
 # Runs build and tests before allowing push
 #
+# ADR: ADR-001-task-file-format
+#
 
 # Colors
 RED='\033[0;31m'

@@ -7,5 +7,7 @@
   "type": "implementation",
   "description": "",
   "createdAt": "2025-12-06T03:38:32.780Z",
-  "updatedAt": "2025-12-06T03:38:32.780Z"
+  "updatedAt": "2025-12-06T03:38:32.780Z",
+  "skipDesign": true,
+  "skipDesignJustification": "Bootstrap: Created before chain type system was implemented"
 }

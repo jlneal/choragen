@@ -18,6 +18,202 @@ Implementation (Code + Tests)
 Verification (Lint + Hooks + Validation)
 ```
 
+## User Value Chain
+
+The pipeline above shows the *implementation* flow, but every artifact must trace back to **user value**. This section documents the complete value chain from user personas to shipped code.
+
+### Complete Value Chain Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         USER VALUE LAYER                            │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  PERSONA (WHO benefits)                                             │
+│  "Control Agent - orchestrates work, needs visibility"              │
+│      │                                                              │
+│      ▼                                                              │
+│  SCENARIO (WHAT user goal)                                          │
+│  "As a Control Agent, I want to see chain status                    │
+│   so that I can coordinate implementation work"                     │
+│      │                                                              │
+│      │ (1-to-many)                                                  │
+│      ▼                                                              │
+│  USE CASE (HOW user accomplishes goal)                              │
+│  ├── "View all active chains"                                       │
+│  ├── "Check specific chain progress"                                │
+│  └── "Identify blocked tasks"                                       │
+│                                                                     │
+├─────────────────────────────────────────────────────────────────────┤
+│                        SOLUTION LAYER                               │
+├─────────────────────────────────────────────────────────────────────┤
+│      │                                                              │
+│      ▼                                                              │
+│  FEATURE (WHAT we build)                                            │
+│  "Chain status dashboard with progress tracking"                    │
+│      │                                                              │
+│      ▼                                                              │
+│  CR/FR (WHY we're building it now)                                  │
+│  "CR-20251207-001: Implement chain status command"                  │
+│      │                                                              │
+│      ▼                                                              │
+│  ADR (HOW we build it technically)                                  │
+│  "ADR-007: Chain status data model and CLI output format"           │
+│      │                                                              │
+│      ▼                                                              │
+│  IMPLEMENTATION (Code + Tests)                                      │
+│  "packages/cli/src/commands/chain-status.ts"                        │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Value Chain Levels
+
+#### 1. Persona (WHO)
+
+A persona is a user archetype that represents a class of users with shared goals and behaviors.
+
+| Attribute | Description |
+|-----------|-------------|
+| **Definition** | Named archetype with goals, context, and pain points |
+| **Location** | `docs/design/<domain>/personas/` |
+| **Example** | "Control Agent", "Implementation Agent", "Project Lead" |
+| **Purpose** | Grounds all work in real user needs |
+
+#### 2. Scenario (WHAT goal)
+
+A scenario describes a user goal in narrative form: "As a [persona], I want [goal] so that [benefit]."
+
+| Attribute | Description |
+|-----------|-------------|
+| **Definition** | User story expressing intent and motivation |
+| **Location** | `docs/design/<domain>/scenarios/` |
+| **Relationship** | Many scenarios per persona |
+| **Example** | "As a Control Agent, I want to see chain status so that I can coordinate work" |
+| **Purpose** | Captures the *why* behind features |
+
+#### 3. Use Case (HOW user accomplishes)
+
+A use case describes a specific interaction pattern that fulfills part of a scenario.
+
+| Attribute | Description |
+|-----------|-------------|
+| **Definition** | Concrete steps a user takes to accomplish a task |
+| **Location** | `docs/design/<domain>/use-cases/` |
+| **Relationship** | Many use cases per scenario (1-to-many) |
+| **Example** | "View all active chains", "Filter chains by status" |
+| **Purpose** | Defines testable user interactions |
+
+**Key relationship**: One scenario may require multiple use cases to fully satisfy the user goal. Each use case should be independently testable.
+
+#### 4. Feature (WHAT we build)
+
+A feature is a capability we build to enable one or more use cases.
+
+| Attribute | Description |
+|-----------|-------------|
+| **Definition** | A buildable unit of functionality |
+| **Location** | `docs/design/<domain>/features/` |
+| **Relationship** | One feature may enable multiple use cases |
+| **Example** | "Chain status command with filtering" |
+| **Purpose** | Defines scope for implementation |
+
+#### 5. CR/FR (WHY now)
+
+A Change Request (CR) or Fix Request (FR) justifies *why* we're building a feature at this time.
+
+| Attribute | Description |
+|-----------|-------------|
+| **Definition** | Prioritized work item with business justification |
+| **Location** | `docs/requests/change-requests/` or `docs/requests/fix-requests/` |
+| **Relationship** | Links feature to current sprint/milestone |
+| **Example** | "CR-20251207-001: Chain status needed for v0.2 release" |
+| **Purpose** | Provides scheduling and priority context |
+
+#### 6. ADR (HOW technically)
+
+An Architecture Decision Record documents the technical approach for implementing a feature.
+
+| Attribute | Description |
+|-----------|-------------|
+| **Definition** | Technical decision with context, options, and rationale |
+| **Location** | `docs/adr/` |
+| **Relationship** | One or more ADRs per feature |
+| **Example** | "ADR-007: Use YAML for chain metadata storage" |
+| **Purpose** | Captures technical decisions and trade-offs |
+
+#### 7. Implementation (Code + Tests)
+
+The actual code and tests that deliver the feature.
+
+| Attribute | Description |
+|-----------|-------------|
+| **Definition** | Source code, tests, and configuration |
+| **Location** | `packages/*/src/` |
+| **Relationship** | References ADR in source comments |
+| **Example** | `packages/cli/src/commands/chain-status.ts` |
+| **Purpose** | Delivers user value |
+
+### Relationship Summary
+
+```
+Persona ──(1:many)──► Scenario ──(1:many)──► Use Case
+                                                │
+                                           (many:many)
+                                                │
+                                                ▼
+                                            Feature
+                                                │
+                                           (1:many)
+                                                │
+                                                ▼
+                                             CR/FR
+                                                │
+                                           (1:many)
+                                                │
+                                                ▼
+                                              ADR
+                                                │
+                                           (1:many)
+                                                │
+                                                ▼
+                                         Implementation
+```
+
+### Traceability Back to User Value
+
+**Every artifact must be traceable back to user value.** This means:
+
+| Artifact | Must Link To |
+|----------|--------------|
+| Implementation | ADR (in source comment) |
+| ADR | CR/FR + Feature design doc |
+| CR/FR | Feature it implements |
+| Feature | Use cases it enables |
+| Use Case | Scenario it fulfills |
+| Scenario | Persona it serves |
+
+When reviewing any artifact, ask: *"Which user persona benefits from this, and how?"* If you can't answer, the traceability chain is broken.
+
+### Integration with Existing Pipeline
+
+The existing pipeline (CR → Design → ADR → Implementation) fits into the **Solution Layer** of the value chain:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  USER VALUE LAYER (documented in design/)                           │
+│  Persona → Scenario → Use Case → Feature                            │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  SOLUTION LAYER (existing pipeline)                                 │
+│  CR/FR → Design Docs → ADR → Implementation → Verification          │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+The User Value Layer provides the *justification* for everything in the Solution Layer. Without it, we risk building technically excellent solutions that don't serve real user needs.
+
 ## Enforcement Layers
 
 ### Layer 1: ESLint Rules (Static Analysis)
@@ -102,6 +298,73 @@ docs/adr/
 ├── done/       # Decisions controlling current implementation
 └── archive/    # Superseded decisions
 ```
+
+## Chain Types and the Pipeline
+
+The conceptual pipeline stages map directly to **chain types** defined in [ADR-006](../adr/done/ADR-006-chain-type-system.md).
+
+### How Chain Types Map to Pipeline Stages
+
+```
+Request (CR/FR)
+    ↓
+┌─────────────────────────────────────────────────────┐
+│  DESIGN CHAIN                                       │
+│  ├── Design Documents (WHAT)                        │
+│  └── Architecture Decision Records (HOW)            │
+└─────────────────────────────────────────────────────┘
+    ↓ (dependsOn)
+┌─────────────────────────────────────────────────────┐
+│  IMPLEMENTATION CHAIN                               │
+│  ├── Implementation (Code + Tests)                  │
+│  └── Verification (Lint + Hooks + Validation)       │
+└─────────────────────────────────────────────────────┘
+```
+
+| Chain Type | Pipeline Stages | Outputs |
+|------------|-----------------|---------|
+| **Design** | Design Documents, ADRs | Feature specs, acceptance criteria, architecture decisions |
+| **Implementation** | Implementation, Verification | Code, tests, configuration |
+
+### Chain Pairing Pattern
+
+Design and implementation chains form pairs linked to the same CR/FR:
+
+```
+CR-20251207-001 (Change Request)
+  │
+  ├── CHAIN-001-user-profile (type: design)
+  │     └── Tasks: create design doc, define API, write ADR
+  │
+  └── CHAIN-002-user-profile-impl (type: implementation)
+        ├── dependsOn: CHAIN-001-user-profile
+        └── Tasks: implement API, write tests
+```
+
+**Workflow sequence**:
+1. Create design chain first
+2. Complete all design tasks (design docs, ADRs)
+3. Get design approved
+4. Create implementation chain with `dependsOn` reference
+5. Execute implementation tasks
+
+### Skipping Design (skipDesign)
+
+For justified exceptions, implementation chains can skip the design dependency:
+
+```bash
+choragen chain:new:impl FR-001 hotfix-login "Fix Login Bug" \
+  --skip-design="Hotfix for production issue, design not required"
+```
+
+Appropriate uses:
+- Hotfixes for production bugs
+- Trivial changes (typo fixes)
+- Documentation-only changes
+
+The `skipDesign` flag requires a justification, maintaining an audit trail for exceptions.
+
+---
 
 ## Traceability Requirements
 

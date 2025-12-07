@@ -1,0 +1,10 @@
+{
+  "id": "CHAIN-001-test-chain",
+  "sequence": 1,
+  "slug": "test-chain",
+  "requestId": "CR-20251207-001",
+  "title": "Test Chain",
+  "description": "",
+  "createdAt": "2025-12-07T06:59:19.245Z",
+  "updatedAt": "2025-12-07T06:59:19.245Z"
+}

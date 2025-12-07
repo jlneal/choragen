@@ -11,5 +11,7 @@
     "003-add-validation",
     "004-migrate-existing",
     "005-verify-close"
-  ]
+  ],
+  "skipDesign": true,
+  "skipDesignJustification": "Bootstrap: Created before chain type system was implemented"
 }

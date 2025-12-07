@@ -3,6 +3,8 @@
 # Pre-commit hook
 # Runs lint, build, and contextual validation checks on staged files
 #
+# ADR: ADR-001-task-file-format
+#
 set -eu
 
 # Ensure Homebrew binaries are in PATH (needed for node, npx, pnpm on Mac)

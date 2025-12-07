@@ -5,7 +5,22 @@
  * Extracted from itinerary-planner in Phase 3.
  */
 
-export { DesignContract } from "./design-contract.js";
+// Primary API - function wrapper for API routes
+export {
+  DesignContract,
+  DesignContractBuilder,
+  isDesignContract,
+  getDesignContractMetadata,
+} from "./design-contract.js";
+export type { DesignContractMetadata, WrappedHandler } from "./design-contract.js";
+
+// Error handling
 export { ApiError } from "./api-error.js";
 export { HttpStatus } from "./http-status.js";
-export type { ContractOptions, ContractResult } from "./types.js";
+
+// Types
+export type {
+  DesignContractOptions,
+  ContractOptions,
+  ContractResult,
+} from "./types.js";

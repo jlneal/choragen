@@ -1,0 +1,11 @@
+{
+  "id": "CHAIN-019-role-separation",
+  "sequence": 19,
+  "slug": "role-separation",
+  "requestId": "FR-20251206-010",
+  "title": "Control/Impl Agent Role Separation",
+  "description": "",
+  "createdAt": "2025-12-07T05:10:03.426Z",
+  "updatedAt": "2025-12-07T05:10:03.426Z",
+  "type": "implementation"
+}

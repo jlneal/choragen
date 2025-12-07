@@ -14,5 +14,7 @@
     "006-expand-agents-md",
     "007-task-runner",
     "008-verify-close"
-  ]
+  ],
+  "skipDesign": true,
+  "skipDesignJustification": "Bootstrap: Created before chain type system was implemented"
 }

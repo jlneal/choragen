@@ -1,0 +1,10 @@
+{
+  "id": "CHAIN-1000-task-test",
+  "sequence": 1000,
+  "slug": "task-test",
+  "requestId": "CR-001",
+  "title": "Task Test",
+  "description": "",
+  "createdAt": "2025-12-07T06:59:48.997Z",
+  "updatedAt": "2025-12-07T06:59:48.997Z"
+}

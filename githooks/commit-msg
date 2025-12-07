@@ -4,6 +4,8 @@ set -eu
 # Commit message validation hook
 # Enforces semantic commit format and CR/FR traceability
 # Format: type(scope): description [CR-ID|FR-ID]
+#
+# ADR: ADR-001-task-file-format
 
 COMMIT_MSG_FILE="$1"
 COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")

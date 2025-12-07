@@ -113,12 +113,18 @@ function validateRequest(requestId, chains) {
   }
 
   // Check for missing implementation chain
+  // Exception: design-only requests (all design chains complete, no impl needed)
   if (implChains.length === 0) {
-    issues.push({
-      severity: "error",
-      code: "MISSING_IMPL_CHAIN",
-      message: `Request ${requestId} has no implementation chain`,
-    });
+    const allDesignComplete = designChains.length > 0 && 
+      designChains.every((c) => isChainComplete(c.chainId || c.id));
+    
+    if (!allDesignComplete) {
+      issues.push({
+        severity: "error",
+        code: "MISSING_IMPL_CHAIN",
+        message: `Request ${requestId} has no implementation chain`,
+      });
+    }
   }
 
   // Check impl chains are blocked until design complete

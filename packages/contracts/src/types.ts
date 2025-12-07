@@ -4,11 +4,24 @@
  * Contract types
  */
 
+/**
+ * Options for the DesignContract function wrapper (simple API)
+ */
+export interface DesignContractOptions<TRequest = Request, TResponse = Response> {
+  /** Design document this handler implements */
+  designDoc: string;
+  /** The handler function to wrap */
+  handler: (request: TRequest) => TResponse | Promise<TResponse>;
+}
+
+/**
+ * Options for DesignContractBuilder (advanced API with pre/postconditions)
+ */
 export interface ContractOptions {
   /** Design document this contract validates */
   designDoc: string;
   /** User intent being validated */
-  userIntent: string;
+  userIntent?: string;
   /** Whether to throw on violation (default: true) */
   throwOnViolation?: boolean;
 }

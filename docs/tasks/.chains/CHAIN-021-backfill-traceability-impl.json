@@ -1,0 +1,12 @@
+{
+  "id": "CHAIN-021-backfill-traceability-impl",
+  "sequence": 21,
+  "slug": "backfill-traceability-impl",
+  "requestId": "CR-20251206-012",
+  "title": "Impl: Backfill Traceability Backlinks",
+  "description": "",
+  "type": "implementation",
+  "dependsOn": "CHAIN-020-backfill-traceability-design",
+  "createdAt": "2025-12-07T06:20:02.092Z",
+  "updatedAt": "2025-12-07T06:20:02.092Z"
+}

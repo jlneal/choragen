@@ -33,7 +33,11 @@
 
 ## Affected Design Documents
 
-- {{DESIGN_DOC_1}}
+<!-- Required: Must include at least one feature doc for user value traceability (Rule 4) -->
+<!-- Reference feature docs from docs/design/*/features/ to establish the CR → Feature link -->
+
+- {{FEATURE_DOC_1}}
+- {{DESIGN_DOC_2}}
 
 ---
 

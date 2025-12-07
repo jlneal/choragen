@@ -9,5 +9,7 @@
     "001-update-agents-md",
     "002-update-task-template",
     "003-verify-close"
-  ]
+  ],
+  "skipDesign": true,
+  "skipDesignJustification": "Bootstrap: Created before chain type system was implemented"
 }

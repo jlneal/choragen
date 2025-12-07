@@ -159,6 +159,12 @@ const TOOLS = {
 
 ---
 
+## Affected Design Documents
+
+- [docs/design/core/features/agent-workflow.md](../../../design/core/features/agent-workflow.md)
+
+---
+
 ## Linked ADRs
 
 - ADR-004-agent-runner (to be created)

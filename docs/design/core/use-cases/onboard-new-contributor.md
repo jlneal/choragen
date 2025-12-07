@@ -5,6 +5,12 @@
 
 ---
 
+## User Goal
+
+Enable a new contributor (human or AI) to make their first successful contribution to the project with minimal friction, building confidence and establishing good practices from the start.
+
+---
+
 ## Actor
 
 - **Primary**: [Open Source Maintainer](../personas/open-source-maintainer.md), [Team Lead](../personas/team-lead.md)
@@ -233,6 +239,13 @@ If you're stuck:
 - Ask in [communication channel]
 - Tag @maintainer in your PR
 ```
+
+---
+
+## Related Scenarios
+
+- [Control Agent Workflow](../scenarios/control-agent-workflow.md)
+- [Implementation Agent Workflow](../scenarios/implementation-agent-workflow.md)
 
 ---
 

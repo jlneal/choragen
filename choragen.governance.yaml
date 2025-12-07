@@ -56,3 +56,44 @@ mutations:
 collision_detection:
   strategy: "file-lock"
   on_collision: "block"
+
+# User value traceability validation exemptions
+validation:
+  user-value-traceability:
+    exempt-patterns:
+      # Legacy CRs completed before traceability requirements were established
+      - pattern: "docs/requests/change-requests/done/CR-20251205-001-bootstrap-choragen.md"
+        category: "legacy"
+        justification: "Bootstrap CR predates user-value-traceability requirements"
+      - pattern: "docs/requests/change-requests/done/CR-20251206-001-agents-md-files.md"
+        category: "legacy"
+        justification: "Completed before user-value-traceability validation was implemented"
+      - pattern: "docs/requests/change-requests/done/CR-20251206-002-complete-enforcement.md"
+        category: "legacy"
+        justification: "Completed before user-value-traceability validation was implemented"
+      - pattern: "docs/requests/change-requests/done/CR-20251206-004-init-command.md"
+        category: "legacy"
+        justification: "Completed before user-value-traceability validation was implemented"
+      - pattern: "docs/requests/change-requests/done/CR-20251206-005-complete-design-docs.md"
+        category: "legacy"
+        justification: "Completed before user-value-traceability validation was implemented"
+      - pattern: "docs/requests/change-requests/done/CR-20251206-006-chain-types.md"
+        category: "legacy"
+        justification: "Completed before user-value-traceability validation was implemented"
+      - pattern: "docs/requests/change-requests/done/CR-20251206-007-complete-agentic-chassis.md"
+        category: "legacy"
+        justification: "Completed before user-value-traceability validation was implemented"
+      - pattern: "docs/requests/change-requests/done/CR-20251206-012-backfill-traceability.md"
+        category: "legacy"
+        justification: "Completed before user-value-traceability validation was implemented"
+
+  # Source ADR reference validation exemptions
+  source-adr-references:
+    exempt-patterns:
+      # Utility scripts that are internal tooling without specific ADR governance
+      - pattern: "scripts/run.mjs"
+        category: "internal-utility"
+        justification: "Task runner utility script - orchestrates other scripts, no specific ADR"
+      - pattern: "scripts/run-validators.mjs"
+        category: "internal-utility"
+        justification: "Validator orchestration script - runs other validators, no specific ADR"

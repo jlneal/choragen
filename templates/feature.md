@@ -43,7 +43,18 @@ So that {{BENEFIT}}
 
 ## Linked Scenarios
 
+<!-- Required: At least one scenario or use case link for user value traceability (Rule 3) -->
+<!-- Link to scenarios in ../scenarios/ that this feature enables -->
+
 - {{SCENARIO_1}}
+
+---
+
+## Linked Use Cases
+
+<!-- Alternative to Linked Scenarios: Link to use cases in ../use-cases/ that this feature enables -->
+
+- {{USE_CASE_1}}
 
 ---
 

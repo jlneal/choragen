@@ -49,7 +49,7 @@ export class ChainManager {
    * Create a new chain
    */
   async createChain(options: CreateChainOptions): Promise<Chain> {
-    const { requestId, slug, title, description, type, dependsOn } = options;
+    const { requestId, slug, title, description, type, dependsOn, skipDesign, skipDesignJustification } = options;
 
     // Find the next sequence number
     const existingChains = await this.getAllChains();
@@ -71,6 +71,8 @@ export class ChainManager {
       description: description || "",
       type,
       dependsOn,
+      skipDesign,
+      skipDesignJustification,
       tasks: [],
       createdAt: now,
       updatedAt: now,
@@ -150,6 +152,8 @@ export class ChainManager {
       description: metadata.description || "",
       type: metadata.type,
       dependsOn: metadata.dependsOn,
+      skipDesign: metadata.skipDesign,
+      skipDesignJustification: metadata.skipDesignJustification,
       tasks,
       createdAt: metadata.createdAt ? new Date(metadata.createdAt) : new Date(),
       updatedAt: new Date(),
@@ -181,6 +185,12 @@ export class ChainManager {
     }
     if (chain.dependsOn) {
       metadata.dependsOn = chain.dependsOn;
+    }
+    if (chain.skipDesign) {
+      metadata.skipDesign = chain.skipDesign;
+    }
+    if (chain.skipDesignJustification) {
+      metadata.skipDesignJustification = chain.skipDesignJustification;
     }
 
     await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2), "utf-8");
@@ -332,7 +342,7 @@ export class ChainManager {
    */
   async updateChain(
     chainId: string,
-    updates: Partial<Pick<Chain, "title" | "description" | "requestId" | "type" | "dependsOn">>
+    updates: Partial<Pick<Chain, "title" | "description" | "requestId" | "type" | "dependsOn" | "skipDesign" | "skipDesignJustification">>
   ): Promise<Chain | null> {
     const chain = await this.getChain(chainId);
     if (!chain) return null;

@@ -93,6 +93,44 @@ expect(response.status).toBe(HttpStatus.OK);
 expect(response.status).toBe(200);
 ```
 
+### Inspecting Contract Metadata
+
+```typescript
+import { isDesignContract, getDesignContractMetadata } from "@choragen/contracts";
+
+// Check if a handler is wrapped
+if (isDesignContract(handler)) {
+  const metadata = getDesignContractMetadata(handler);
+  console.log(metadata?.designDoc); // "docs/design/..."
+}
+```
+
+### Advanced: Contract Builder with Pre/Postconditions
+
+For runtime validation of inputs and outputs:
+
+```typescript
+import { DesignContractBuilder } from "@choragen/contracts";
+
+interface TaskInput { title: string; }
+interface TaskOutput { id: string; title: string; }
+
+const contract = new DesignContractBuilder<TaskInput, TaskOutput>({
+  designDoc: "docs/design/core/features/task-management.md",
+  userIntent: "Create a new task",
+})
+  .pre((input) => input.title ? null : "Title is required")
+  .post((output) => output.id ? null : "Must return ID");
+
+// Validate input
+const inputResult = contract.validateInput({ title: "" });
+// { success: false, violations: ["Title is required"] }
+
+// Validate output  
+const outputResult = contract.validateOutput({ id: "123", title: "Test" });
+// { success: true, data: { id: "123", title: "Test" } }
+```
+
 ## Related ADRs
 
 - **ADR-002**: Governance schema design (DesignContract enforces traceability)
