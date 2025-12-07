@@ -81,7 +81,7 @@ const rule: Rule.RuleModule = {
 
         const comments = sourceCode.getAllComments();
 
-        // Count eslint-disable comments (actual directives, not mentions in docs)
+        // Count eslint disable comments (actual directives, not mentions in docs)
         const disableCount = comments.filter((comment) =>
           isEslintDisableComment(comment.value)
         ).length;

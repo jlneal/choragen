@@ -40,17 +40,17 @@ export default [
     rules: {
       // TypeScript rules
       "@typescript-eslint/no-unused-vars": [
-        "warn",
+        "error",
         { argsIgnorePattern: "^_" },
       ],
       "@typescript-eslint/no-explicit-any": "off", // We use any in ESLint rules
 
-      // Choragen rules (self-hosted)
+      // Choragen rules (self-hosted) - ALL ERRORS for deterministic feedback
       "@choragen/require-adr-reference": "error",
       "@choragen/no-as-unknown": "error",
       "@choragen/no-magic-numbers-http": "error",
-      "@choragen/no-untracked-todos": "warn",
-      "@choragen/require-eslint-disable-justification": "warn",
+      "@choragen/no-untracked-todos": "error",
+      "@choragen/require-eslint-disable-justification": "error",
     },
   },
 
@@ -70,16 +70,16 @@ export default [
     },
     rules: {
       "@typescript-eslint/no-unused-vars": [
-        "warn",
+        "error",
         { argsIgnorePattern: "^_" },
       ],
       "@typescript-eslint/no-explicit-any": "off",
 
-      // Test-specific rules
+      // Test-specific rules - ALL ERRORS for deterministic feedback
       "@choragen/require-test-metadata": "error",
       "@choragen/no-as-unknown": "off", // Tests may need unsafe casts
-      "@choragen/no-untracked-todos": "warn",
-      "@choragen/require-eslint-disable-justification": "warn",
+      "@choragen/no-untracked-todos": "error",
+      "@choragen/require-eslint-disable-justification": "error",
     },
   },
 ];

@@ -53,5 +53,5 @@ export type ProtocolMessage = TaskAssignment | TaskCompletion | TaskReview;
 
 // Placeholder exports - implementation in Phase 2
 export const ProtocolFormatter = {
-  // TODO: Implement in CR-20251205-005
+  // TODO(CR-20251205-005): Implement protocol formatter
 };

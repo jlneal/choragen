@@ -1,14 +1,14 @@
 /**
  * Rule: max-eslint-disables-per-file
  *
- * Limits the number of eslint-disable comments per file.
+ * Limits the number of eslint disable comments per file.
  * Encourages fixing issues rather than disabling rules.
  *
  * Valid (with default limit of 5):
- *   File with 5 or fewer eslint-disable comments
+ *   File with 5 or fewer eslint disable comments
  *
  * Invalid:
- *   File with more than 5 eslint-disable comments
+ *   File with more than 5 eslint disable comments
  *
  * ADR: ADR-002-governance-schema
  */
@@ -74,7 +74,7 @@ const rule: Rule.RuleModule = {
 };
 
 /**
- * Check if this is an eslint-disable directive comment
+ * Check if this is an eslint disable directive comment
  */
 function isEslintDisableComment(commentText: string): boolean {
   return /eslint-disable(-next-line|-line)?/.test(commentText);

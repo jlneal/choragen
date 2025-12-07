@@ -62,6 +62,11 @@ const rule: Rule.RuleModule = {
         for (const comment of comments) {
           const text = comment.value;
 
+          // Skip JSDoc block comments (documentation, not directives)
+          if (comment.type === "Block" && text.startsWith("*")) {
+            continue;
+          }
+
           if (!isEslintDisableComment(text)) {
             continue;
           }

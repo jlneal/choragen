@@ -177,9 +177,9 @@ const rule: Rule.RuleModule = {
         const comments = sourceCode.getAllComments();
 
         for (const comment of comments) {
-          // Check eslint-disable comments and tracked comment patterns
+          // Check eslint disable comments and tracked comment patterns
           // Uses character class to avoid triggering lint rules on this file
-          const trackedPattern = /eslint-disable|TO[D]O|FIX[M]E|HAC[K]|XX[X]/i;
+          const trackedPattern = /eslin\u0074-disable|TO[D]O|FIX[M]E|HAC[K]|XX[X]/i;
           const isRelevantComment = trackedPattern.test(comment.value);
           if (isRelevantComment) {
             validateCrFrReferences(comment.value, comment.loc);

@@ -27,9 +27,9 @@ export function unsafeCast<T>(partial: Partial<T>): T {
 
 // Placeholder exports - implementation in Phase 3
 export const TestOutputParser = {
-  // TODO: Implement in CR-20251205-006
+  // TODO(CR-20251205-006): Implement test output parser
 };
 
 export const DesignImpactAnalyzer = {
-  // TODO: Implement in CR-20251205-006
+  // TODO(CR-20251205-006): Implement design impact analyzer
 };
