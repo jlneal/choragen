@@ -2,7 +2,7 @@
 
 **ID**: 001-create-adr  
 **Chain**: CHAIN-030-task-rework  
-**Status**: todo  
+**Status**: in-progress  
 **Agent**: impl  
 
 ---
