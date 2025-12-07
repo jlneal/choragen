@@ -220,8 +220,23 @@ export class TaskManager {
 
   /**
    * Send a task back for rework (move from in-review to in-progress)
+   * Increments the reworkCount on the task
    */
-  async reworkTask(chainId: string, taskId: string): Promise<TransitionResult> {
+  async reworkTask(chainId: string, taskId: string, reason?: string): Promise<TransitionResult> {
+    const task = await this.getTask(chainId, taskId);
+    if (task) {
+      // Increment rework count
+      task.reworkCount = (task.reworkCount || 0) + 1;
+      if (reason) {
+        task.reworkReason = reason;
+      }
+      task.updatedAt = new Date();
+      
+      // Write updated task before transition
+      const taskPath = this.getTaskPath(chainId, taskId, task.status);
+      await fs.writeFile(taskPath, serializeTaskMarkdown(task), "utf-8");
+    }
+    
     return this.transitionTask(chainId, taskId, "in-progress");
   }
 

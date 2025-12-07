@@ -70,6 +70,12 @@ export interface Task {
   createdAt: Date;
   /** Last updated timestamp */
   updatedAt: Date;
+  /** ID of original task if this is a rework task */
+  reworkOf?: string;
+  /** Why rework was needed (set by control agent) */
+  reworkReason?: string;
+  /** Number of times this task has been reworked */
+  reworkCount?: number;
 }
 
 export interface Chain {

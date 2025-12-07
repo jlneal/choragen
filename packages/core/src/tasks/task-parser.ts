@@ -139,6 +139,9 @@ export function parseTaskMarkdown(
     notes: sections["notes"] || "",
     createdAt: parseDate(metadata["created"]) || new Date(),
     updatedAt: new Date(),
+    reworkOf: metadata["rework-of"] || undefined,
+    reworkReason: metadata["rework-reason"] || undefined,
+    reworkCount: metadata["rework-count"] ? parseInt(metadata["rework-count"], 10) : undefined,
   };
 }
 
@@ -157,6 +160,15 @@ export function serializeTaskMarkdown(task: Task): string {
   lines.push(`**Task**: ${task.id}  `);
   lines.push(`**Status**: ${task.status}  `);
   lines.push(`**Created**: ${formatDate(task.createdAt)}`);
+  if (task.reworkOf) {
+    lines.push(`**Rework-Of**: ${task.reworkOf}  `);
+  }
+  if (task.reworkReason) {
+    lines.push(`**Rework-Reason**: ${task.reworkReason}  `);
+  }
+  if (task.reworkCount !== undefined) {
+    lines.push(`**Rework-Count**: ${task.reworkCount}  `);
+  }
   lines.push("");
   lines.push("---");
   lines.push("");
