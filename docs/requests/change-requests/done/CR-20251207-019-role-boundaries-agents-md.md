@@ -2,7 +2,7 @@
 
 **ID**: CR-20251207-019  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-07  
 **Owner**: control-agent  
 
@@ -51,11 +51,11 @@ Moving critical role boundaries to `AGENTS.md` ensures they're always in context
 
 ## Acceptance Criteria
 
-- [ ] `AGENTS.md` includes "Session Role Declaration" section requiring role announcement
-- [ ] `AGENTS.md` includes "Role Boundaries" section with explicit allow/deny patterns
-- [ ] Control agent restrictions: no editing `packages/*/src/**`, no creating tests
-- [ ] Impl agent restrictions: no moving `docs/tasks/**`, no `git commit`, no creating CRs/FRs
-- [ ] Both roles have clear file pattern rules that can later be enforced programmatically
+- [x] `AGENTS.md` includes "Session Role Declaration" section requiring role announcement
+- [x] `AGENTS.md` includes "Role Boundaries" section with explicit allow/deny patterns
+- [x] Control agent restrictions: no editing `packages/*/src/**`, no creating tests
+- [x] Impl agent restrictions: no moving `docs/tasks/**`, no `git commit`, no creating CRs/FRs
+- [x] Both roles have clear file pattern rules that can later be enforced programmatically
 
 ---
 
@@ -81,4 +81,13 @@ The role boundaries should be structured to mirror the governance schema format,
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented role boundaries via CHAIN-036-role-boundaries:
+
+**Changes to AGENTS.md**:
+- Added "Session Role Declaration" section (lines 166-178) requiring `ROLE: impl | control` declaration
+- Added "Role Boundaries" section (lines 182-226) with explicit allow/deny patterns
+- Impl restrictions: no task moves, no commits, no CR/FR creation
+- Control restrictions: no source code edits, no test creation
+- File patterns use glob syntax for future programmatic extraction
+
+**Result**: Role boundaries are now injected into every agent session via AGENTS.md.

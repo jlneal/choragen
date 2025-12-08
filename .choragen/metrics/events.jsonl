@@ -268,3 +268,4 @@
 {"eventType":"task:completed","entityType":"task","entityId":"002-update-agent-docs","chainId":"CHAIN-035-task-role-assignment","id":"d7bce759-2e5e-49fd-a145-5380b60966b1","timestamp":"2025-12-08T02:43:52.222Z"}
 {"eventType":"task:started","entityType":"task","entityId":"003-verify-close","chainId":"CHAIN-035-task-role-assignment","id":"1a4f711b-a4ed-4241-a43f-df30845e1c70","timestamp":"2025-12-08T02:44:05.438Z"}
 {"eventType":"task:completed","entityType":"task","entityId":"003-verify-close","chainId":"CHAIN-035-task-role-assignment","id":"89cb4658-0380-4d04-91e7-2b1e451d6182","timestamp":"2025-12-08T02:44:47.841Z"}
+{"eventType":"chain:created","entityType":"chain","entityId":"CHAIN-036-role-boundaries","requestId":"CR-20251207-019","id":"caaa11b7-f1d1-4c37-9f07-db8c831f2ada","timestamp":"2025-12-08T02:46:30.864Z"}

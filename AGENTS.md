@@ -163,6 +163,70 @@ This project uses a two-agent model. See the detailed guides:
 
 ---
 
+## Session Role Declaration
+
+**Every agent session MUST declare its role at the start of work.**
+
+When you begin a task, identify which role you are operating as:
+
+```
+ROLE: impl | control
+```
+
+Your role determines what actions you are permitted to take. If a task file specifies `Type: impl` or `Type: control`, that is your role for the session. If no type is specified, default to `impl` for code changes and `control` for documentation/planning work.
+
+**Role violations are serious.** If you find yourself needing to perform an action outside your role boundaries, STOP and request a handoff to the appropriate agent role.
+
+---
+
+## Role Boundaries
+
+These boundaries define what each role can and cannot do. File patterns use glob syntax for future programmatic extraction.
+
+### If ROLE = impl
+
+**ALLOWED:**
+- `packages/**/src/**/*.ts` — create, modify
+- `packages/**/__tests__/**/*.ts` — create, modify, delete
+- `packages/**/src/**/*.json` — create, modify
+- `*.config.*` — modify (with caution)
+- `README.md` — modify (package-level only)
+
+**DENIED:**
+- `docs/tasks/**` — move, delete (control agent manages task lifecycle)
+- `docs/requests/**` — create, modify, move (control agent creates CRs/FRs)
+- `docs/adr/**` — create, move (control agent manages ADRs)
+- `git commit` — impl agents do not commit directly
+- `git push` — impl agents do not push directly
+- `choragen request:close` — control agent closes requests
+- `choragen chain:new` — control agent creates chains
+
+### If ROLE = control
+
+**ALLOWED:**
+- `docs/**/*.md` — create, modify, move, delete
+- `docs/tasks/**` — create, move (manage task lifecycle)
+- `docs/requests/**` — create, modify, move
+- `docs/adr/**` — create, modify, move
+- `AGENTS.md` — modify (root and subdirectory)
+- `git commit` — with proper CR/FR reference
+- `git push` — after verification passes
+- `choragen *` — all CLI commands
+
+**DENIED:**
+- `packages/**/src/**/*.ts` — create, modify (impl agent writes code)
+- `packages/**/__tests__/**/*.ts` — create, modify (impl agent writes tests)
+- Creating test files of any kind
+
+### Boundary Enforcement
+
+These boundaries are currently enforced by convention. Future versions will include:
+- CLI validation via `choragen governance:check`
+- Pre-commit hooks that verify role compliance
+- Automated boundary extraction from this document
+
+---
+
 ## Chain Policy
 
 Task chains provide traceability, context preservation, and progress tracking. This policy defines when chains are required.
