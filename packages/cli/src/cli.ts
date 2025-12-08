@@ -9,6 +9,8 @@ import {
   parseGovernanceFile,
   GovernanceChecker,
   formatCheckSummary,
+  checkMutationForRole,
+  type AgentRole,
 } from "@choragen/core";
 import { initProject, formatInitResult, InitOptions } from "./commands/init.js";
 import {
@@ -28,6 +30,13 @@ import { getMetricsSummary, formatMetricsSummary, formatMetricsSummaryJson } fro
 import { exportMetrics, writeExport } from "./commands/metrics-export.js";
 import { importMetrics, formatImportSummary } from "./commands/metrics-import.js";
 import { runTrace, formatTraceHelp } from "./commands/trace.js";
+import {
+  startSession,
+  getSessionStatus,
+  endSession,
+  formatSessionStatus,
+  type SessionRole,
+} from "./commands/session.js";
 import * as readline from "node:readline";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
@@ -904,34 +913,87 @@ const commands: Record<string, CommandDef> = {
   // Governance
   "governance:check": {
     description: "Check files against governance rules",
-    usage: "governance:check <action> <file1> [file2...]",
+    usage: "governance:check [--role <impl|control>] <action> <file1> [file2...]",
     handler: async (args) => {
-      const [action, ...files] = args;
+      // Parse --role flag
+      let role: AgentRole | undefined;
+      const remainingArgs: string[] = [];
+
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === "--role" && args[i + 1]) {
+          const roleValue = args[++i];
+          if (roleValue !== "impl" && roleValue !== "control") {
+            console.error(`Invalid role: ${roleValue}. Must be one of: impl, control`);
+            process.exit(1);
+          }
+          role = roleValue;
+        } else if (arg.startsWith("--role=")) {
+          const roleValue = arg.slice("--role=".length);
+          if (roleValue !== "impl" && roleValue !== "control") {
+            console.error(`Invalid role: ${roleValue}. Must be one of: impl, control`);
+            process.exit(1);
+          }
+          role = roleValue;
+        } else {
+          remainingArgs.push(arg);
+        }
+      }
+
+      const [action, ...files] = remainingArgs;
       if (!action || files.length === 0) {
         console.error(
-          "Usage: choragen governance:check <create|modify|delete> <file1> [file2...]"
+          "Usage: choragen governance:check [--role <impl|control>] <create|modify|delete|move> <file1> [file2...]"
         );
         process.exit(1);
       }
 
-      if (!["create", "modify", "delete"].includes(action)) {
-        console.error("Action must be one of: create, modify, delete");
+      if (!["create", "modify", "delete", "move"].includes(action)) {
+        console.error("Action must be one of: create, modify, delete, move");
         process.exit(1);
       }
 
       const schema = await parseGovernanceFile("choragen.governance.yaml");
-      const checker = new GovernanceChecker(schema);
 
-      const mutations = files.map((file) => ({
-        file,
-        action: action as "create" | "modify" | "delete",
-      }));
+      // Use role-based check if role specified, otherwise use global check
+      if (role) {
+        const results = files.map((file) =>
+          checkMutationForRole(file, action as "create" | "modify" | "delete", role, schema)
+        );
 
-      const summary = checker.checkAll(mutations);
-      console.log(formatCheckSummary(summary));
+        const allowed = results.filter((r) => r.policy === "allow");
+        const denied = results.filter((r) => r.policy === "deny");
 
-      if (summary.hasDenied) {
-        process.exit(1);
+        // Format output
+        if (denied.length === 0) {
+          console.log(`✓ All mutations allowed for role: ${role}`);
+        } else {
+          console.log(`✗ Denied mutations for role: ${role}`);
+          for (const result of denied) {
+            console.log(`  - ${result.file} (${result.action})`);
+            if (result.reason) {
+              console.log(`    Reason: ${result.reason}`);
+            }
+          }
+          if (allowed.length > 0) {
+            console.log(`\n✓ ${allowed.length} mutation(s) allowed`);
+          }
+          process.exit(1);
+        }
+      } else {
+        // Existing global check
+        const checker = new GovernanceChecker(schema);
+        const mutations = files.map((file) => ({
+          file,
+          action: action as "create" | "modify" | "delete",
+        }));
+
+        const summary = checker.checkAll(mutations);
+        console.log(formatCheckSummary(summary));
+
+        if (summary.hasDenied) {
+          process.exit(1);
+        }
       }
     },
   },
@@ -1653,6 +1715,78 @@ const commands: Record<string, CommandDef> = {
         console.error(`Error: ${result.error}`);
         process.exit(1);
       }
+    },
+  },
+
+  // Session management
+  "session:start": {
+    description: "Start a session with a role",
+    usage: "session:start <impl|control> [--task <path>]",
+    handler: async (args) => {
+      // Parse args
+      const positionalArgs: string[] = [];
+      let task: string | undefined;
+
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === "--task" && args[i + 1]) {
+          task = args[++i];
+        } else if (arg.startsWith("--task=")) {
+          task = arg.slice("--task=".length);
+        } else {
+          positionalArgs.push(arg);
+        }
+      }
+
+      const [role] = positionalArgs;
+      if (!role) {
+        console.error("Usage: choragen session:start <impl|control> [--task <path>]");
+        process.exit(1);
+      }
+
+      if (role !== "impl" && role !== "control") {
+        console.error(`Invalid role: ${role}. Must be 'impl' or 'control'.`);
+        process.exit(1);
+      }
+
+      const result = startSession(projectRoot, role as SessionRole, task);
+      if (!result.success) {
+        console.error(`Failed to start session: ${result.error}`);
+        process.exit(1);
+      }
+
+      console.log(`Session started`);
+      console.log(`  Role: ${result.session!.role}`);
+      if (result.session!.task) {
+        console.log(`  Task: ${result.session!.task}`);
+      }
+      console.log(`  Started: ${result.session!.started}`);
+    },
+  },
+
+  "session:status": {
+    description: "Show current session status",
+    handler: async () => {
+      const result = getSessionStatus(projectRoot);
+      if (!result.success) {
+        console.error(`Failed to get session status: ${result.error}`);
+        process.exit(1);
+      }
+
+      console.log(formatSessionStatus(result.session));
+    },
+  },
+
+  "session:end": {
+    description: "End the current session",
+    handler: async () => {
+      const result = endSession(projectRoot);
+      if (!result.success) {
+        console.error(`Failed to end session: ${result.error}`);
+        process.exit(1);
+      }
+
+      console.log("Session ended");
     },
   },
 

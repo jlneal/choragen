@@ -2,7 +2,7 @@
 
 **ID**: CR-20251207-021  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-07  
 **Owner**: control-agent  
 
@@ -25,11 +25,11 @@ This is the enforcement layer that makes role separation reliable rather than ad
 ## Scope
 
 **In Scope**:
-- `choragen session:start <role>` — Declare session role, write to `.choragen/session.yaml`
+- `choragen session:start <role>` — Declare session role, write to `.choragen/session.json`
 - `choragen session:status` — Show current session role and context
 - `choragen governance:check --role <role> <action> <file>` — Validate action against role rules
 - Role validation in existing commands (e.g., `task:start` checks role matches task type)
-- Session context file (`.choragen/session.yaml`)
+- Session context file (`.choragen/session.json`)
 
 **Out of Scope**:
 - Full CLI shell interface (future phase)
@@ -53,14 +53,14 @@ This is the enforcement layer that makes role separation reliable rather than ad
 
 ## Acceptance Criteria
 
-- [ ] `choragen session:start impl` creates `.choragen/session.yaml` with role
-- [ ] `choragen session:start control` creates `.choragen/session.yaml` with role
-- [ ] `choragen session:status` displays current role or "no active session"
-- [ ] `choragen governance:check --role impl modify packages/core/src/foo.ts` returns allowed
-- [ ] `choragen governance:check --role impl move docs/tasks/todo/x.md` returns denied
-- [ ] `choragen governance:check --role control modify packages/core/src/foo.ts` returns denied
-- [ ] Session file includes: role, task (if any), started timestamp
-- [ ] Commands respect session role when validating operations
+- [x] `choragen session:start impl` creates `.choragen/session.json` with role
+- [x] `choragen session:start control` creates `.choragen/session.json` with role
+- [x] `choragen session:status` displays current role or "no active session"
+- [x] `choragen governance:check --role impl modify packages/core/src/foo.ts` returns allowed
+- [x] `choragen governance:check --role impl move docs/tasks/todo/x.md` returns denied
+- [x] `choragen governance:check --role control modify packages/core/src/foo.ts` returns denied
+- [x] Session file includes: role, task (if any), started timestamp
+- [x] Commands respect session role when validating operations
 
 ---
 
@@ -74,11 +74,13 @@ No commits yet.
 
 Session file structure:
 
-```yaml
-# .choragen/session.yaml
-role: impl
-task: docs/tasks/in-progress/CHAIN-019/001-foo.md
-started: 2025-12-07T20:30:00Z
+```json
+// .choragen/session.json
+{
+  "role": "impl",
+  "task": "docs/tasks/in-progress/CHAIN-019/001-foo.md",
+  "started": "2025-12-07T20:30:00Z"
+}
 ```
 
 This file is:
@@ -93,4 +95,18 @@ Future: The custom CLI shell will automatically manage session state, making exp
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented CLI role enforcement via CHAIN-038-cli-role-enforcement:
+
+**Session commands** (`packages/cli/src/commands/session.ts`):
+- `session:start <impl|control> [--task <path>]` — Creates `.choragen/session.json`
+- `session:status` — Displays current role, task, and start time
+- `session:end` — Removes session file
+- Session file is gitignored
+
+**Governance enhancement** (`packages/cli/src/cli.ts`):
+- Added `--role <impl|control>` flag to `governance:check` command
+- Uses `checkMutationForRole()` from `@choragen/core` for role-based validation
+- Backward compatible: without `--role`, uses existing global rules
+- Added `move` action support for task file governance
+
+**Result**: Agents can now declare their role and validate file mutations against role-specific governance rules.

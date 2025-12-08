@@ -26,3 +26,6 @@ coverage/
 
 # Turbo
 .turbo/
+
+# Choragen session state (local only)
+.choragen/session.json
