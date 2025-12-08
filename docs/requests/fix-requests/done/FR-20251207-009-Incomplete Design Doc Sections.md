@@ -2,8 +2,9 @@
 
 **ID**: FR-20251207-009  
 **Domain**: docs  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-07  
+**Completed**: 2025-12-07
 **Severity**: medium  
 **Owner**: agent  
 **Chain**: Skipped — single-session doc fix, 8 files
@@ -77,18 +78,22 @@ Add minimal required sections to each incomplete doc:
 
 ## Commits
 
-No commits yet.
-
----
+- addf885 fix(docs): add missing sections to design docs
 
 ## Verification
 
-- [ ] `node scripts/validate-design-doc-content.mjs` passes
-- [ ] Pre-commit hook passes
-- [ ] All 8 docs have required sections
+- [x] `node scripts/validate-design-doc-content.mjs` passes
+- [x] Pre-commit hook passes
+- [x] All 8 docs have required sections
 
 ---
 
 ## Completion Notes
 
-[Added when moved to done/]
+**Completed**: 2025-12-07
+
+Fixed 8 design docs by adding required sections:
+- Enhancements (4): Renamed "Description" to "Overview" (accepted alternative for "Current State")
+- Use Cases (4): Added "User Goal" and "Acceptance Criteria" sections
+
+Validator now reports: `✅ Design doc content validation passed (26/26 files)`

@@ -52,10 +52,10 @@ Add explicit step: "Commit all changes with proper CR/FR reference before closin
 
 ## Acceptance Criteria
 
-- [ ] `validate-uncommitted-requests.mjs` exists and detects the problem
-- [ ] Pre-push hook blocks push when uncommitted request work exists
-- [ ] Control task template includes commit reminder
-- [ ] Clear error message explains what to do
+- [x] `validate-uncommitted-requests.mjs` exists and detects the problem
+- [x] Pre-push hook blocks push when uncommitted request work exists
+- [x] Control task template includes commit reminder
+- [x] Clear error message explains what to do
 
 ---
 

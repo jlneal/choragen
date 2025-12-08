@@ -50,9 +50,9 @@ Also document the `request:close` command as the mechanism for completing the ch
 
 ## Acceptance Criteria
 
-- [ ] All traceability chain diagrams include "→ Commits"
-- [ ] `request:close` command documented in workflow
-- [ ] Bi-directional nature explained (Request ↔ Commits)
+- [x] All traceability chain diagrams include "→ Commits"
+- [x] `request:close` command documented in workflow
+- [x] Bi-directional nature explained (Request ↔ Commits)
 
 ---
 

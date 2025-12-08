@@ -2,8 +2,9 @@
 
 **ID**: CR-20251206-011  
 **Domain**: cli  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-06  
+**Completed**: 2025-12-07
 **Owner**: agent  
 
 ---
@@ -95,9 +96,7 @@ $ choragen trace ADR-001-task-file-format --format=json
 
 ## Commits
 
-No commits yet.
-
----
+- 2ecdaf8 feat(cli): add trace command for traceability exploration
 
 ## Implementation Notes
 
@@ -144,4 +143,16 @@ Could integrate with existing validators:
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+**Completed**: 2025-12-07
+
+Implemented via CHAIN-033-trace-command (design) and CHAIN-034-trace-impl (implementation).
+
+**Deliverables**:
+- `choragen trace <artifact>` CLI command
+- TraceEngine with cycle detection and 4-level caching
+- Link parsers for all artifact types (source, ADR, CR/FR, design, chain)
+- Output formatters: tree (ANSI colors), JSON, markdown
+- 214 new tests covering all components
+- Design doc: `docs/design/core/features/trace-command.md` (1058 lines)
+
+**Files created**: 41 files, 8,996 lines

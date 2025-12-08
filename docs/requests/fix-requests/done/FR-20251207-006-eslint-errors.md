@@ -40,9 +40,9 @@ The principle: **If it's worth checking, it's worth enforcing.**
 
 ## Acceptance Criteria
 
-- [ ] No `warn` rules in eslint.config.mjs (except intentional exceptions)
-- [ ] `pnpm lint` passes with all rules as errors
-- [ ] Any existing violations fixed or explicitly disabled with justification
+- [x] No `warn` rules in eslint.config.mjs (except intentional exceptions)
+- [x] `pnpm lint` passes with all rules as errors
+- [x] Any existing violations fixed or explicitly disabled with justification
 
 ---
 

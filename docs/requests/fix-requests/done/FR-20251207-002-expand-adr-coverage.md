@@ -50,10 +50,10 @@ These artifacts embody technical decisions but aren't required to reference the 
 
 ## Acceptance Criteria
 
-- [ ] Validator covers: `.github/workflows/*.yml`, `scripts/*.mjs`, `*.config.mjs`, `githooks/*`
-- [ ] Exemption patterns configurable in `choragen.governance.yaml`
-- [ ] All covered files either have ADR refs or are explicitly exempted
-- [ ] Validator passes
+- [x] Validator covers: `.github/workflows/*.yml`, `scripts/*.mjs`, `*.config.mjs`, `githooks/*`
+- [x] Exemption patterns configurable in `choragen.governance.yaml`
+- [x] All covered files either have ADR refs or are explicitly exempted
+- [x] Validator passes
 
 ---
 

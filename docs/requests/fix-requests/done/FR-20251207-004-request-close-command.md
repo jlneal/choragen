@@ -60,13 +60,13 @@ Closing CR-20251207-002...
 
 ## Acceptance Criteria
 
-- [ ] `choragen request:close <id>` command exists
-- [ ] Finds request in todo/ or doing/
-- [ ] Queries git log for commits referencing the request
-- [ ] Populates ## Commits section with commit list
-- [ ] Updates status to done
-- [ ] Moves file to done/
-- [ ] Errors gracefully if request not found or no commits
+- [x] `choragen request:close <id>` command exists
+- [x] Finds request in todo/ or doing/
+- [x] Queries git log for commits referencing the request
+- [x] Populates ## Commits section with commit list
+- [x] Updates status to done
+- [x] Moves file to done/
+- [x] Errors gracefully if request not found or no commits
 
 ---
 
@@ -91,4 +91,6 @@ Closing CR-20251207-002...
 
 ## Completion Notes
 
-[Added when moved to done/]
+**Completed**: 2025-12-07
+
+Implemented `choragen request:close` command in CHAIN-029-request-close. The command queries git log for commits referencing the request ID, populates the ## Commits section, and moves the file to done/.
