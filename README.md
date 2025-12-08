@@ -29,23 +29,6 @@ Think of it like driving:
 
 The governance isn't friction. It's what lets you take your hands off the wheel.
 
-## Proof of Concept
-
-This philosophy was battle-tested on [itinerary-planner](https://github.com/jlneal/itinerary-planner):
-
-| Metric | Result |
-|--------|--------|
-| **Lines of code** | ~247,000 |
-| **Time** | 61 days |
-| **Team size** | 1 developer |
-| **Code reviewed by human** | 0 lines |
-| **Production bugs** | 0 |
-| **Velocity** | 67.5 commits/day |
-
-A solo developer built an enterprise-grade application with real-time collaboration, comprehensive testing, and 214 architecture decision records—without ever looking at the code.
-
-The structure made it possible. Choragen extracts that structure into a reusable framework.
-
 ## What Choragen Provides
 
 ### Control Structures (Not Code Review)
