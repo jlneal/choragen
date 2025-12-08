@@ -2,8 +2,9 @@
 
 **ID**: CR-20251207-018  
 **Domain**: cli  
-**Status**: doing  
+**Status**: done  
 **Created**: 2025-12-07  
+**Completed**: 2025-12-07
 **Owner**: agent  
 **Chain**: Skipped — single script + hook update, <150 lines  
 
@@ -94,9 +95,7 @@ When running `choragen cr:new` or `choragen fr:new`:
 
 ## Commits
 
-No commits yet.
-
----
+- b25fbbc feat(scripts): add duplicate request detection
 
 ## Implementation Notes
 
