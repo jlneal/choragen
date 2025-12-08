@@ -25,6 +25,28 @@ When new work is identified:
 
 1. Create a CR (change request) or FR (fix request) in `docs/requests/`
 2. Move request to `doing/` when starting work
+3. **Determine if a chain is required** (see Chain Requirements below)
+
+### Chain Requirements
+
+**Chains are REQUIRED when:**
+- Work spans multiple sessions or context windows
+- Work involves multiple agents (control + impl handoffs)
+- Work affects core packages (`@choragen/core`, `@choragen/cli`, `@choragen/contracts`)
+- CR/FR has 3 or more acceptance criteria
+- Work involves more than 2 files
+
+**Chains are OPTIONAL when:**
+- Single-session documentation-only updates
+- Simple config changes (single file, no logic)
+- FR severity is "low" AND scope is trivial (1 file, <20 lines)
+
+**When skipping a chain**, you MUST:
+1. Add to the request file: `**Chain**: Skipped — [reason]`
+2. Ensure commit message still references the request ID
+3. Complete the work in a single session
+
+**Default**: When in doubt, create a chain.
 
 ### 2. Plan Chain Sequence
 
@@ -197,6 +219,22 @@ After all tasks in a chain are complete:
 ```
 
 3. Move CR/FR to `done/` with completion notes
+
+### Commit Discipline (CRITICAL)
+
+**Before starting a new request:**
+
+1. **Commit all changes** from the current request
+2. **Commit message must reference** the request ID (e.g., `[CR-20251207-001]`)
+3. **Run `choragen request:close`** if the request is complete
+4. **Only then** move to the next request
+
+**Never:**
+- Start a new request with uncommitted changes from a previous request
+- Combine changes from multiple requests in a single commit
+- Commit without a request ID reference
+
+This ensures the traceability chain remains intact and `request:close` can accurately populate the Commits section.
 
 ---
 

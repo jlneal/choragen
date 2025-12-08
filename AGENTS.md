@@ -163,6 +163,74 @@ This project uses a two-agent model. See the detailed guides:
 
 ---
 
+## Chain Policy
+
+Task chains provide traceability, context preservation, and progress tracking. This policy defines when chains are required.
+
+### Chains are REQUIRED when
+
+- Work spans multiple sessions or context windows
+- Work involves multiple agents (control + impl handoffs)
+- Work affects core packages (`@choragen/core`, `@choragen/cli`, `@choragen/contracts`)
+- CR/FR has 3 or more acceptance criteria
+- Work involves more than 2 files
+
+### Chains are OPTIONAL when
+
+- Single-session documentation-only updates (e.g., fixing typos, updating README)
+- Simple config changes (single file, no logic)
+- FR severity is "low" AND scope is trivial (1 file, <20 lines)
+
+### When skipping a chain
+
+If you determine a chain is not needed, you MUST:
+
+1. Add to the request file: `**Chain**: Skipped — [reason]`
+2. Ensure commit message still references the request ID
+3. Complete the work in a single session
+
+Example:
+```markdown
+**Chain**: Skipped — single-file typo fix, <10 lines changed
+```
+
+### Default to creating a chain
+
+When in doubt, create a chain. The overhead is minimal and the traceability benefits are significant.
+
+---
+
+## Commit Discipline
+
+Commits must maintain traceability. Follow these rules strictly.
+
+### Before starting a new request
+
+1. **Commit all changes** from the current request
+2. **Commit message must reference** the request ID (e.g., `[CR-20251207-001]`)
+3. **Run `choragen request:close`** if the request is complete
+4. **Only then** move to the next request
+
+### Commit message format
+
+```
+<type>(<scope>): <description>
+
+[body]
+
+[CR-xxx | FR-xxx]
+```
+
+The request ID in brackets is **required** for all commits related to a request.
+
+### Never
+
+- Start a new request with uncommitted changes from a previous request
+- Combine changes from multiple requests in a single commit
+- Commit without a request ID reference (unless it's truly unrelated infrastructure)
+
+---
+
 ## Validation Commands
 
 Run these before committing to ensure all traceability and quality checks pass.

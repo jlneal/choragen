@@ -2,7 +2,7 @@
 
 **ID**: FR-20251207-007  
 **Domain**: docs  
-**Status**: todo  
+**Status**: doing  
 **Severity**: low  
 **Created**: 2025-12-07  
 **Owner**: agent  
@@ -53,9 +53,9 @@ Document a clear policy in governance or AGENTS.md:
 
 ## Acceptance Criteria
 
-- [ ] Chain policy documented in `AGENTS.md`
-- [ ] Control agent guide updated with policy
-- [ ] FR-005 and FR-006 annotated with "Chain skipped" note (retroactive)
+- [x] Chain policy documented in `AGENTS.md`
+- [x] Control agent guide updated with policy
+- [x] FR-005 and FR-006 annotated with "Chain skipped" note (retroactive)
 
 ---
 

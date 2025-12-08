@@ -6,6 +6,7 @@
 **Severity**: medium  
 **Created**: 2025-12-07  
 **Owner**: agent  
+**Chain**: Skipped — single-file documentation update, <20 lines changed  
 
 ---
 

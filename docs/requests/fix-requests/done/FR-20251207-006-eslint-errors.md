@@ -6,6 +6,7 @@
 **Severity**: high  
 **Created**: 2025-12-07  
 **Owner**: agent  
+**Chain**: Skipped — single config file change (eslint.config.mjs)  
 
 ---
 

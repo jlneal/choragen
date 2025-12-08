@@ -59,10 +59,10 @@ Add a commit-msg hook that warns if:
 
 ## Acceptance Criteria
 
-- [ ] `AGENTS.md` documents commit-before-next-request rule
-- [ ] `docs/agents/control-agent.md` updated with commit checkpoint
-- [ ] `request:close` warns if uncommitted changes exist
-- [ ] (Optional) commit-msg hook validates request ID reference
+- [x] `AGENTS.md` documents commit-before-next-request rule
+- [x] `docs/agents/control-agent.md` updated with commit checkpoint
+- [ ] `request:close` warns if uncommitted changes exist (deferred to future CR)
+- [ ] (Optional) commit-msg hook validates request ID reference (deferred)
 
 ## Affected Components
 
