@@ -110,7 +110,8 @@ Current focus:
 - [x] CLI commands for chain/task management
 - [x] Traceability validation
 - [ ] Agent Runtime (Phase 1-4)
-- [ ] Multi-provider LLM support
+- [ ] Multi-provider LLM support (Anthropic, OpenAI, Gemini)
+- [ ] Web dashboard for monitoring and control
 
 See [docs/design/core/features/agent-runtime.md](docs/design/core/features/agent-runtime.md) for the full roadmap.
 
