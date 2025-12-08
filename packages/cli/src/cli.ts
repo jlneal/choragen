@@ -590,6 +590,14 @@ const commands: Record<string, CommandDef> = {
         console.error("Usage: choragen task:add <chain-id> <slug> <title>");
         process.exit(1);
       }
+
+      // Verify chain exists
+      const chain = await chainManager.getChain(chainId);
+      if (!chain) {
+        console.error(`Chain not found: ${chainId}`);
+        process.exit(1);
+      }
+
       const title = titleParts.join(" ");
       const task = await chainManager.addTask(chainId, {
         slug,
