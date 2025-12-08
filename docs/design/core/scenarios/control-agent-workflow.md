@@ -52,12 +52,23 @@ choragen task:next CHAIN-xxx
 
 ---
 
-## Linked Personas
+## Persona Value
 
-- [AI Agent](../personas/ai-agent.md) (as Control Agent)
-- [Solo Developer](../personas/solo-developer.md)
-- [Team Lead](../personas/team-lead.md)
-- [Open Source Maintainer](../personas/open-source-maintainer.md)
+### [AI Agent](../personas/ai-agent.md) (as Control Agent)
+
+**Value**: Can break down complex requests into manageable tasks, coordinate work across context boundaries, and maintain project continuity even when individual sessions end.
+
+### [Solo Developer](../personas/solo-developer.md)
+
+**Value**: Gets structured task breakdown and progress tracking without manual project management overhead. Can resume work after interruptions with full context preserved.
+
+### [Team Lead](../personas/team-lead.md)
+
+**Value**: Gains visibility into work decomposition and progress. Can review task chains to understand how requests are being addressed and identify bottlenecks.
+
+### [Open Source Maintainer](../personas/open-source-maintainer.md)
+
+**Value**: Can delegate task coordination to AI agents while maintaining oversight. Reduces cognitive load of tracking multiple concurrent contributions.
 
 ---
 

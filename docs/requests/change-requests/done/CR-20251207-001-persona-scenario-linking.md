@@ -2,7 +2,7 @@
 
 **ID**: CR-20251207-001  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-07  
 **Owner**: agent  
 
@@ -88,4 +88,16 @@ Consider:
 
 ## Completion Notes
 
-[Added when moved to done/]
+Completed 2025-12-07. Chain skipped: single-session docs-only change.
+
+**Changes made**:
+1. Updated `templates/scenario.md` with new `## Persona Value` section format
+2. Updated `control-agent-workflow.md` with value statements for all 4 personas
+3. Updated `implementation-agent-workflow.md` with value statements (including one exclusion example)
+4. Updated `user-value-traceability.md` Rule 1 to validate new format
+
+**Format adopted**:
+- Section renamed from `## Linked Personas` to `## Persona Value`
+- Each persona gets a `### [Persona Name]` subsection
+- `**Value**:` statement describes specific benefit
+- `**Excluded**:` statement (optional) explains why persona doesn't benefit

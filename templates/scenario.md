@@ -38,12 +38,27 @@
 
 ---
 
-## Linked Personas
+## Persona Value
 
-<!-- Required: At least one persona link for user value traceability (Rule 1) -->
-<!-- Link to personas in ../personas/ who benefit from this scenario -->
+<!-- Required: At least one persona with value statement for user value traceability (Rule 1) -->
+<!-- For each persona who benefits from this scenario, state the specific value they receive -->
 
-- {{PERSONA_1}}
+### {{PERSONA_1}}
+
+**Value**: {{VALUE_STATEMENT_1}}
+
+<!-- Add additional personas as needed:
+
+### {{PERSONA_2}}
+
+**Value**: {{VALUE_STATEMENT_2}}
+
+### {{PERSONA_3}}
+
+**Value**: {{VALUE_STATEMENT_3}}
+**Excluded**: {{EXCLUSION_REASON}} (optional - use when persona doesn't benefit)
+
+-->
 
 ---
 

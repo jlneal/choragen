@@ -79,11 +79,23 @@ Create the API routes for user profile CRUD operations.
 
 ---
 
-## Linked Personas
+## Persona Value
 
-- [AI Agent](../personas/ai-agent.md) (as Implementation Agent)
-- [Solo Developer](../personas/solo-developer.md)
-- [Open Source Maintainer](../personas/open-source-maintainer.md)
+### [AI Agent](../personas/ai-agent.md) (as Implementation Agent)
+
+**Value**: Receives well-scoped tasks with complete context, enabling focused execution without needing full project history. Clear acceptance criteria provide unambiguous completion targets.
+
+### [Solo Developer](../personas/solo-developer.md)
+
+**Value**: Can act as implementation agent with clear task boundaries. Task files serve as self-contained work orders that don't require remembering previous context.
+
+### [Open Source Maintainer](../personas/open-source-maintainer.md)
+
+**Value**: Can onboard contributors (human or AI) quickly by pointing them to task files. Reduces time spent explaining context for each contribution.
+
+### [Team Lead](../personas/team-lead.md)
+
+**Excluded**: Team leads typically operate as control agents, not implementation agents. They benefit indirectly through clearer delegation and review processes.
 
 ---
 

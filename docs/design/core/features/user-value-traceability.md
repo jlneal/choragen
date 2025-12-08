@@ -29,33 +29,35 @@ This validator focuses on the **User Value Layer** links (Persona through Featur
 
 ## Validation Rules
 
-### Rule 1: Scenario → Persona
+### Rule 1: Scenario → Persona (with Value Statement)
 
-**Purpose**: Ensure every scenario is grounded in a real user need.
+**Purpose**: Ensure every scenario is grounded in a real user need with explicit value articulation.
 
 | Attribute | Value |
 |-----------|-------|
-| **What is checked** | Scenario docs in `docs/design/*/scenarios/` have a non-empty "Linked Personas" section |
+| **What is checked** | Scenario docs in `docs/design/*/scenarios/` have a non-empty "Persona Value" section with value statements |
 | **File pattern** | `docs/design/*/scenarios/*.md` |
-| **Section name** | `## Linked Personas` |
+| **Section name** | `## Persona Value` |
 
 **Pass criteria**:
-- Document contains `## Linked Personas` section
-- Section has at least one list item (`- `) after the heading
-- List item contains a link to a persona file (`../personas/`) or persona name
+- Document contains `## Persona Value` section
+- Section has at least one persona subsection (`### [Persona Name]`)
+- Each persona subsection has a `**Value**:` statement (non-empty)
+- Personas may optionally have `**Excluded**:` with justification instead of value
 
 **Fail criteria**:
-- Missing `## Linked Personas` section entirely
-- Section exists but is empty (no list items)
-- Section only contains placeholder text like `{{PERSONA_1}}`
+- Missing `## Persona Value` section entirely
+- Section exists but has no persona subsections
+- Persona subsection missing both `**Value**:` and `**Excluded**:` statements
+- Value/Excluded statements are empty or contain only placeholder text
 
 **Error message format**:
 ```
-❌ [RULE-1] Scenario missing linked persona
+❌ [RULE-1] Scenario missing persona value statements
    File: docs/design/core/scenarios/example-workflow.md
-   Expected: Non-empty "Linked Personas" section
-   Found: Section missing or empty
-   Fix: Add "## Linked Personas" section with at least one persona reference
+   Expected: Non-empty "Persona Value" section with value statements
+   Found: Section missing or incomplete
+   Fix: Add "## Persona Value" section with persona subsections and value statements
 ```
 
 ---
