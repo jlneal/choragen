@@ -2,7 +2,7 @@
 
 **ID**: FR-20251207-007  
 **Domain**: docs  
-**Status**: doing  
+**Status**: done  
 **Severity**: low  
 **Created**: 2025-12-07  
 **Owner**: agent  
@@ -61,4 +61,16 @@ Document a clear policy in governance or AGENTS.md:
 
 ## Commits
 
-[Populated by `choragen request:close`]
+- 03b5041 docs: add Chain Policy and Commit Discipline to agent guidelines
+
+## Completion Notes
+
+Completed 2025-12-07 via CHAIN-032-chain-policy.
+
+**Changes made**:
+- Added `## Chain Policy` section to `AGENTS.md`
+- Added `## Commit Discipline` section to `AGENTS.md`
+- Added Chain Requirements and Commit Discipline sections to `docs/agents/control-agent.md`
+- Added retroactive "Chain skipped" notes to FR-005 and FR-006
+
+**Deferred**: Validation script to warn when chain might be needed (future enhancement)

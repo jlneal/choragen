@@ -2,7 +2,7 @@
 
 **ID**: FR-20251207-008  
 **Domain**: workflow  
-**Status**: todo  
+**Status**: done  
 **Severity**: medium  
 **Created**: 2025-12-07  
 **Owner**: agent  
@@ -77,4 +77,16 @@ Add a commit-msg hook that warns if:
 
 ## Commits
 
-[Populated by `choragen request:close`]
+- 03b5041 docs: add Chain Policy and Commit Discipline to agent guidelines
+
+## Completion Notes
+
+Completed 2025-12-07 (documentation criteria only).
+
+**Completed**:
+- Added `## Commit Discipline` section to `AGENTS.md`
+- Added Commit Discipline section to `docs/agents/control-agent.md`
+
+**Deferred to future CR**:
+- CLI warning in `request:close` for uncommitted changes
+- Git hook for request ID validation
