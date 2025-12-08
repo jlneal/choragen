@@ -7,7 +7,12 @@
  */
 
 import * as fs from "node:fs/promises";
-import type { GovernanceSchema, MutationRule, MutationAction } from "./types.js";
+import type {
+  GovernanceSchema,
+  MutationRule,
+  MutationAction,
+  RoleGovernanceRules,
+} from "./types.js";
 import { DEFAULT_GOVERNANCE_SCHEMA } from "./types.js";
 
 /** Raw YAML structure (before normalization) */
@@ -21,6 +26,15 @@ interface RawGovernanceYaml {
     strategy?: string;
     on_collision?: string;
   };
+  roles?: {
+    impl?: RawRoleRules;
+    control?: RawRoleRules;
+  };
+}
+
+interface RawRoleRules {
+  allow?: RawMutationRule[];
+  deny?: RawMutationRule[];
 }
 
 interface RawMutationRule {
@@ -94,7 +108,27 @@ function normalizeSchema(raw: RawGovernanceYaml): GovernanceSchema {
     };
   }
 
+  if (raw.roles) {
+    schema.roles = {};
+    if (raw.roles.impl) {
+      schema.roles.impl = normalizeRoleRules(raw.roles.impl);
+    }
+    if (raw.roles.control) {
+      schema.roles.control = normalizeRoleRules(raw.roles.control);
+    }
+  }
+
   return schema;
+}
+
+/**
+ * Normalize raw role rules into RoleGovernanceRules
+ */
+function normalizeRoleRules(raw: RawRoleRules): RoleGovernanceRules {
+  return {
+    allow: raw.allow ? raw.allow.map(normalizeRule) : [],
+    deny: raw.deny ? raw.deny.map(normalizeRule) : [],
+  };
 }
 
 /**
@@ -114,7 +148,7 @@ function normalizeRule(raw: RawMutationRule): MutationRule {
 
 /**
  * Simple YAML parser for our governance format
- * Handles basic nested structures with arrays
+ * Handles basic nested structures with arrays, including 3-level nesting for roles
  */
 function parseSimpleYaml(content: string): Record<string, unknown> {
   const result: Record<string, unknown> = {};
@@ -122,6 +156,7 @@ function parseSimpleYaml(content: string): Record<string, unknown> {
 
   let currentSection: string | null = null;
   let currentSubsection: string | null = null;
+  let currentThirdLevel: string | null = null;
   let currentArray: Record<string, unknown>[] | null = null;
   let currentItem: Record<string, unknown> | null = null;
 
@@ -138,6 +173,7 @@ function parseSimpleYaml(content: string): Record<string, unknown> {
       currentSection = trimmed.slice(0, -1);
       result[currentSection] = {};
       currentSubsection = null;
+      currentThirdLevel = null;
       currentArray = null;
       currentItem = null;
       continue;
@@ -146,16 +182,40 @@ function parseSimpleYaml(content: string): Record<string, unknown> {
     // Second-level key (2 spaces)
     if (indent === 2 && trimmed.endsWith(":") && currentSection) {
       currentSubsection = trimmed.slice(0, -1);
-      // Convert snake_case to camelCase for JS
       const section = result[currentSection] as Record<string, unknown>;
-      section[currentSubsection] = [];
-      currentArray = section[currentSubsection] as Record<string, unknown>[];
+
+      // For 'roles' section, subsections (impl/control) are objects, not arrays
+      if (currentSection === "roles") {
+        section[currentSubsection] = {};
+        currentThirdLevel = null;
+        currentArray = null;
+      } else {
+        section[currentSubsection] = [];
+        currentArray = section[currentSubsection] as Record<string, unknown>[];
+      }
       currentItem = null;
       continue;
     }
 
-    // Array item start (4 spaces, starts with -)
-    if (indent === 4 && trimmed.startsWith("- ") && currentArray) {
+    // Third-level key (4 spaces) - for roles section
+    if (
+      indent === 4 &&
+      trimmed.endsWith(":") &&
+      currentSection === "roles" &&
+      currentSubsection
+    ) {
+      currentThirdLevel = trimmed.slice(0, -1);
+      const section = result[currentSection] as Record<string, unknown>;
+      const subsection = section[currentSubsection] as Record<string, unknown>;
+      subsection[currentThirdLevel] = [];
+      currentArray = subsection[currentThirdLevel] as Record<string, unknown>[];
+      currentItem = null;
+      continue;
+    }
+
+    // Array item start (4 spaces for mutations, 6 spaces for roles)
+    const arrayIndent = currentSection === "roles" ? 6 : 4;
+    if (indent === arrayIndent && trimmed.startsWith("- ") && currentArray) {
       currentItem = {};
       currentArray.push(currentItem);
 
@@ -179,8 +239,9 @@ function parseSimpleYaml(content: string): Record<string, unknown> {
       continue;
     }
 
-    // Array item continuation (6 spaces)
-    if (indent === 6 && currentItem) {
+    // Array item continuation (6 spaces for mutations, 8 spaces for roles)
+    const continuationIndent = currentSection === "roles" ? 8 : 6;
+    if (indent === continuationIndent && currentItem) {
       if (trimmed.includes(":")) {
         const colonIdx = trimmed.indexOf(":");
         const key = trimmed.slice(0, colonIdx).trim();

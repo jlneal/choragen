@@ -6,6 +6,7 @@
 
 export type MutationAction = "create" | "modify" | "delete";
 export type MutationPolicy = "allow" | "approve" | "deny";
+export type AgentRole = "impl" | "control";
 
 export interface MutationRule {
   /** Glob pattern for matching files */
@@ -23,6 +24,13 @@ export interface CollisionConfig {
   onCollision: "block" | "warn";
 }
 
+export interface RoleGovernanceRules {
+  /** Patterns this role is allowed to mutate */
+  allow: MutationRule[];
+  /** Patterns this role is denied from mutating */
+  deny: MutationRule[];
+}
+
 export interface GovernanceSchema {
   mutations: {
     allow: MutationRule[];
@@ -30,6 +38,10 @@ export interface GovernanceSchema {
     deny: MutationRule[];
   };
   collisionDetection?: CollisionConfig;
+  roles?: {
+    impl?: RoleGovernanceRules;
+    control?: RoleGovernanceRules;
+  };
 }
 
 export interface MutationCheckResult {

@@ -269,3 +269,4 @@
 {"eventType":"task:started","entityType":"task","entityId":"003-verify-close","chainId":"CHAIN-035-task-role-assignment","id":"1a4f711b-a4ed-4241-a43f-df30845e1c70","timestamp":"2025-12-08T02:44:05.438Z"}
 {"eventType":"task:completed","entityType":"task","entityId":"003-verify-close","chainId":"CHAIN-035-task-role-assignment","id":"89cb4658-0380-4d04-91e7-2b1e451d6182","timestamp":"2025-12-08T02:44:47.841Z"}
 {"eventType":"chain:created","entityType":"chain","entityId":"CHAIN-036-role-boundaries","requestId":"CR-20251207-019","id":"caaa11b7-f1d1-4c37-9f07-db8c831f2ada","timestamp":"2025-12-08T02:46:30.864Z"}
+{"eventType":"chain:created","entityType":"chain","entityId":"CHAIN-037-governance-roles","requestId":"CR-20251207-020","id":"0f8d0f72-046a-4fa0-9868-6701da7c4768","timestamp":"2025-12-08T02:53:49.900Z"}

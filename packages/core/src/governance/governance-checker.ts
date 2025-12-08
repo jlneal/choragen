@@ -12,6 +12,7 @@ import type {
   MutationCheckResult,
   GovernanceCheckSummary,
   MutationRule,
+  AgentRole,
 } from "./types.js";
 import { matchGlob } from "../utils/index.js";
 
@@ -207,4 +208,71 @@ export class GovernanceChecker {
 
     return rules;
   }
+}
+
+/**
+ * Check a file mutation against role-specific governance rules.
+ *
+ * Role-based governance follows this logic:
+ * 1. If no roles section exists, fall back to global mutations check
+ * 2. If role has no rules defined, deny by default
+ * 3. Check deny rules first (highest priority)
+ * 4. Check allow rules
+ * 5. If no rule matches, deny
+ */
+export function checkMutationForRole(
+  file: string,
+  action: MutationAction,
+  role: AgentRole,
+  schema: GovernanceSchema
+): MutationCheckResult {
+  // If no roles section, fall back to global mutations check
+  if (!schema.roles) {
+    return checkMutation(schema, file, action);
+  }
+
+  const roleRules = schema.roles[role];
+
+  // If role has no rules defined, deny by default
+  if (!roleRules) {
+    return {
+      file,
+      action,
+      policy: "deny",
+      reason: `No governance rules defined for role: ${role}`,
+    };
+  }
+
+  // Check deny rules first (highest priority)
+  for (const rule of roleRules.deny) {
+    if (matchGlob(rule.pattern, file) && rule.actions.includes(action)) {
+      return {
+        file,
+        action,
+        policy: "deny",
+        reason: rule.reason ?? `Denied by role ${role} governance`,
+        matchedRule: rule,
+      };
+    }
+  }
+
+  // Check allow rules
+  for (const rule of roleRules.allow) {
+    if (matchGlob(rule.pattern, file) && rule.actions.includes(action)) {
+      return {
+        file,
+        action,
+        policy: "allow",
+        matchedRule: rule,
+      };
+    }
+  }
+
+  // Default: deny if no rule matches
+  return {
+    file,
+    action,
+    policy: "deny",
+    reason: `No matching role governance rule for ${role}`,
+  };
 }

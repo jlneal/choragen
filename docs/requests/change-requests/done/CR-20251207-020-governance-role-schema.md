@@ -2,7 +2,7 @@
 
 **ID**: CR-20251207-020  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-07  
 **Owner**: control-agent  
 
@@ -54,12 +54,12 @@ This schema extension is the foundation for CLI enforcement (CR-20251207-021).
 
 ## Acceptance Criteria
 
-- [ ] `choragen.governance.yaml` schema supports `roles` section
-- [ ] `roles.impl` defines allow/deny patterns for implementation agents
-- [ ] `roles.control` defines allow/deny patterns for control agents
-- [ ] `@choragen/core` exports types for role-based governance rules
-- [ ] `@choragen/core` can validate a file mutation against a specific role
-- [ ] Existing global rules continue to work (backward compatible)
+- [x] `choragen.governance.yaml` schema supports `roles` section
+- [x] `roles.impl` defines allow/deny patterns for implementation agents
+- [x] `roles.control` defines allow/deny patterns for control agents
+- [x] `@choragen/core` exports types for role-based governance rules
+- [x] `@choragen/core` can validate a file mutation against a specific role
+- [x] Existing global rules continue to work (backward compatible)
 
 ---
 
@@ -106,4 +106,19 @@ roles:
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented role-based governance via CHAIN-037-governance-roles:
+
+**Schema changes** (`choragen.governance.yaml`):
+- Added `roles` section with `impl` and `control` subsections
+- Each role has `allow` and `deny` arrays with pattern/actions rules
+- Patterns mirror AGENTS.md Role Boundaries section
+
+**Core library changes** (`@choragen/core`):
+- Added `AgentRole` type: `"impl" | "control"`
+- Added `RoleGovernanceRules` interface
+- Extended `GovernanceSchema` with optional `roles` property
+- Added `checkMutationForRole()` function for role-aware validation
+- Extended YAML parser to handle 3-level nesting for roles
+- 20 new tests for role-based governance (434 total tests passing)
+
+**Result**: Programmatic validation of file mutations against agent roles is now possible.

@@ -57,6 +57,62 @@ collision_detection:
   strategy: "file-lock"
   on_collision: "block"
 
+# Role-based access control for impl and control agents
+# Mirrors boundaries defined in AGENTS.md "Role Boundaries" section
+roles:
+  impl:
+    allow:
+      # Source code
+      - pattern: "packages/**/src/**/*.ts"
+        actions: [create, modify]
+      # Tests
+      - pattern: "packages/**/__tests__/**/*.ts"
+        actions: [create, modify, delete]
+      # JSON config in source
+      - pattern: "packages/**/src/**/*.json"
+        actions: [create, modify]
+      # Config files (with caution)
+      - pattern: "*.config.*"
+        actions: [modify]
+      # Package-level README
+      - pattern: "README.md"
+        actions: [modify]
+    deny:
+      # Task lifecycle managed by control agent
+      - pattern: "docs/tasks/**"
+        actions: [move, delete]
+      # Requests managed by control agent
+      - pattern: "docs/requests/**"
+        actions: [create, modify, move]
+      # ADRs managed by control agent
+      - pattern: "docs/adr/**"
+        actions: [create, move]
+
+  control:
+    allow:
+      # All documentation
+      - pattern: "docs/**/*.md"
+        actions: [create, modify, move, delete]
+      # Task lifecycle
+      - pattern: "docs/tasks/**"
+        actions: [create, move]
+      # Requests
+      - pattern: "docs/requests/**"
+        actions: [create, modify, move]
+      # ADRs
+      - pattern: "docs/adr/**"
+        actions: [create, modify, move]
+      # Agent guidelines
+      - pattern: "AGENTS.md"
+        actions: [modify]
+    deny:
+      # Source code written by impl agent
+      - pattern: "packages/**/src/**/*.ts"
+        actions: [create, modify]
+      # Tests written by impl agent
+      - pattern: "packages/**/__tests__/**/*.ts"
+        actions: [create, modify]
+
 # User value traceability validation exemptions
 validation:
   user-value-traceability:
