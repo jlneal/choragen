@@ -1,14 +1,34 @@
 # Choragen Architecture
 
+## Philosophy
+
+**The human is the bottleneck—no matter where they are in the loop.**
+
+Choragen's architecture is designed around a single insight: the fastest path to shipping software isn't watching AI write code—it's elevating human attention from code to control structures.
+
+Think of it like driving:
+- **Vibe coding** = No steering wheel, hoping the car goes somewhere useful
+- **Current AI tools** = Micromanaging every turn of the wheel  
+- **Choragen** = Setting the destination, monitoring the route, intervening only when needed
+
+The governance isn't friction. It's what lets you take your hands off the wheel.
+
+### Proof of Concept
+
+This architecture was validated on [itinerary-planner](https://github.com/jlneal/itinerary-planner): ~247,000 lines of code built in 61 days by a solo developer who never looked at the code. Zero production bugs. 67.5 commits/day sustained velocity.
+
+---
+
 ## Overview
 
 Choragen transforms stateless language models into stateful, accountable workers by providing:
 
 1. **Persistent State** — Files are the source of truth, not agent memory
 2. **Task Decomposition** — Work broken into context-window-sized chunks
-3. **Governance** — Rules for what mutations are allowed
+3. **Governance** — Rules for what mutations are *enforced*, not suggested
 4. **Coordination** — Locks prevent parallel workers from colliding
 5. **Traceability** — Every change links back to intent
+6. **Agent Runtime** — CLI spawns and orchestrates agent sessions directly (coming soon)
 
 ## Core Concepts
 
@@ -172,6 +192,39 @@ export default [
 7. **Repeat** — Until chain complete
 8. **Release Locks** — `choragen lock:release CHAIN-001`
 
+## Agent Runtime (Coming Soon)
+
+The Agent Runtime transforms Choragen from a framework agents *should* follow into an orchestrator that *enforces* governance.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    $ choragen agent:start                   │
+│                                                             │
+│   1. CLI loads role-specific system prompt                  │
+│   2. CLI calls LLM API with restricted tool set             │
+│   3. LLM returns tool calls                                 │
+│   4. CLI validates each tool call against governance        │
+│   5. CLI executes allowed tools, rejects violations         │
+│   6. If tool is "spawn_impl_session":                       │
+│      - CLI starts nested agentic loop                       │
+│      - Impl agent runs with impl-only tools                 │
+│      - Impl agent completes, returns to control loop        │
+│   7. Loop continues until agent signals completion          │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Key Properties
+
+- **Role-gated tools** — Control agents can't write files; impl agents can't approve tasks
+- **Governance at execution** — Every tool call validated before running
+- **Automatic handoffs** — Control spawns impl without human intervention
+- **Multi-provider** — Anthropic, OpenAI, Gemini supported from day one
+
+See [Agent Runtime Feature](design/core/features/agent-runtime.md) for full specification.
+
+---
+
 ## Design Principles
 
 1. **Files over Memory** — Agent context is ephemeral; files persist
@@ -179,3 +232,4 @@ export default [
 3. **Traceability over Trust** — Every change must link to intent
 4. **Coordination over Isolation** — Multiple agents can work in parallel safely
 5. **Contracts over Comments** — Design intent validated at runtime
+6. **Control over Supervision** — Humans navigate; agents drive
