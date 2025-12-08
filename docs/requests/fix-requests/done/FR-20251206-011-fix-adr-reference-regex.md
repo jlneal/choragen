@@ -1,6 +1,6 @@
 # Fix Request: ADR Reference Regex Not Matching Valid References
 
-**ID**: FR-20251206-001  
+**ID**: FR-20251206-011  
 **Domain**: core  
 **Status**: done  
 **Created**: 2025-12-06  

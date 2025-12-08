@@ -134,6 +134,17 @@ if [ -n "${requests_changed:-}" ]; then
     exit 1
   fi
   echo "✅ Request completion validated" 1>&2
+
+  # Also check for duplicate requests
+  echo "📋 Checking for duplicate requests..." 1>&2
+  if ! node scripts/validate-duplicate-requests.mjs 2>/dev/null; then
+    echo "" 1>&2
+    echo "❌ Duplicate request validation failed" 1>&2
+    echo "   Run: node scripts/validate-duplicate-requests.mjs" 1>&2
+    echo "" 1>&2
+    exit 1
+  fi
+  echo "✅ No duplicate requests" 1>&2
 fi
 
 # =============================================================================
