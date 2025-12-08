@@ -2,7 +2,7 @@
 
 **ID**: CR-20251207-025  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-07  
 **Owner**: control-agent  
 
@@ -61,22 +61,28 @@ This CR establishes the foundation for fully automated agent orchestration.
 
 ## Linked ADRs
 
-- ADR-007: Agent Runtime Architecture (to be created with this CR)
+- ADR-010: Agent Runtime Architecture
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] `choragen agent:start --role=control` starts a control agent session
-- [ ] `choragen agent:start --role=impl` starts an impl agent session
-- [ ] Control role sees only control-allowed tools (chain:*, task:approve, etc.)
-- [ ] Impl role sees only impl-allowed tools (task:start, task:complete, etc.)
-- [ ] Tool calls are validated against governance before execution
-- [ ] Governance violations are rejected with clear error messages
-- [ ] Session outputs tool calls and results to console
-- [ ] Session metrics (tokens, duration) are recorded to `.choragen/metrics/`
-- [ ] `--model` flag allows specifying LLM model
-- [ ] `--dry-run` flag shows what would happen without executing
+- [x] `choragen agent:start --role=control` starts a control agent session
+- [x] `choragen agent:start --role=impl` starts an impl agent session
+- [x] Control role sees only control-allowed tools (chain:*, task:approve, etc.)
+- [x] Impl role sees only impl-allowed tools (task:start, task:complete, etc.)
+- [x] Tool calls are validated against governance before execution
+- [x] Governance violations are rejected with clear error messages
+- [x] Session outputs tool calls and results to console
+- [x] Session metrics (tokens, duration) are recorded to `.choragen/metrics/`
+- [x] `--model` flag allows specifying LLM model
+- [x] `--dry-run` flag shows what would happen without executing
+
+---
+
+## Chain
+
+**Chain**: CHAIN-037-agent-runtime-core
 
 ---
 
@@ -108,17 +114,23 @@ No commits yet.
 ### Key Files to Create
 
 ```
-packages/core/src/
+packages/cli/src/
+├── commands/
+│   └── agent.ts           # agent:start command entry point
 ├── runtime/
 │   ├── index.ts           # Public exports
-│   ├── agentic-loop.ts    # Core loop implementation
-│   ├── tool-registry.ts   # Tool definitions and role filtering
-│   ├── governance-gate.ts # Tool call validation
-│   ├── prompt-loader.ts   # System prompt loading
-│   └── llm-client.ts      # LLM API abstraction
-
-packages/cli/src/commands/
-└── agent.ts               # agent:start command
+│   ├── loop.ts            # Agentic loop
+│   ├── session.ts         # Session state management
+│   ├── tools/             # Tool definitions and executors
+│   │   ├── index.ts
+│   │   ├── registry.ts    # Tool registry with role filtering
+│   │   └── definitions/   # Individual tool implementations
+│   └── providers/         # LLM provider implementations
+│       ├── index.ts
+│       ├── types.ts       # Provider interface
+│       ├── anthropic.ts
+│       ├── openai.ts
+│       └── gemini.ts
 ```
 
 ### Environment Variables
@@ -147,4 +159,24 @@ CHORAGEN_MAX_TOKENS=4096        # Max output tokens per turn
 
 ## Completion Notes
 
-[Added when moved to done/]
+**Completed**: 2025-12-08
+
+Phase 1 of the Agent Runtime feature is complete. The implementation includes:
+
+**Files Created** (in `packages/cli/src/runtime/`):
+- `providers/` — LLM provider abstraction (Anthropic, OpenAI, Gemini)
+- `tools/` — Tool registry with role-based filtering and executors
+- `governance-gate.ts` — Tool call validation
+- `prompt-loader.ts` — System prompt assembly
+- `loop.ts` — Core agentic loop
+- `session.ts` — Session state persistence
+- `index.ts` — Public exports
+
+**CLI Command**: `packages/cli/src/commands/agent.ts`
+
+**Test Coverage**: 225 tests in `@choragen/cli` (includes 20 integration tests)
+
+**Verification**:
+- `pnpm build` ✅
+- `pnpm test` ✅ (715 total tests across all packages)
+- `pnpm lint` ✅

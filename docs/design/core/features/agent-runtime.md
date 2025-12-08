@@ -322,7 +322,7 @@ Session complete. Tokens: 12,450 input / 3,200 output
 
 ## Linked ADRs
 
-- ADR-007: Agent Runtime Architecture (to be created)
+- ADR-010: Agent Runtime Architecture
 
 ---
 

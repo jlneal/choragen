@@ -1,6 +1,6 @@
 # ADR-010: Agent Runtime Architecture
 
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-08  
 **Linked CR/FR**: CR-20251207-025, CR-20251207-026, CR-20251207-027, CR-20251207-028  
 **Linked Design Docs**: docs/design/core/features/agent-runtime.md, docs/design/core/scenarios/agent-runtime-orchestration.md  
@@ -198,10 +198,13 @@ Use SQLite or similar for session persistence.
 
 ## Implementation
 
-[Added when moved to done/]
+**Implemented**: 2025-12-08 via CR-20251207-025
 
 - `packages/cli/src/runtime/` — Agent runtime implementation
-- `packages/cli/src/runtime/providers/` — LLM provider implementations
-- `packages/cli/src/runtime/tools/` — Tool definitions and executors
+- `packages/cli/src/runtime/providers/` — LLM provider implementations (Anthropic, OpenAI, Gemini)
+- `packages/cli/src/runtime/tools/` — Tool definitions, registry, and executors
+- `packages/cli/src/runtime/governance-gate.ts` — Role-based tool validation
+- `packages/cli/src/runtime/prompt-loader.ts` — System prompt assembly
+- `packages/cli/src/runtime/loop.ts` — Core agentic loop
 - `packages/cli/src/runtime/session.ts` — Session state management
-- `packages/core/src/governance/tool-filter.ts` — Role-based tool filtering
+- `packages/cli/src/commands/agent.ts` — CLI command entry point

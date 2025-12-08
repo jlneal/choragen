@@ -25,7 +25,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@choragen/core": "workspace:*"
+    "@anthropic-ai/sdk": "^0.52.0",
+    "@choragen/core": "workspace:*",
+    "@google/generative-ai": "^0.21.0",
+    "openai": "^4.77.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",

@@ -37,6 +37,7 @@ import {
   formatSessionStatus,
   type SessionRole,
 } from "./commands/session.js";
+import { runAgentStart, getAgentStartHelp } from "./commands/agent.js";
 import * as readline from "node:readline";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
@@ -1795,6 +1796,20 @@ const commands: Record<string, CommandDef> = {
       }
 
       console.log("Session ended");
+    },
+  },
+
+  // Agent runtime
+  "agent:start": {
+    description: "Start an agent session",
+    usage: "agent:start --role=<impl|control> [--provider=<name>] [--model=<name>] [--chain=<id>] [--task=<id>] [--dry-run]",
+    handler: async (args) => {
+      // Handle --help
+      if (args.includes("--help") || args.includes("-h")) {
+        console.log(getAgentStartHelp());
+        return;
+      }
+      await runAgentStart(args, projectRoot);
     },
   },
 
