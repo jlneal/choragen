@@ -5,6 +5,12 @@
 
 ---
 
+## User Goal
+
+As a control agent or developer, I want to debug a failed task so that I can identify the root cause and either fix the issue or update the task definition.
+
+---
+
 ## Actor
 
 - **Primary**: [AI Agent](../personas/ai-agent.md) (as Control Agent), [Solo Developer](../personas/solo-developer.md)
@@ -189,6 +195,16 @@ Use this checklist when debugging:
 
 - [Task Chain Management](../features/task-chain-management.md)
 - [Governance Enforcement](../features/governance-enforcement.md)
+
+---
+
+## Acceptance Criteria
+
+- [ ] Failed tasks can be identified via chain status
+- [ ] Task history and rework notes are accessible
+- [ ] Diagnostic commands help identify root cause
+- [ ] Tasks can be updated with learnings
+- [ ] Tasks can be retried or blocked as appropriate
 
 ---
 

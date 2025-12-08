@@ -7,7 +7,7 @@
 
 ---
 
-## Description
+## Overview
 
 Enable task chains that span multiple repositories, allowing coordinated work across microservices, monorepos with external dependencies, or related projects.
 

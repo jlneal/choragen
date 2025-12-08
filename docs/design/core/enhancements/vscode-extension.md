@@ -7,7 +7,7 @@
 
 ---
 
-## Description
+## Overview
 
 A VS Code extension that provides visual task management directly within the IDE. Developers can view, create, and manage task chains without leaving their editor.
 

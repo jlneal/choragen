@@ -5,6 +5,12 @@
 
 ---
 
+## User Goal
+
+As a developer starting a new project, I want to initialize choragen so that I can use structured task chains and governance for coordinated development.
+
+---
+
 ## Actor
 
 - **Primary**: [Solo Developer](../personas/solo-developer.md), [Team Lead](../personas/team-lead.md), [Open Source Maintainer](../personas/open-source-maintainer.md)
@@ -150,6 +156,16 @@ For monorepos with multiple packages:
 
 - [Task Chain Management](../features/task-chain-management.md)
 - [Governance Enforcement](../features/governance-enforcement.md)
+
+---
+
+## Acceptance Criteria
+
+- [ ] `choragen init` creates `.choragen/config.yaml`
+- [ ] `choragen init` creates `choragen.governance.yaml`
+- [ ] `choragen init` creates `docs/` directory structure
+- [ ] `choragen init` creates root `AGENTS.md`
+- [ ] User can run `choragen chain:new` after initialization
 
 ---
 

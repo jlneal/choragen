@@ -5,6 +5,12 @@
 
 ---
 
+## User Goal
+
+As a control agent or team lead, I want to review and approve completed work so that I can ensure quality standards are met before tasks are marked done.
+
+---
+
 ## Actor
 
 - **Primary**: [AI Agent](../personas/ai-agent.md) (as Control Agent), [Team Lead](../personas/team-lead.md)
@@ -158,6 +164,16 @@ Use this checklist when reviewing:
 
 - [Task Chain Management](../features/task-chain-management.md)
 - [Governance Enforcement](../features/governance-enforcement.md)
+
+---
+
+## Acceptance Criteria
+
+- [ ] Tasks in review status can be listed
+- [ ] Task acceptance criteria are visible for review
+- [ ] Verification commands can be run
+- [ ] Tasks can be approved (moves to done)
+- [ ] Tasks can be sent back for rework (moves to in-progress)
 
 ---
 

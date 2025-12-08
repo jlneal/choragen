@@ -7,7 +7,7 @@
 
 ---
 
-## Description
+## Overview
 
 A web-based dashboard for visualizing task chains, governance status, and project health. Provides a bird's-eye view for team leads and stakeholders who need visibility without diving into the codebase.
 

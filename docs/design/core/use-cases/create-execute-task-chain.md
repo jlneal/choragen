@@ -5,6 +5,12 @@
 
 ---
 
+## User Goal
+
+As a control agent, I want to create and execute a task chain so that I can coordinate work on a change request through structured, traceable tasks.
+
+---
+
 ## Actor
 
 - **Primary**: [AI Agent](../personas/ai-agent.md) (as Control Agent)
@@ -159,6 +165,16 @@ Control agent loses context:
 - [Task Chain Management](../features/task-chain-management.md)
 - [File Locking](../features/file-locking.md)
 - [Governance Enforcement](../features/governance-enforcement.md)
+
+---
+
+## Acceptance Criteria
+
+- [ ] Chain can be created from a CR/FR
+- [ ] Tasks can be added to the chain
+- [ ] Tasks can transition through status workflow
+- [ ] Chain status shows overall progress
+- [ ] CR can be closed when chain completes
 
 ---
 

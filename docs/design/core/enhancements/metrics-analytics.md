@@ -7,7 +7,7 @@
 
 ---
 
-## Description
+## Overview
 
 Track and analyze task chain metrics including velocity, completion rates, cycle times, and agent performance. Provides data-driven insights for process improvement.
 
