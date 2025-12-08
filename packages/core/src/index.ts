@@ -14,3 +14,4 @@ export * from "./locks/index.js";
 export * from "./protocol/index.js";
 export * from "./validation/index.js";
 export * from "./metrics/index.js";
+export * from "./trace/index.js";

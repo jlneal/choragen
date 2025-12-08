@@ -1,0 +1,11 @@
+{
+  "id": "CHAIN-033-trace-command",
+  "sequence": 33,
+  "slug": "trace-command",
+  "requestId": "CR-20251206-011",
+  "title": "Traceability Explorer Design",
+  "description": "",
+  "createdAt": "2025-12-08T01:15:29.673Z",
+  "updatedAt": "2025-12-08T01:15:29.673Z",
+  "type": "design"
+}

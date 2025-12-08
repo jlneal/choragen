@@ -27,6 +27,7 @@ import { createReworkTask, formatReworkResult } from "./commands/task-rework.js"
 import { getMetricsSummary, formatMetricsSummary, formatMetricsSummaryJson } from "./commands/metrics-summary.js";
 import { exportMetrics, writeExport } from "./commands/metrics-export.js";
 import { importMetrics, formatImportSummary } from "./commands/metrics-import.js";
+import { runTrace, formatTraceHelp } from "./commands/trace.js";
 import * as readline from "node:readline";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
@@ -1576,6 +1577,80 @@ const commands: Record<string, CommandDef> = {
         console.log(formatImportSummary(summary, dryRun));
       } catch (error) {
         console.error(`Failed to import metrics: ${(error as Error).message}`);
+        process.exit(1);
+      }
+    },
+  },
+
+  // Traceability
+  trace: {
+    description: "Trace artifact traceability chain",
+    usage: "trace <artifact-path-or-id> [--format=tree|json|markdown] [--direction=both|upstream|downstream] [--depth=<n>] [--no-color]",
+    handler: async (args) => {
+      // Handle --help
+      if (args.includes("--help") || args.includes("-h")) {
+        console.log(formatTraceHelp());
+        return;
+      }
+
+      // Parse arguments
+      const positionalArgs: string[] = [];
+      let format: string | undefined;
+      let direction: string | undefined;
+      let depth: number | undefined;
+      let noColor = false;
+
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg.startsWith("--format=")) {
+          format = arg.slice("--format=".length);
+        } else if (arg === "--format" && args[i + 1]) {
+          format = args[++i];
+        } else if (arg.startsWith("--direction=")) {
+          direction = arg.slice("--direction=".length);
+        } else if (arg === "--direction" && args[i + 1]) {
+          direction = args[++i];
+        } else if (arg.startsWith("--depth=")) {
+          const depthStr = arg.slice("--depth=".length);
+          depth = parseInt(depthStr, 10);
+          if (isNaN(depth)) {
+            console.error(`Invalid depth value: ${depthStr}`);
+            process.exit(1);
+          }
+        } else if (arg === "--depth" && args[i + 1]) {
+          depth = parseInt(args[++i], 10);
+          if (isNaN(depth)) {
+            console.error(`Invalid depth value: ${args[i]}`);
+            process.exit(1);
+          }
+        } else if (arg === "--no-color") {
+          noColor = true;
+        } else if (!arg.startsWith("-")) {
+          positionalArgs.push(arg);
+        }
+      }
+
+      // Require artifact path or ID
+      const artifactPathOrId = positionalArgs[0];
+      if (!artifactPathOrId) {
+        console.error("Error: Missing artifact path or ID");
+        console.error("Usage: choragen trace <artifact-path-or-id> [options]");
+        console.error("Run 'choragen trace --help' for more information.");
+        process.exit(1);
+      }
+
+      // Run trace
+      const result = await runTrace(projectRoot, artifactPathOrId, {
+        format,
+        direction,
+        depth,
+        noColor,
+      });
+
+      if (result.success) {
+        console.log(result.output);
+      } else {
+        console.error(`Error: ${result.error}`);
         process.exit(1);
       }
     },

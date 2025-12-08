@@ -1,0 +1,12 @@
+{
+  "id": "CHAIN-034-trace-impl",
+  "sequence": 34,
+  "slug": "trace-impl",
+  "requestId": "CR-20251206-011",
+  "title": "Traceability Explorer Implementation",
+  "description": "",
+  "createdAt": "2025-12-08T01:31:09.489Z",
+  "updatedAt": "2025-12-08T01:31:09.489Z",
+  "type": "implementation",
+  "dependsOn": "CHAIN-033-trace-command"
+}
