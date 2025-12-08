@@ -19,11 +19,22 @@ The implementation agent **executes tasks from task files**. It receives a hando
 
 1. Receive handoff prompt from human (spawned by control agent)
 2. Read the task file path provided in the prompt
-3. Understand:
+3. **Check the Type field** — Only work on tasks with `**Type**: impl`
+   - If the task has `**Type**: control`, report back that this is a control-only task
+4. Understand:
    - Objective
    - Acceptance criteria (your checklist)
    - Verification commands (your success criteria)
    - Any notes or context
+
+### Task Type Field
+
+Every task file has a **Type** field in its header:
+
+- `**Type**: impl` (default) — Implementation agent executes this task
+- `**Type**: control` — Control agent executes directly, no impl handoff needed
+
+**Implementation agents should only work on `Type: impl` tasks.** If you receive a task with `Type: control`, report back to the control agent — it was likely handed off by mistake.
 
 Example task file location:
 ```

@@ -8,6 +8,12 @@
 /** Chain type distinguishes design chains from implementation chains */
 export type ChainType = "design" | "implementation";
 
+/** Task type determines which agent handles the task */
+export type TaskType = "impl" | "control";
+
+/** All valid task type values */
+export const TASK_TYPES: readonly TaskType[] = ["impl", "control"] as const;
+
 /** All valid chain type values */
 export const CHAIN_TYPES: readonly ChainType[] = [
   "design",
@@ -76,6 +82,8 @@ export interface Task {
   reworkReason?: string;
   /** Number of times this task has been reworked */
   reworkCount?: number;
+  /** Task type - determines which agent handles the task (default: impl) */
+  type?: TaskType;
 }
 
 export interface Chain {

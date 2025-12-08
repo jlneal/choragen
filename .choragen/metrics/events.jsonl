@@ -261,3 +261,10 @@
 {"eventType":"request:closed","entityType":"request","entityId":"CR-20251206-011","id":"095176f9-467f-4dcc-a89c-8f07480586fd","timestamp":"2025-12-08T02:11:18.752Z"}
 {"eventType":"request:closed","entityType":"request","entityId":"FR-20251207-009","id":"86ebb19a-e78f-40f5-8258-fc7de22add53","timestamp":"2025-12-08T02:15:11.223Z"}
 {"eventType":"request:closed","entityType":"request","entityId":"CR-20251207-018","id":"1e30b0ec-7819-4794-aafe-f0092f9a2b5d","timestamp":"2025-12-08T02:22:56.190Z"}
+{"eventType":"chain:created","entityType":"chain","entityId":"CHAIN-035-task-role-assignment","requestId":"CR-20251207-018","id":"54ff5223-bf7b-4dbf-b4b6-49c12d498603","timestamp":"2025-12-08T02:35:39.793Z"}
+{"eventType":"task:started","entityType":"task","entityId":"001-update-task-template","chainId":"CHAIN-035-task-role-assignment","id":"9a619cee-eae0-46ea-a296-b279cb363a24","timestamp":"2025-12-08T02:42:08.846Z"}
+{"eventType":"task:completed","entityType":"task","entityId":"001-update-task-template","chainId":"CHAIN-035-task-role-assignment","id":"cad961a0-dfca-47ab-998b-49fcfc03d675","timestamp":"2025-12-08T02:42:12.888Z"}
+{"eventType":"task:started","entityType":"task","entityId":"002-update-agent-docs","chainId":"CHAIN-035-task-role-assignment","id":"d2801696-e40d-4579-8a1c-8f25235f4fe4","timestamp":"2025-12-08T02:43:46.153Z"}
+{"eventType":"task:completed","entityType":"task","entityId":"002-update-agent-docs","chainId":"CHAIN-035-task-role-assignment","id":"d7bce759-2e5e-49fd-a145-5380b60966b1","timestamp":"2025-12-08T02:43:52.222Z"}
+{"eventType":"task:started","entityType":"task","entityId":"003-verify-close","chainId":"CHAIN-035-task-role-assignment","id":"1a4f711b-a4ed-4241-a43f-df30845e1c70","timestamp":"2025-12-08T02:44:05.438Z"}
+{"eventType":"task:completed","entityType":"task","entityId":"003-verify-close","chainId":"CHAIN-035-task-role-assignment","id":"89cb4658-0380-4d04-91e7-2b1e451d6182","timestamp":"2025-12-08T02:44:47.841Z"}

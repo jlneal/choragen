@@ -253,7 +253,22 @@ For these tasks:
 2. Control agent updates task status to `done`
 3. Control agent moves task file to `done/<CHAIN-ID>/`
 
-Mark control-only tasks with `**Type**: control` in the task header.
+### Task Type Field
+
+Every task file has a **Type** field in its header:
+
+- `**Type**: impl` (default) — Requires handoff to implementation agent in a fresh session
+- `**Type**: control` — Control agent executes directly, no impl handoff
+
+**Control agents**:
+- Execute `Type: control` tasks directly
+- Hand off `Type: impl` tasks to implementation agents
+- Never implement `Type: impl` tasks themselves
+
+**Implementation agents**:
+- Only work on `Type: impl` tasks
+- Should verify the Type field before starting work
+- Report back if handed a `Type: control` task by mistake
 
 ---
 

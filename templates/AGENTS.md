@@ -62,6 +62,20 @@ Templates use `{{VARIABLE}}` syntax for placeholders:
 | `{{OBJECTIVE}}` | Task objective |
 | `{{CRITERION_N}}` | Acceptance criteria |
 
+### Task Type Field
+
+Tasks include a `**Type**` field that determines which agent handles the task:
+
+| Value | Description | When to Use |
+|-------|-------------|-------------|
+| `impl` | Implementation agent | Default. Code changes, feature implementation, bug fixes |
+| `control` | Control agent | Verification, review, closure, documentation-only tasks |
+
+**Guidelines:**
+- Use `impl` (default) for any task requiring code changes
+- Use `control` for tasks the control agent can complete directly without handoff
+- Control tasks typically involve: verification, approval workflows, documentation updates, chain/request closure
+
 ### Rework-Task-Specific Variables
 
 | Variable | Description |

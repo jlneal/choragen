@@ -6,7 +6,8 @@
  * ADR: ADR-001-task-file-format
  */
 
-import type { Task, TaskStatus } from "./types.js";
+import type { Task, TaskStatus, TaskType } from "./types.js";
+import { TASK_TYPES } from "./types.js";
 
 /** Regex patterns for parsing */
 const TASK_ID_PATTERN = /^(\d{3})-(.+)$/;
@@ -142,6 +143,7 @@ export function parseTaskMarkdown(
     reworkOf: metadata["rework-of"] || undefined,
     reworkReason: metadata["rework-reason"] || undefined,
     reworkCount: metadata["rework-count"] ? parseInt(metadata["rework-count"], 10) : undefined,
+    type: parseTaskType(metadata["type"]),
   };
 }
 
@@ -159,6 +161,7 @@ export function serializeTaskMarkdown(task: Task): string {
   lines.push(`**Chain**: ${task.chainId}  `);
   lines.push(`**Task**: ${task.id}  `);
   lines.push(`**Status**: ${task.status}  `);
+  lines.push(`**Type**: ${task.type || "impl"}  `);
   lines.push(`**Created**: ${formatDate(task.createdAt)}`);
   if (task.reworkOf) {
     lines.push(`**Rework-Of**: ${task.reworkOf}  `);
@@ -217,6 +220,15 @@ export function serializeTaskMarkdown(task: Task): string {
   lines.push("## Notes");
   lines.push("");
   lines.push(task.notes || "_No notes yet._");
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+
+  // Task Type Reference
+  lines.push("## Task Type Reference");
+  lines.push("");
+  lines.push("- **impl** (default): Requires handoff to implementation agent in a fresh session");
+  lines.push("- **control**: Control agent executes directly (e.g., verification, review, closure tasks)");
   lines.push("");
 
   return lines.join("\n");
@@ -280,4 +292,13 @@ function parseDate(dateStr: string | undefined): Date | null {
 
 function formatDate(date: Date): string {
   return date.toISOString().split("T")[0];
+}
+
+function parseTaskType(typeStr: string | undefined): TaskType | undefined {
+  if (!typeStr) return undefined;
+  const normalized = typeStr.toLowerCase().trim();
+  if (TASK_TYPES.includes(normalized as TaskType)) {
+    return normalized as TaskType;
+  }
+  return undefined;
 }
