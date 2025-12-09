@@ -1,0 +1,252 @@
+"use client";
+
+// ADR: ADR-011-web-api-architecture
+
+/**
+ * TaskDetailPanel - Slide-out panel for viewing task details
+ *
+ * Displays full task information including description, expected files,
+ * acceptance criteria, constraints, and notes.
+ */
+
+import { FileCode, CheckSquare, AlertTriangle, StickyNote } from "lucide-react";
+
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc/client";
+
+import { TaskStatusBadge } from "./task-status-badge";
+
+interface TaskDetailPanelProps {
+  /** Chain ID of the task to display */
+  chainId: string | null;
+  /** Task ID to display */
+  taskId: string | null;
+  /** Whether the panel is open */
+  open: boolean;
+  /** Callback when open state changes */
+  onOpenChange: (open: boolean) => void;
+}
+
+/**
+ * Loading skeleton for the task detail panel
+ */
+function TaskDetailSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Status */}
+      <Skeleton className="h-6 w-24" />
+
+      {/* Description */}
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-20 w-full" />
+      </div>
+
+      {/* Expected Files */}
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+      </div>
+
+      {/* Acceptance Criteria */}
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-36" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-2/3" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Section component for consistent styling
+ */
+function Section({
+  title,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+        <Icon className="h-4 w-4" />
+        {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * TaskDetailPanel displays full task information in a slide-out sheet.
+ *
+ * Features:
+ * - Slides in from the right
+ * - Shows title, description, status
+ * - Lists expected files
+ * - Shows acceptance criteria as checklist
+ * - Displays constraints and notes
+ * - Loading state while fetching
+ * - Closes on X button or outside click
+ */
+export function TaskDetailPanel({
+  chainId,
+  taskId,
+  open,
+  onOpenChange,
+}: TaskDetailPanelProps) {
+  // Fetch task details when panel is open and IDs are provided
+  const { data: task, isLoading } = trpc.tasks.get.useQuery(
+    { chainId: chainId!, taskId: taskId! },
+    {
+      enabled: open && !!chainId && !!taskId,
+    }
+  );
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-lg">
+        <SheetHeader className="space-y-1">
+          <SheetTitle className="text-lg font-semibold">
+            {isLoading ? (
+              <Skeleton className="h-6 w-48" />
+            ) : (
+              task?.title ?? "Task Details"
+            )}
+          </SheetTitle>
+          <SheetDescription className="font-mono text-xs">
+            {isLoading ? (
+              <Skeleton className="h-4 w-32" />
+            ) : (
+              task?.id ?? ""
+            )}
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="h-[calc(100vh-8rem)] mt-6 pr-4 overflow-y-auto">
+          {isLoading ? (
+            <TaskDetailSkeleton />
+          ) : task ? (
+            <div className="space-y-6">
+              {/* Status Badge */}
+              <div>
+                <TaskStatusBadge status={task.status} showIcon />
+              </div>
+
+              {/* Description */}
+              {task.description && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Description
+                  </h3>
+                  <p className="text-sm whitespace-pre-wrap">
+                    {task.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Expected Files */}
+              {task.expectedFiles && task.expectedFiles.length > 0 && (
+                <Section title="Expected Files" icon={FileCode}>
+                  <ul className="space-y-1">
+                    {task.expectedFiles.map((file, index) => (
+                      <li
+                        key={index}
+                        className="text-sm font-mono text-muted-foreground bg-muted px-2 py-1 rounded"
+                      >
+                        {file}
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
+
+              {/* Acceptance Criteria */}
+              {task.acceptance && task.acceptance.length > 0 && (
+                <Section title="Acceptance Criteria" icon={CheckSquare}>
+                  <ul className="space-y-2">
+                    {task.acceptance.map((criterion, index) => (
+                      <li key={index} className="flex items-start gap-2 text-sm">
+                        <div className="mt-0.5 h-4 w-4 rounded border border-muted-foreground/30 flex-shrink-0" />
+                        <span>{criterion}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
+
+              {/* Constraints */}
+              {task.constraints && task.constraints.length > 0 && (
+                <Section title="Constraints" icon={AlertTriangle}>
+                  <ul className="space-y-1">
+                    {task.constraints.map((constraint, index) => (
+                      <li
+                        key={index}
+                        className="text-sm text-amber-600 dark:text-amber-400"
+                      >
+                        {constraint}
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
+
+              {/* Notes */}
+              {task.notes && (
+                <Section title="Notes" icon={StickyNote}>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {task.notes}
+                  </p>
+                </Section>
+              )}
+
+              {/* Rework Info */}
+              {task.reworkOf && (
+                <div className="border-t pt-4 mt-4">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                    Rework Information
+                  </h3>
+                  <div className="text-sm space-y-1">
+                    <p>
+                      <span className="text-muted-foreground">Original task:</span>{" "}
+                      <span className="font-mono">{task.reworkOf}</span>
+                    </p>
+                    {task.reworkReason && (
+                      <p>
+                        <span className="text-muted-foreground">Reason:</span>{" "}
+                        {task.reworkReason}
+                      </p>
+                    )}
+                    {task.reworkCount !== undefined && task.reworkCount > 0 && (
+                      <p>
+                        <span className="text-muted-foreground">Rework count:</span>{" "}
+                        {task.reworkCount}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-32 text-muted-foreground">
+              No task selected
+            </div>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}

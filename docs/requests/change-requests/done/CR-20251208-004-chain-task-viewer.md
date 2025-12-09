@@ -2,7 +2,8 @@
 
 **ID**: CR-20251208-004  
 **Domain**: web  
-**Status**: todo  
+**Status**: done  
+**Completed**: 2025-12-09  
 **Created**: 2025-12-08  
 **Owner**: control-agent  
 
@@ -114,20 +115,20 @@ TaskDetailPanel    // Slide-out panel for task details
 
 ## Acceptance Criteria
 
-- [ ] `/chains` page lists all chains
-- [ ] Chain cards show: ID, title, type, request, progress, status
-- [ ] Filter chains by status (todo, in-progress, done)
-- [ ] Filter chains by type (design, implementation)
-- [ ] Sort chains by date, progress, name
-- [ ] `/chains/[id]` shows chain detail with tasks
-- [ ] Task list shows all tasks with status badges
-- [ ] Click task opens detail panel with full info
-- [ ] Progress bar accurately reflects task completion
-- [ ] Link to associated request works
-- [ ] Empty states for no chains/tasks
-- [ ] Loading skeletons while fetching
-- [ ] `pnpm build` passes
-- [ ] `pnpm lint` passes
+- [x] `/chains` page lists all chains
+- [x] Chain cards show: ID, title, type, request, progress, status
+- [x] Filter chains by status (todo, in-progress, done)
+- [x] Filter chains by type (design, implementation)
+- [x] Sort chains by date, progress, name
+- [x] `/chains/[id]` shows chain detail with tasks
+- [x] Task list shows all tasks with status badges
+- [x] Click task opens detail panel with full info
+- [x] Progress bar accurately reflects task completion
+- [x] Link to associated request works
+- [x] Empty states for no chains/tasks
+- [x] Loading skeletons while fetching
+- [x] `pnpm build` passes
+- [x] `pnpm lint` passes
 
 ---
 
@@ -141,6 +142,28 @@ TaskDetailPanel    // Slide-out panel for task details
 ## Linked Design Documents
 
 - [Web Dashboard](../../design/core/features/web-dashboard.md)
+
+---
+
+## Completion Notes
+
+Implemented full chain and task viewer functionality for the web dashboard:
+
+**Chain List Page (`/chains`)**:
+- Filterable by status (todo, in-progress, done) and type (design, implementation)
+- Sortable by date, progress, and name
+- ChainCard components with progress bars and status badges
+
+**Chain Detail Page (`/chains/[id]`)**:
+- ChainHeader with metadata, progress, and request link
+- TaskList with status badges for all task states
+- TaskDetailPanel slide-out sheet for full task info
+
+**Components Created**: ChainCard, ChainProgress, ChainStatusBadge, ChainFilters, ChainSort, ChainList, ChainHeader, TaskRow, TaskStatusBadge, TaskList, TaskDetailPanel
+
+**Hooks Created**: useTaskDetail for panel state management
+
+**Follow-up**: Phase 2 will add chain/task creation and task transitions.
 
 ---
 
