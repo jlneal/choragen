@@ -34,6 +34,44 @@ export interface ExecutionContext {
 }
 
 /**
+ * Extended context for tools that need nested session capabilities.
+ * Used by spawn_impl_session to spawn child sessions.
+ */
+export interface NestedSessionContext extends ExecutionContext {
+  /** Current session ID */
+  sessionId: string;
+  /** Parent session ID (for nested sessions) */
+  parentSessionId?: string;
+  /** Current nesting depth */
+  nestingDepth: number;
+  /** Maximum nesting depth */
+  maxNestingDepth: number;
+  /** Function to spawn a child session */
+  spawnChildSession?: (config: ChildSessionConfig) => Promise<ChildSessionResult>;
+}
+
+/**
+ * Configuration for spawning a child session.
+ */
+export interface ChildSessionConfig {
+  chainId: string;
+  taskId: string;
+  context?: string;
+}
+
+/**
+ * Result from a child session.
+ */
+export interface ChildSessionResult {
+  success: boolean;
+  sessionId: string;
+  iterations: number;
+  tokensUsed: { input: number; output: number };
+  error?: string;
+  summary?: string;
+}
+
+/**
  * Function signature for tool executors.
  */
 export type ToolExecutorFn = (

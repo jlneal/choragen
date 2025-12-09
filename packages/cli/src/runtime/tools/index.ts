@@ -12,7 +12,14 @@ export { toProviderTool } from "./types.js";
 export { ToolRegistry, defaultRegistry } from "./registry.js";
 
 // Executor
-export type { ToolResult, ExecutionContext, ToolExecutorFn } from "./executor.js";
+export type {
+  ToolResult,
+  ExecutionContext,
+  ToolExecutorFn,
+  NestedSessionContext,
+  ChildSessionConfig,
+  ChildSessionResult,
+} from "./executor.js";
 export { ToolExecutor, defaultExecutor } from "./executor.js";
 
 // Tool definitions

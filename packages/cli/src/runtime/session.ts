@@ -63,6 +63,12 @@ export interface SessionData {
   tokenUsage: SessionTokenUsage;
   messages: Message[];
   toolCalls: SessionToolCall[];
+  /** Parent session ID (for nested sessions) */
+  parentSessionId: string | null;
+  /** Child session IDs (for tracking spawned sessions) */
+  childSessionIds: string[];
+  /** Nesting depth (0 = root session) */
+  nestingDepth: number;
 }
 
 /**
@@ -74,6 +80,10 @@ export interface SessionConfig {
   chainId?: string;
   taskId?: string;
   workspaceRoot: string;
+  /** Parent session ID (for nested sessions) */
+  parentSessionId?: string;
+  /** Nesting depth (0 = root session) */
+  nestingDepth?: number;
 }
 
 /**
@@ -141,6 +151,9 @@ export class Session {
         tokenUsage: { input: 0, output: 0, total: 0 },
         messages: [],
         toolCalls: [],
+        parentSessionId: config.parentSessionId ?? null,
+        childSessionIds: [],
+        nestingDepth: config.nestingDepth ?? 0,
       };
     }
   }
@@ -255,6 +268,34 @@ export class Session {
   }
 
   /**
+   * Get the parent session ID.
+   */
+  get parentSessionId(): string | null {
+    return this.data.parentSessionId;
+  }
+
+  /**
+   * Get the child session IDs (copy).
+   */
+  get childSessionIds(): string[] {
+    return [...this.data.childSessionIds];
+  }
+
+  /**
+   * Get the nesting depth.
+   */
+  get nestingDepth(): number {
+    return this.data.nestingDepth;
+  }
+
+  /**
+   * Check if this is a root session (no parent).
+   */
+  get isRootSession(): boolean {
+    return this.data.parentSessionId === null;
+  }
+
+  /**
    * Add a message to the session.
    * @param message - Message to add
    */
@@ -294,6 +335,15 @@ export class Session {
   }
 
   /**
+   * Add a child session ID to this session.
+   * @param childSessionId - ID of the child session
+   */
+  async addChildSession(childSessionId: string): Promise<void> {
+    this.data.childSessionIds.push(childSessionId);
+    await this.save();
+  }
+
+  /**
    * Save the session to disk.
    * Creates the sessions directory if it doesn't exist.
    */
@@ -313,6 +363,7 @@ export class Session {
       tokenUsage: { ...this.data.tokenUsage },
       messages: [...this.data.messages],
       toolCalls: [...this.data.toolCalls],
+      childSessionIds: [...this.data.childSessionIds],
     };
   }
 }

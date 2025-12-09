@@ -510,4 +510,95 @@ describe("Session", () => {
       expect(data.toolCalls[0]).toHaveProperty("governanceResult");
     });
   });
+
+  describe("nested session support", () => {
+    it("creates root session with default nesting properties", () => {
+      const config: SessionConfig = {
+        role: "control",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+
+      const session = new Session(config);
+
+      expect(session.parentSessionId).toBeNull();
+      expect(session.childSessionIds).toEqual([]);
+      expect(session.nestingDepth).toBe(0);
+      expect(session.isRootSession).toBe(true);
+    });
+
+    it("creates child session with parent reference", () => {
+      const config: SessionConfig = {
+        role: "impl",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+        parentSessionId: "parent-session-001",
+        nestingDepth: 1,
+      };
+
+      const session = new Session(config);
+
+      expect(session.parentSessionId).toBe("parent-session-001");
+      expect(session.nestingDepth).toBe(1);
+      expect(session.isRootSession).toBe(false);
+    });
+
+    it("tracks child session IDs", async () => {
+      const config: SessionConfig = {
+        role: "control",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+
+      const session = new Session(config);
+      expect(session.childSessionIds).toEqual([]);
+
+      await session.addChildSession("child-001");
+      expect(session.childSessionIds).toEqual(["child-001"]);
+
+      await session.addChildSession("child-002");
+      expect(session.childSessionIds).toEqual(["child-001", "child-002"]);
+    });
+
+    it("persists nested session properties to JSON", async () => {
+      const config: SessionConfig = {
+        role: "impl",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+        chainId: "CHAIN-001",
+        taskId: "TASK-001",
+        parentSessionId: "parent-session-001",
+        nestingDepth: 1,
+      };
+
+      const session = new Session(config);
+      await session.addChildSession("grandchild-001");
+      await session.end("success");
+
+      const filePath = join(testWorkspace, ".choragen/sessions", `${session.id}.json`);
+      const content = await readFile(filePath, "utf-8");
+      const data = JSON.parse(content);
+
+      expect(data).toHaveProperty("parentSessionId", "parent-session-001");
+      expect(data).toHaveProperty("childSessionIds", ["grandchild-001"]);
+      expect(data).toHaveProperty("nestingDepth", 1);
+    });
+
+    it("toJSON includes nested session properties", () => {
+      const config: SessionConfig = {
+        role: "control",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+        parentSessionId: "parent-001",
+        nestingDepth: 2,
+      };
+
+      const session = new Session(config);
+      const json = session.toJSON();
+
+      expect(json.parentSessionId).toBe("parent-001");
+      expect(json.nestingDepth).toBe(2);
+      expect(json.childSessionIds).toEqual([]);
+    });
+  });
 });

@@ -2,14 +2,14 @@
 
 /**
  * Core agentic loop that orchestrates LLM calls, tool execution, and governance validation.
- * Phase 1: Single-session, non-streaming implementation.
+ * Phase 2: Supports nested sessions for control-to-impl delegation.
  */
 
 import { randomUUID } from "node:crypto";
 import type { AgentRole } from "./tools/types.js";
 import type { LLMProvider, Message, Tool, ToolCall } from "./providers/types.js";
 import { ToolRegistry, defaultRegistry } from "./tools/registry.js";
-import { ToolExecutor, defaultExecutor } from "./tools/executor.js";
+import { ToolExecutor, defaultExecutor, type ChildSessionConfig, type ChildSessionResult } from "./tools/executor.js";
 import { GovernanceGate, defaultGovernanceGate } from "./governance-gate.js";
 import { PromptLoader, createToolSummaries } from "./prompt-loader.js";
 
@@ -17,6 +17,11 @@ import { PromptLoader, createToolSummaries } from "./prompt-loader.js";
  * Default maximum iterations for safety limit.
  */
 const DEFAULT_MAX_ITERATIONS = 50;
+
+/**
+ * Default maximum nesting depth for nested sessions.
+ */
+const DEFAULT_MAX_NESTING_DEPTH = 2;
 
 /**
  * Configuration for an agent session.
@@ -36,6 +41,14 @@ export interface AgentSessionConfig {
   maxIterations?: number;
   /** Dry run mode - validate but don't execute tools */
   dryRun?: boolean;
+  /** Parent session ID (for nested sessions) */
+  parentSessionId?: string;
+  /** Current nesting depth (0 = root session) */
+  nestingDepth?: number;
+  /** Maximum nesting depth (default: 2) */
+  maxNestingDepth?: number;
+  /** Additional context passed from parent session */
+  parentContext?: string;
 }
 
 /**
@@ -74,8 +87,12 @@ export interface SessionResult {
   tokensUsed: { input: number; output: number };
   /** Error message (if session failed) */
   error?: string;
-  /** Stop reason (end_turn, max_iterations, error) */
-  stopReason: "end_turn" | "max_iterations" | "error";
+  /** Stop reason (end_turn, max_iterations, error, max_depth) */
+  stopReason: "end_turn" | "max_iterations" | "error" | "max_depth";
+  /** Session ID */
+  sessionId: string;
+  /** Child session results (for nested sessions) */
+  childSessions?: SessionResult[];
 }
 
 /**
@@ -86,6 +103,37 @@ export interface LoopDependencies {
   executor?: ToolExecutor;
   governanceGate?: GovernanceGate;
   promptLoader?: PromptLoader;
+}
+
+/**
+ * Extended execution context for nested session support.
+ * Includes all base ExecutionContext fields plus nested session metadata.
+ */
+export interface ExtendedExecutionContext {
+  /** Role of the agent executing the tool */
+  role: AgentRole;
+  /** Current chain ID (if in a chain context) */
+  chainId?: string;
+  /** Current task ID (if in a task context) */
+  taskId?: string;
+  /** Workspace root directory */
+  workspaceRoot: string;
+  /** Current session ID */
+  sessionId: string;
+  /** Parent session ID (for nested sessions) */
+  parentSessionId?: string;
+  /** Current nesting depth */
+  nestingDepth: number;
+  /** Maximum nesting depth */
+  maxNestingDepth: number;
+  /** LLM provider (for spawning child sessions) */
+  provider: LLMProvider;
+  /** Dependencies (for spawning child sessions) */
+  deps: LoopDependencies;
+  /** Array to collect child session results */
+  childSessionResults: SessionResult[];
+  /** Function to spawn a child session */
+  spawnChildSession: (config: ChildSessionConfig) => Promise<ChildSessionResult>;
 }
 
 /**
@@ -117,6 +165,10 @@ export async function runAgentSession(
     workspaceRoot,
     maxIterations = DEFAULT_MAX_ITERATIONS,
     dryRun = false,
+    parentSessionId,
+    nestingDepth = 0,
+    maxNestingDepth = DEFAULT_MAX_NESTING_DEPTH,
+    parentContext,
   } = config;
 
   // Use provided dependencies or defaults
@@ -125,9 +177,24 @@ export async function runAgentSession(
   const governanceGate = deps.governanceGate ?? defaultGovernanceGate;
   const promptLoader = deps.promptLoader ?? new PromptLoader(workspaceRoot);
 
+  // Check nesting depth limit
+  if (nestingDepth > maxNestingDepth) {
+    console.error(`[Loop] Maximum nesting depth (${maxNestingDepth}) exceeded`);
+    return {
+      success: false,
+      iterations: 0,
+      toolCalls: [],
+      tokensUsed: { input: 0, output: 0 },
+      error: `Maximum nesting depth (${maxNestingDepth}) exceeded`,
+      stopReason: "max_depth",
+      sessionId: randomUUID(),
+    };
+  }
+
   // Session state
   const sessionId = randomUUID();
   const toolCallRecords: ToolCallRecord[] = [];
+  const childSessionResults: SessionResult[] = [];
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
   let iterations = 0;
@@ -150,16 +217,62 @@ export async function runAgentSession(
     { role: "system", content: systemPrompt },
     {
       role: "user",
-      content: buildInitialUserMessage(role, chainId, taskId),
+      content: buildInitialUserMessage(role, chainId, taskId, parentContext),
     },
   ];
 
-  // Execution context for tools
-  const executionContext = {
+  // Create the spawn child session function
+  const spawnChildSession = async (childConfig: ChildSessionConfig): Promise<ChildSessionResult> => {
+    console.log(`[Loop] Spawning child impl session for task ${childConfig.taskId}`);
+    
+    // Run a nested agent session
+    const childResult = await runAgentSession(
+      {
+        role: "impl",
+        provider,
+        chainId: childConfig.chainId,
+        taskId: childConfig.taskId,
+        workspaceRoot,
+        maxIterations,
+        dryRun,
+        parentSessionId: sessionId,
+        nestingDepth: nestingDepth + 1,
+        maxNestingDepth,
+        parentContext: childConfig.context,
+      },
+      deps
+    );
+
+    // Track the child session result
+    childSessionResults.push(childResult);
+
+    // Return a summary for the parent session
+    return {
+      success: childResult.success,
+      sessionId: childResult.sessionId,
+      iterations: childResult.iterations,
+      tokensUsed: childResult.tokensUsed,
+      error: childResult.error,
+      summary: childResult.success
+        ? `Impl session completed in ${childResult.iterations} iterations`
+        : `Impl session failed: ${childResult.error}`,
+    };
+  };
+
+  // Execution context for tools (extended for nested sessions)
+  const executionContext: ExtendedExecutionContext = {
     role,
     chainId,
     taskId,
     workspaceRoot,
+    sessionId,
+    parentSessionId,
+    nestingDepth,
+    maxNestingDepth,
+    provider,
+    deps,
+    childSessionResults,
+    spawnChildSession,
   };
 
   try {
@@ -209,6 +322,8 @@ export async function runAgentSession(
           toolCalls: toolCallRecords,
           tokensUsed: { input: totalInputTokens, output: totalOutputTokens },
           stopReason: "end_turn",
+          sessionId,
+          childSessions: childSessionResults.length > 0 ? childSessionResults : undefined,
         };
       }
     }
@@ -222,6 +337,8 @@ export async function runAgentSession(
       tokensUsed: { input: totalInputTokens, output: totalOutputTokens },
       error: `Maximum iterations (${maxIterations}) reached`,
       stopReason: "max_iterations",
+      sessionId,
+      childSessions: childSessionResults.length > 0 ? childSessionResults : undefined,
     };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
@@ -233,6 +350,8 @@ export async function runAgentSession(
       tokensUsed: { input: totalInputTokens, output: totalOutputTokens },
       error: errorMessage,
       stopReason: "error",
+      sessionId,
+      childSessions: childSessionResults.length > 0 ? childSessionResults : undefined,
     };
   }
 }
@@ -334,7 +453,8 @@ function buildToolMessage(toolCall: ToolCall, record: ToolCallRecord): Message {
 function buildInitialUserMessage(
   role: AgentRole,
   chainId?: string,
-  taskId?: string
+  taskId?: string,
+  parentContext?: string
 ): string {
   const parts: string[] = [];
 
@@ -350,6 +470,12 @@ function buildInitialUserMessage(
   } else {
     parts.push("You are an implementation agent ready to work.");
     parts.push("What would you like me to help you with?");
+  }
+
+  // Add parent context if this is a nested session
+  if (parentContext) {
+    parts.push("\n\nAdditional context from parent session:");
+    parts.push(parentContext);
   }
 
   return parts.join(" ");

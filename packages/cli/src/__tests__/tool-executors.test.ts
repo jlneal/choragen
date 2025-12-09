@@ -19,7 +19,7 @@ import {
   executeTaskApprove,
   executeSpawnImplSession,
 } from "../runtime/tools/index.js";
-import type { ExecutionContext } from "../runtime/tools/index.js";
+import type { ExecutionContext, NestedSessionContext, ChildSessionResult } from "../runtime/tools/index.js";
 
 describe("ToolExecutor", () => {
   describe("execute", () => {
@@ -43,14 +43,15 @@ describe("ToolExecutor", () => {
         workspaceRoot: "/tmp",
       };
 
-      // spawn_impl_session always returns a stub error, so we can test dispatch
+      // spawn_impl_session returns error when called without nested session context
       const result = await executor.execute(
         "spawn_impl_session",
         { chainId: "CHAIN-001-test", taskId: "001-test" },
         context
       );
 
-      expect(result.error).toContain("Phase 2");
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Nested session context not available");
     });
 
     it("catches and wraps executor errors", async () => {
@@ -364,33 +365,120 @@ describe("Individual executors", () => {
       expect(result.error).toBe("Missing required parameter: taskId");
     });
 
-    it("returns Phase 2 stub message", async () => {
+    it("returns error when nested session context not available", async () => {
       const result = await executeSpawnImplSession(
         { chainId: "CHAIN-001-test", taskId: "001-test" },
         context
       );
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe("Nested sessions not yet implemented (Phase 2)");
+      expect(result.error).toBe("Nested session context not available. This tool requires the extended execution context.");
       expect(result.data).toMatchObject({
         chainId: "CHAIN-001-test",
         taskId: "001-test",
-        message: expect.stringContaining("Phase 2"),
+        hint: expect.stringContaining("nested session support"),
       });
     });
 
-    it("includes context in stub response", async () => {
+    it("returns error when max nesting depth exceeded", async () => {
+      const nestedContext: NestedSessionContext = {
+        ...context,
+        sessionId: "session-001",
+        nestingDepth: 2,
+        maxNestingDepth: 2,
+      };
+
+      const result = await executeSpawnImplSession(
+        { chainId: "CHAIN-001-test", taskId: "001-test" },
+        nestedContext
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Maximum nesting depth");
+      expect(result.data).toMatchObject({
+        currentDepth: 2,
+        maxDepth: 2,
+      });
+    });
+
+    it("returns error when spawnChildSession not configured", async () => {
+      const nestedContext: NestedSessionContext = {
+        ...context,
+        sessionId: "session-001",
+        nestingDepth: 0,
+        maxNestingDepth: 2,
+        // spawnChildSession not provided
+      };
+
+      const result = await executeSpawnImplSession(
+        { chainId: "CHAIN-001-test", taskId: "001-test" },
+        nestedContext
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Child session spawning not configured");
+    });
+
+    it("spawns child session successfully when properly configured", async () => {
+      const mockChildResult: ChildSessionResult = {
+        success: true,
+        sessionId: "child-session-001",
+        iterations: 3,
+        tokensUsed: { input: 100, output: 50 },
+        summary: "Impl session completed in 3 iterations",
+      };
+
+      const nestedContext: NestedSessionContext = {
+        ...context,
+        sessionId: "session-001",
+        nestingDepth: 0,
+        maxNestingDepth: 2,
+        spawnChildSession: async () => mockChildResult,
+      };
+
       const result = await executeSpawnImplSession(
         {
           chainId: "CHAIN-001-test",
           taskId: "001-test",
           context: "Additional instructions",
         },
-        context
+        nestedContext
       );
 
+      expect(result.success).toBe(true);
       expect(result.data).toMatchObject({
-        context: "Additional instructions",
+        message: "Impl session completed successfully",
+        childSessionId: "child-session-001",
+        iterations: 3,
+      });
+    });
+
+    it("handles child session failure", async () => {
+      const mockChildResult: ChildSessionResult = {
+        success: false,
+        sessionId: "child-session-001",
+        iterations: 1,
+        tokensUsed: { input: 50, output: 20 },
+        error: "Task file not found",
+      };
+
+      const nestedContext: NestedSessionContext = {
+        ...context,
+        sessionId: "session-001",
+        nestingDepth: 0,
+        maxNestingDepth: 2,
+        spawnChildSession: async () => mockChildResult,
+      };
+
+      const result = await executeSpawnImplSession(
+        { chainId: "CHAIN-001-test", taskId: "001-test" },
+        nestedContext
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Task file not found");
+      expect(result.data).toMatchObject({
+        childSessionId: "child-session-001",
       });
     });
   });

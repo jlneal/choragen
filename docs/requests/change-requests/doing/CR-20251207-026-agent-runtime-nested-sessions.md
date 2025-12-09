@@ -2,7 +2,7 @@
 
 **ID**: CR-20251207-026  
 **Domain**: core  
-**Status**: todo  
+**Status**: doing  
 **Created**: 2025-12-07  
 **Owner**: control-agent  
 
@@ -62,21 +62,21 @@ Without nested sessions, step 3 still requires human intervention—defeating th
 
 ## Acceptance Criteria
 
-- [ ] Control agent can call `spawn_impl_session` tool
-- [ ] `spawn_impl_session` accepts task ID and chain ID
-- [ ] Child session starts with impl role and task context
-- [ ] Child session has isolated message history
-- [ ] Child session inherits governance rules from parent
-- [ ] Child session completion returns control to parent
-- [ ] Parent session receives summary of child session actions
-- [ ] Nested session metrics are recorded separately but linked
-- [ ] Maximum nesting depth is enforced (default: 2)
+- [x] Control agent can call `spawn_impl_session` tool
+- [x] `spawn_impl_session` accepts task ID and chain ID
+- [x] Child session starts with impl role and task context
+- [x] Child session has isolated message history
+- [x] Child session inherits governance rules from parent
+- [x] Child session completion returns control to parent
+- [x] Parent session receives summary of child session actions
+- [x] Nested session metrics are recorded separately but linked
+- [x] Maximum nesting depth is enforced (default: 2)
 
 ---
 
 ## Commits
 
-No commits yet.
+Pending commit.
 
 ---
 
