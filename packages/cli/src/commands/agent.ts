@@ -14,10 +14,13 @@ import {
   ProviderError,
   DEFAULT_MODELS,
   Session,
+  getCostLimitsFromEnv,
+  getApprovalTimeoutFromEnv,
   type AgentRole,
   type ProviderName,
   type SessionResult,
   type ToolCallRecord,
+  type CheckpointConfig,
 } from "../runtime/index.js";
 
 /**
@@ -30,6 +33,11 @@ export interface AgentStartOptions {
   chain?: string;
   task?: string;
   dryRun?: boolean;
+  maxTokens?: number;
+  maxCost?: number;
+  requireApproval?: boolean;
+  autoApprove?: boolean;
+  approvalTimeout?: number;
 }
 
 /**
@@ -46,6 +54,11 @@ export function parseAgentStartArgs(
   let chain: string | undefined;
   let task: string | undefined;
   let dryRun = false;
+  let maxTokens: number | undefined;
+  let maxCost: number | undefined;
+  let requireApproval = false;
+  let autoApprove = false;
+  let approvalTimeout: number | undefined;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -67,14 +80,14 @@ export function parseAgentStartArgs(
     // --provider=<value> or --provider <value>
     else if (arg === "--provider" && args[i + 1]) {
       const value = args[++i];
-      if (value !== "anthropic" && value !== "openai" && value !== "gemini") {
-        return { success: false, error: `Invalid provider: ${value}. Must be 'anthropic', 'openai', or 'gemini'.` };
+      if (value !== "anthropic" && value !== "openai" && value !== "gemini" && value !== "ollama") {
+        return { success: false, error: `Invalid provider: ${value}. Must be 'anthropic', 'openai', 'gemini', or 'ollama'.` };
       }
       provider = value;
     } else if (arg.startsWith("--provider=")) {
       const value = arg.slice("--provider=".length);
-      if (value !== "anthropic" && value !== "openai" && value !== "gemini") {
-        return { success: false, error: `Invalid provider: ${value}. Must be 'anthropic', 'openai', or 'gemini'.` };
+      if (value !== "anthropic" && value !== "openai" && value !== "gemini" && value !== "ollama") {
+        return { success: false, error: `Invalid provider: ${value}. Must be 'anthropic', 'openai', 'gemini', or 'ollama'.` };
       }
       provider = value;
     }
@@ -100,6 +113,56 @@ export function parseAgentStartArgs(
     else if (arg === "--dry-run") {
       dryRun = true;
     }
+    // --max-tokens=<value> or --max-tokens <value>
+    else if (arg === "--max-tokens" && args[i + 1]) {
+      const value = parseInt(args[++i], 10);
+      if (isNaN(value) || value <= 0) {
+        return { success: false, error: `Invalid max-tokens: ${args[i]}. Must be a positive integer.` };
+      }
+      maxTokens = value;
+    } else if (arg.startsWith("--max-tokens=")) {
+      const value = parseInt(arg.slice("--max-tokens=".length), 10);
+      if (isNaN(value) || value <= 0) {
+        return { success: false, error: `Invalid max-tokens: ${arg.slice("--max-tokens=".length)}. Must be a positive integer.` };
+      }
+      maxTokens = value;
+    }
+    // --max-cost=<value> or --max-cost <value>
+    else if (arg === "--max-cost" && args[i + 1]) {
+      const value = parseFloat(args[++i]);
+      if (isNaN(value) || value <= 0) {
+        return { success: false, error: `Invalid max-cost: ${args[i]}. Must be a positive number.` };
+      }
+      maxCost = value;
+    } else if (arg.startsWith("--max-cost=")) {
+      const value = parseFloat(arg.slice("--max-cost=".length));
+      if (isNaN(value) || value <= 0) {
+        return { success: false, error: `Invalid max-cost: ${arg.slice("--max-cost=".length)}. Must be a positive number.` };
+      }
+      maxCost = value;
+    }
+    // --require-approval
+    else if (arg === "--require-approval") {
+      requireApproval = true;
+    }
+    // --auto-approve
+    else if (arg === "--auto-approve") {
+      autoApprove = true;
+    }
+    // --approval-timeout=<value> or --approval-timeout <value>
+    else if (arg === "--approval-timeout" && args[i + 1]) {
+      const value = parseInt(args[++i], 10);
+      if (isNaN(value) || value <= 0) {
+        return { success: false, error: `Invalid approval-timeout: ${args[i]}. Must be a positive integer (seconds).` };
+      }
+      approvalTimeout = value * 1000; // Convert to milliseconds
+    } else if (arg.startsWith("--approval-timeout=")) {
+      const value = parseInt(arg.slice("--approval-timeout=".length), 10);
+      if (isNaN(value) || value <= 0) {
+        return { success: false, error: `Invalid approval-timeout: ${arg.slice("--approval-timeout=".length)}. Must be a positive integer (seconds).` };
+      }
+      approvalTimeout = value * 1000; // Convert to milliseconds
+    }
     // --help
     else if (arg === "--help" || arg === "-h") {
       return { success: false, error: "SHOW_HELP" };
@@ -117,7 +180,7 @@ export function parseAgentStartArgs(
 
   return {
     success: true,
-    options: { role, provider, model, chain, task, dryRun },
+    options: { role, provider, model, chain, task, dryRun, maxTokens, maxCost, requireApproval, autoApprove, approvalTimeout },
   };
 }
 
@@ -201,7 +264,15 @@ function formatSessionSummary(
   const duration = formatDuration(durationMs);
   const tokens = `${result.tokensUsed.input.toLocaleString()} in / ${result.tokensUsed.output.toLocaleString()} out`;
 
-  return `\n${status}\nDuration: ${duration} | Tokens: ${tokens}`;
+  const lines = [`\n${status}`, `Duration: ${duration} | Tokens: ${tokens}`];
+
+  // Add cost information if available
+  if (result.costSnapshot) {
+    const cost = result.costSnapshot.estimatedCost;
+    lines.push(`Estimated cost: $${cost.toFixed(4)} (model: ${result.costSnapshot.model})`);
+  }
+
+  return lines.join("\n");
 }
 
 /**
@@ -217,19 +288,33 @@ Required:
   --role=<impl|control>    Agent role (impl for implementation, control for management)
 
 Options:
-  --provider=<name>        LLM provider: anthropic, openai, gemini (default: from CHORAGEN_PROVIDER or anthropic)
+  --provider=<name>        LLM provider: anthropic, openai, gemini, ollama (default: from CHORAGEN_PROVIDER or anthropic)
   --model=<name>           Model to use (default: provider's default model)
   --chain=<id>             Chain ID for context
   --task=<id>              Task ID for context (requires --chain)
   --dry-run                Validate but don't execute tool calls
+  --max-tokens=<number>    Maximum total tokens (input + output) before stopping
+  --max-cost=<number>      Maximum cost in USD before stopping
+  --require-approval       Require human approval for sensitive actions
+  --auto-approve           Auto-approve all actions (for CI/CD, overrides --require-approval)
+  --approval-timeout=<sec> Timeout for approval prompts in seconds (default: 300)
   --help, -h               Show this help message
 
 Environment Variables:
-  CHORAGEN_PROVIDER        Default provider (anthropic, openai, gemini)
+  CHORAGEN_PROVIDER        Default provider (anthropic, openai, gemini, ollama)
   CHORAGEN_MODEL           Default model name
+  CHORAGEN_MAX_TOKENS      Default maximum tokens
+  CHORAGEN_MAX_COST        Default maximum cost in USD
+  CHORAGEN_APPROVAL_TIMEOUT Default approval timeout in seconds
   ANTHROPIC_API_KEY        API key for Anthropic
   OPENAI_API_KEY           API key for OpenAI
   GEMINI_API_KEY           API key for Gemini
+  OLLAMA_HOST              Ollama server URL (default: http://localhost:11434)
+  OLLAMA_MODEL             Ollama model name (default: llama2)
+
+Cost Controls:
+  The session will warn at 80% of any limit and stop at 100%.
+  CLI flags override environment variables.
 
 Examples:
   # Start control agent with defaults
@@ -243,6 +328,18 @@ Examples:
 
   # Dry run to see what would happen
   choragen agent:start --role=control --dry-run
+
+  # Set cost limits
+  choragen agent:start --role=impl --max-tokens=100000 --max-cost=5.00
+
+  # Require human approval for sensitive actions
+  choragen agent:start --role=impl --require-approval
+
+  # Auto-approve for CI/CD pipelines
+  choragen agent:start --role=impl --auto-approve
+
+  # Custom approval timeout (2 minutes)
+  choragen agent:start --role=impl --require-approval --approval-timeout=120
 `.trim();
 }
 
@@ -268,16 +365,32 @@ export async function runAgentStart(
     process.exit(1);
   }
 
-  const { role, provider: providerOverride, model: modelOverride, chain, task, dryRun } = parseResult.options;
+  const { role, provider: providerOverride, model: modelOverride, chain, task, dryRun, maxTokens: maxTokensOverride, maxCost: maxCostOverride, requireApproval, autoApprove, approvalTimeout: approvalTimeoutOverride } = parseResult.options;
+
+  // Get cost limits from env vars, CLI flags override
+  const envLimits = getCostLimitsFromEnv();
+  const maxTokens = maxTokensOverride ?? envLimits.maxTokens;
+  const maxCost = maxCostOverride ?? envLimits.maxCost;
+
+  // Get approval timeout from env vars, CLI flags override
+  const approvalTimeoutMs = approvalTimeoutOverride ?? getApprovalTimeoutFromEnv();
+
+  // Build checkpoint configuration
+  const checkpointConfig: Partial<CheckpointConfig> = {
+    requireApproval: requireApproval ?? false,
+    autoApprove: autoApprove ?? false,
+    approvalTimeoutMs,
+  };
 
   // Determine provider
   const providerName = providerOverride ?? getProviderFromEnv() ?? "anthropic";
 
-  // Check for API key
+  // Check for API key (Ollama doesn't need one)
   const apiKey = getApiKeyFromEnv(providerName);
   if (!apiKey) {
     const envVar = providerName === "anthropic" ? "ANTHROPIC_API_KEY" :
-                   providerName === "openai" ? "OPENAI_API_KEY" : "GEMINI_API_KEY";
+                   providerName === "openai" ? "OPENAI_API_KEY" :
+                   providerName === "gemini" ? "GEMINI_API_KEY" : "OLLAMA_HOST";
     console.error(`Error: API key not found for provider '${providerName}'.`);
     console.error(`Set the ${envVar} environment variable.`);
     process.exit(1);
@@ -347,6 +460,9 @@ export async function runAgentStart(
       taskId: task,
       workspaceRoot,
       dryRun,
+      maxTokens,
+      maxCost,
+      checkpointConfig,
     });
 
     // Restore console.log

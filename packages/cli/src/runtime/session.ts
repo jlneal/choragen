@@ -6,7 +6,7 @@
  */
 
 import { randomBytes } from "node:crypto";
-import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { AgentRole } from "./tools/types.js";
 import type { Message } from "./providers/types.js";
@@ -102,6 +102,34 @@ export class AuditLogger {
 export type SessionOutcome = "success" | "failure" | "interrupted";
 
 /**
+ * Session runtime status for crash recovery.
+ */
+export type SessionStatus = "running" | "paused" | "completed" | "failed";
+
+/**
+ * Error details captured when a session fails.
+ */
+export interface SessionError {
+  message: string;
+  stack?: string;
+  recoverable: boolean;
+}
+
+/**
+ * Summary of a session for listing purposes.
+ */
+export interface SessionSummary {
+  id: string;
+  role: AgentRole;
+  status: SessionStatus;
+  startTime: string;
+  endTime: string | null;
+  tokenUsage: SessionTokenUsage;
+  chainId: string | null;
+  taskId: string | null;
+}
+
+/**
  * Token usage statistics for a session.
  */
 export interface SessionTokenUsage {
@@ -154,6 +182,12 @@ export interface SessionData {
   childSessionIds: string[];
   /** Nesting depth (0 = root session) */
   nestingDepth: number;
+  /** Runtime status for crash recovery */
+  status: SessionStatus;
+  /** Error details if session failed */
+  error?: SessionError;
+  /** Index of the last completed turn for resume */
+  lastTurnIndex: number;
 }
 
 /**
@@ -239,6 +273,8 @@ export class Session {
         parentSessionId: config.parentSessionId ?? null,
         childSessionIds: [],
         nestingDepth: config.nestingDepth ?? 0,
+        status: "running",
+        lastTurnIndex: 0,
       };
     }
   }
@@ -273,6 +309,90 @@ export class Session {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * List all sessions in the workspace.
+   * @param workspaceRoot - Workspace root directory
+   * @returns Array of session summaries sorted by startTime (newest first)
+   */
+  static async listAll(workspaceRoot: string): Promise<SessionSummary[]> {
+    const sessionsDir = join(workspaceRoot, SESSIONS_DIR);
+    const summaries: SessionSummary[] = [];
+
+    try {
+      const files = await readdir(sessionsDir);
+      const jsonFiles = files.filter((f) => f.endsWith(".json"));
+
+      for (const file of jsonFiles) {
+        try {
+          const filePath = join(sessionsDir, file);
+          const content = await readFile(filePath, "utf-8");
+          const data = JSON.parse(content) as SessionData;
+          summaries.push({
+            id: data.id,
+            role: data.role,
+            status: data.status,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            tokenUsage: { ...data.tokenUsage },
+            chainId: data.chainId,
+            taskId: data.taskId,
+          });
+        } catch {
+          // Skip invalid session files
+        }
+      }
+    } catch {
+      // Sessions directory doesn't exist yet
+      return [];
+    }
+
+    // Sort by startTime descending (newest first)
+    return summaries.sort((a, b) => b.startTime.localeCompare(a.startTime));
+  }
+
+  /**
+   * Clean up old session files.
+   * @param workspaceRoot - Workspace root directory
+   * @param olderThanDays - Delete sessions older than this many days
+   * @returns Number of sessions deleted
+   */
+  static async cleanup(
+    workspaceRoot: string,
+    olderThanDays: number
+  ): Promise<number> {
+    const sessionsDir = join(workspaceRoot, SESSIONS_DIR);
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+    const cutoffTime = cutoffDate.getTime();
+
+    let deletedCount = 0;
+
+    try {
+      const files = await readdir(sessionsDir);
+      const jsonFiles = files.filter((f) => f.endsWith(".json"));
+
+      for (const file of jsonFiles) {
+        try {
+          const filePath = join(sessionsDir, file);
+          const fileStat = await stat(filePath);
+          
+          // Use file modification time to determine age
+          if (fileStat.mtime.getTime() < cutoffTime) {
+            await unlink(filePath);
+            deletedCount++;
+          }
+        } catch {
+          // Skip files that can't be accessed
+        }
+      }
+    } catch {
+      // Sessions directory doesn't exist
+      return 0;
+    }
+
+    return deletedCount;
   }
 
   /**
@@ -381,6 +501,27 @@ export class Session {
   }
 
   /**
+   * Get the session status.
+   */
+  get status(): SessionStatus {
+    return this.data.status;
+  }
+
+  /**
+   * Get the error details (if any).
+   */
+  get error(): SessionError | undefined {
+    return this.data.error ? { ...this.data.error } : undefined;
+  }
+
+  /**
+   * Get the last completed turn index.
+   */
+  get lastTurnIndex(): number {
+    return this.data.lastTurnIndex;
+  }
+
+  /**
    * Add a message to the session.
    * @param message - Message to add
    */
@@ -416,6 +557,7 @@ export class Session {
   async end(outcome: SessionOutcome): Promise<void> {
     this.data.endTime = new Date().toISOString();
     this.data.outcome = outcome;
+    this.data.status = outcome === "success" ? "completed" : "failed";
     await this.save();
   }
 
@@ -425,6 +567,36 @@ export class Session {
    */
   async addChildSession(childSessionId: string): Promise<void> {
     this.data.childSessionIds.push(childSessionId);
+    await this.save();
+  }
+
+  /**
+   * Set the session status.
+   * Auto-saves after status change for crash recovery.
+   * @param status - New session status
+   */
+  async setStatus(status: SessionStatus): Promise<void> {
+    this.data.status = status;
+    await this.save();
+  }
+
+  /**
+   * Mark the session as failed with error details.
+   * Auto-saves after recording error for crash recovery.
+   * @param error - Error details
+   */
+  async setFailed(error: SessionError): Promise<void> {
+    this.data.status = "failed";
+    this.data.error = error;
+    await this.save();
+  }
+
+  /**
+   * Increment the turn index after completing a turn.
+   * Auto-saves for crash recovery.
+   */
+  async incrementTurnIndex(): Promise<void> {
+    this.data.lastTurnIndex++;
     await this.save();
   }
 

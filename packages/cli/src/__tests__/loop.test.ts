@@ -423,8 +423,9 @@ describe("runAgentSession", () => {
         }),
       };
 
+      // Disable retry to avoid timeout waiting for backoff delays
       const result = await runAgentSession(
-        { ...baseConfig, provider },
+        { ...baseConfig, provider, retryConfig: { enabled: false } },
         { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
       );
 

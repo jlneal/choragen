@@ -288,12 +288,14 @@ Session complete. Tokens: 12,450 input / 3,200 output
 
 ### Phase 4: Production Hardening
 
-**CR**: [CR-20251207-028](../../../requests/change-requests/todo/CR-20251207-028-agent-runtime-production.md)
+**CR**: [CR-20251207-028](../../../requests/change-requests/done/CR-20251207-028-agent-runtime-production.md)  
+**Chain**: CHAIN-040-production-hardening
 
-- Error recovery
-- Cost controls (token limits)
-- Human-in-the-loop checkpoints
-- Multiple LLM provider support
+- Error recovery (retry with backoff, session resume)
+- Cost controls (token limits, cost tracking)
+- Human-in-the-loop checkpoints (approval prompts)
+- Local model support (Ollama provider)
+- Graceful shutdown handling
 
 **Deliverable**: Runtime is production-ready with safety controls
 

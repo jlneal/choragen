@@ -70,9 +70,25 @@ export type { ToolCall as GovernanceToolCall } from "./governance-gate.js";
 export type { SessionContext, ToolSummary } from "./prompt-loader.js";
 export { PromptLoader, createToolSummaries } from "./prompt-loader.js";
 
+// Retry logic
+export type { RetryConfig, RetryResult, RetryableError } from "./retry.js";
+export {
+  withRetry,
+  withRetryWrapper,
+  isRetryableError,
+  calculateBackoffDelay,
+  sleep,
+  DEFAULT_RETRY_CONFIG,
+  RETRYABLE_STATUS_CODES,
+  RETRYABLE_ERROR_TYPES,
+} from "./retry.js";
+
 // Session state
 export type {
   SessionOutcome,
+  SessionStatus,
+  SessionError,
+  SessionSummary,
   SessionTokenUsage,
   SessionGovernanceResult,
   SessionToolCall,
@@ -81,3 +97,46 @@ export type {
   AuditLogEntry,
 } from "./session.js";
 export { Session, AuditLogger } from "./session.js";
+
+// Cost tracking
+export type {
+  ModelPricing,
+  TokenUsage as CostTokenUsage,
+  LimitCheckResult,
+  CostTrackerConfig,
+  CostSnapshot,
+} from "./cost-tracker.js";
+export {
+  CostTracker,
+  MODEL_PRICING,
+  DEFAULT_PRICING,
+  getCostLimitsFromEnv,
+} from "./cost-tracker.js";
+
+// Checkpoint system
+export type {
+  ApprovalResult,
+  CheckpointConfig,
+  ApprovalContext,
+  ApprovalCallback,
+} from "./checkpoint.js";
+export {
+  CheckpointHandler,
+  SENSITIVE_ACTIONS,
+  createCheckpointHandler,
+  defaultCheckpointHandler,
+  getApprovalTimeoutFromEnv,
+  DEFAULT_APPROVAL_TIMEOUT,
+} from "./checkpoint.js";
+
+// Graceful shutdown
+export type {
+  ShutdownState,
+  ShutdownCallback,
+  ShutdownConfig,
+} from "./shutdown.js";
+export {
+  ShutdownHandler,
+  createShutdownHandler,
+  defaultShutdownHandler,
+} from "./shutdown.js";

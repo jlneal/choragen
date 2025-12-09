@@ -8,6 +8,7 @@
 import type { AgentRole } from "./types.js";
 import type { AuditLogEntry } from "../session.js";
 import { AuditLogger } from "../session.js";
+import { withRetry, DEFAULT_RETRY_CONFIG, type RetryConfig } from "../retry.js";
 
 /**
  * Result of a tool execution.
@@ -42,6 +43,8 @@ export interface ExecutionContext {
   workspaceRoot: string;
   /** Optional audit log callback for file operations */
   auditLog?: AuditLogCallback;
+  /** Optional retry configuration for tool execution */
+  retryConfig?: Partial<RetryConfig>;
 }
 
 /**
@@ -213,9 +216,14 @@ export function buildDeniedAuditEntry(
  */
 export class ToolExecutor {
   private executors: Map<string, ToolExecutorFn>;
+  private defaultRetryConfig: RetryConfig;
 
-  constructor(executors: Map<string, ToolExecutorFn> = TOOL_EXECUTORS) {
+  constructor(
+    executors: Map<string, ToolExecutorFn> = TOOL_EXECUTORS,
+    defaultRetryConfig: Partial<RetryConfig> = {}
+  ) {
     this.executors = new Map(executors);
+    this.defaultRetryConfig = { ...DEFAULT_RETRY_CONFIG, ...defaultRetryConfig };
   }
 
   /**
@@ -239,29 +247,39 @@ export class ToolExecutor {
       };
     }
 
-    try {
-      const result = await executor(params, context);
+    // Merge retry configs: default < executor default < context override
+    const effectiveRetryConfig: RetryConfig = {
+      ...this.defaultRetryConfig,
+      ...context.retryConfig,
+    };
 
-      // Audit log file operations
-      if (context.auditLog && AuditLogger.shouldLog(toolName)) {
-        await this.logFileOperation(toolName, params, result, context);
-      }
+    // Execute with retry for transient errors
+    const retryResult = await withRetry(
+      () => executor(params, context),
+      effectiveRetryConfig
+    );
 
-      return result;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      const result: ToolResult = {
+    let result: ToolResult;
+
+    if (retryResult.success) {
+      result = retryResult.data!;
+    } else {
+      const message = retryResult.error?.message ?? "Unknown error";
+      const retryInfo = retryResult.wasRetryable
+        ? ` (retried ${retryResult.attempts - 1} times)`
+        : "";
+      result = {
         success: false,
-        error: `Tool execution failed: ${message}`,
+        error: `Tool execution failed${retryInfo}: ${message}`,
       };
-
-      // Audit log file operation errors
-      if (context.auditLog && AuditLogger.shouldLog(toolName)) {
-        await this.logFileOperation(toolName, params, result, context);
-      }
-
-      return result;
     }
+
+    // Audit log file operations
+    if (context.auditLog && AuditLogger.shouldLog(toolName)) {
+      await this.logFileOperation(toolName, params, result, context);
+    }
+
+    return result;
   }
 
   /**

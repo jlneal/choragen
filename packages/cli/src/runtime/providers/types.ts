@@ -106,7 +106,7 @@ export interface ProviderConfig {
 /**
  * Supported LLM provider names.
  */
-export type ProviderName = "anthropic" | "openai" | "gemini";
+export type ProviderName = "anthropic" | "openai" | "gemini" | "ollama";
 
 /**
  * Default models for each provider.
@@ -115,6 +115,7 @@ export const DEFAULT_MODELS: Record<ProviderName, string> = {
   anthropic: "claude-sonnet-4-20250514",
   openai: "gpt-4o",
   gemini: "gemini-2.0-flash",
+  ollama: "llama2",
 };
 
 /**

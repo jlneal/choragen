@@ -2,7 +2,7 @@
 
 **ID**: CR-20251207-028  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-07  
 **Owner**: control-agent  
 
@@ -61,36 +61,36 @@ Phase 4 addresses these gaps to make the runtime suitable for real-world use.
 ## Acceptance Criteria
 
 ### Error Recovery
-- [ ] Failed tool calls are retried with exponential backoff
-- [ ] Session state is persisted after each turn
-- [ ] `agent:resume` command continues a crashed session
-- [ ] Unrecoverable errors trigger graceful shutdown with state dump
+- [x] Failed tool calls are retried with exponential backoff
+- [x] Session state is persisted after each turn
+- [x] `agent:resume` command continues a crashed session
+- [x] Unrecoverable errors trigger graceful shutdown with state dump
 
 ### Cost Controls
-- [ ] `--max-tokens` flag limits total tokens per session
-- [ ] `--max-cost` flag limits estimated cost per session
-- [ ] Warning at 80% of limit, hard stop at 100%
-- [ ] Cost tracking displayed in session output
-- [ ] Session summary shows total cost
+- [x] `--max-tokens` flag limits total tokens per session
+- [x] `--max-cost` flag limits estimated cost per session
+- [x] Warning at 80% of limit, hard stop at 100%
+- [x] Cost tracking displayed in session output
+- [x] Session summary shows total cost
 
 ### Human Checkpoints
-- [ ] `--require-approval` flag enables checkpoint mode
-- [ ] Sensitive actions (file delete, chain close) pause for approval
-- [ ] Approval prompt shows action details and waits for y/n
-- [ ] Timeout on approval prompt (default: 5 minutes)
-- [ ] `--auto-approve` flag for CI/CD (skips prompts)
+- [x] `--require-approval` flag enables checkpoint mode
+- [x] Sensitive actions (file delete, chain close) pause for approval
+- [x] Approval prompt shows action details and waits for y/n
+- [x] Timeout on approval prompt (default: 5 minutes)
+- [x] `--auto-approve` flag for CI/CD (skips prompts)
 
 ### Local Model Support
-- [ ] `--provider=ollama` flag for local models
-- [ ] Ollama-specific configuration via environment variables
-- [ ] Graceful degradation for models without tool support
+- [x] `--provider=ollama` flag for local models
+- [x] Ollama-specific configuration via environment variables
+- [x] Graceful degradation for models without tool support
 
 ### Session Persistence
-- [ ] Session state saved to `.choragen/sessions/{session-id}.json`
-- [ ] State includes: messages, tool calls, metrics, position
-- [ ] `agent:list-sessions` shows saved sessions
-- [ ] `agent:resume {session-id}` continues session
-- [ ] `agent:cleanup` removes old session files
+- [x] Session state saved to `.choragen/sessions/{session-id}.json`
+- [x] State includes: messages, tool calls, metrics, position
+- [x] `agent:list-sessions` shows saved sessions
+- [x] `agent:resume {session-id}` continues session
+- [x] `agent:cleanup` removes old session files
 
 ---
 
@@ -200,4 +200,25 @@ CHORAGEN_MAX_COST=5.00
 
 ## Completion Notes
 
-[Added when moved to done/]
+**Completed**: 2025-12-08  
+**Chain**: CHAIN-040-production-hardening  
+**Tests**: 615 tests passing (258 new tests added)
+
+### Files Created
+
+- `packages/cli/src/runtime/retry.ts` - Exponential backoff retry logic
+- `packages/cli/src/runtime/cost-tracker.ts` - Token/cost tracking and limits
+- `packages/cli/src/runtime/checkpoint.ts` - Human-in-the-loop approval prompts
+- `packages/cli/src/runtime/shutdown.ts` - Graceful SIGINT/SIGTERM handling
+- `packages/cli/src/runtime/providers/ollama.ts` - Local LLM provider
+- `packages/cli/src/commands/agent-session.ts` - Session management commands
+- `packages/cli/src/__tests__/production-hardening.integration.test.ts` - Integration tests
+
+### Features Delivered
+
+1. **Error Recovery**: Retry with exponential backoff (1s, 2s, 4s, 8s), session resume
+2. **Cost Controls**: `--max-tokens`, `--max-cost` flags, 80% warning, 100% hard stop
+3. **Human Checkpoints**: `--require-approval`, `--auto-approve`, timeout handling
+4. **Ollama Provider**: `--provider=ollama`, OLLAMA_HOST/OLLAMA_MODEL env vars
+5. **Session Management**: `agent:resume`, `agent:list-sessions`, `agent:cleanup`
+6. **Graceful Shutdown**: SIGINT/SIGTERM handling, session pause on interrupt

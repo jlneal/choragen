@@ -5,13 +5,14 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdir, rm, readFile, readdir } from "node:fs/promises";
+import { mkdir, rm, readFile, readdir, writeFile, utimes } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   Session,
   type SessionConfig,
   type SessionToolCall,
+  type SessionError,
 } from "../runtime/session.js";
 
 describe("Session", () => {
@@ -599,6 +600,402 @@ describe("Session", () => {
       expect(json.parentSessionId).toBe("parent-001");
       expect(json.nestingDepth).toBe(2);
       expect(json.childSessionIds).toEqual([]);
+    });
+  });
+
+  describe("session status and error tracking", () => {
+    it("initializes with running status", () => {
+      const config: SessionConfig = {
+        role: "impl",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+
+      const session = new Session(config);
+
+      expect(session.status).toBe("running");
+      expect(session.error).toBeUndefined();
+      expect(session.lastTurnIndex).toBe(0);
+    });
+
+    it("setStatus changes status and saves", async () => {
+      const config: SessionConfig = {
+        role: "control",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+      const session = new Session(config);
+
+      await session.setStatus("paused");
+
+      expect(session.status).toBe("paused");
+
+      // Verify persisted
+      const loaded = await Session.load(session.id, testWorkspace);
+      expect(loaded!.status).toBe("paused");
+    });
+
+    it("setFailed sets status to failed with error details", async () => {
+      const config: SessionConfig = {
+        role: "impl",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+      const session = new Session(config);
+
+      const error: SessionError = {
+        message: "API rate limit exceeded",
+        stack: "Error: API rate limit exceeded\n    at ...",
+        recoverable: true,
+      };
+
+      await session.setFailed(error);
+
+      expect(session.status).toBe("failed");
+      expect(session.error).toEqual(error);
+
+      // Verify persisted
+      const loaded = await Session.load(session.id, testWorkspace);
+      expect(loaded!.status).toBe("failed");
+      expect(loaded!.error).toEqual(error);
+    });
+
+    it("incrementTurnIndex increments and saves", async () => {
+      const config: SessionConfig = {
+        role: "control",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+      const session = new Session(config);
+
+      expect(session.lastTurnIndex).toBe(0);
+
+      await session.incrementTurnIndex();
+      expect(session.lastTurnIndex).toBe(1);
+
+      await session.incrementTurnIndex();
+      expect(session.lastTurnIndex).toBe(2);
+
+      // Verify persisted
+      const loaded = await Session.load(session.id, testWorkspace);
+      expect(loaded!.lastTurnIndex).toBe(2);
+    });
+
+    it("end with success sets status to completed", async () => {
+      const config: SessionConfig = {
+        role: "impl",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+      const session = new Session(config);
+
+      await session.end("success");
+
+      expect(session.status).toBe("completed");
+      expect(session.outcome).toBe("success");
+    });
+
+    it("end with failure sets status to failed", async () => {
+      const config: SessionConfig = {
+        role: "control",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+      const session = new Session(config);
+
+      await session.end("failure");
+
+      expect(session.status).toBe("failed");
+      expect(session.outcome).toBe("failure");
+    });
+
+    it("end with interrupted sets status to failed", async () => {
+      const config: SessionConfig = {
+        role: "impl",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+      const session = new Session(config);
+
+      await session.end("interrupted");
+
+      expect(session.status).toBe("failed");
+      expect(session.outcome).toBe("interrupted");
+    });
+
+    it("error getter returns defensive copy", async () => {
+      const config: SessionConfig = {
+        role: "impl",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+      const session = new Session(config);
+
+      const error: SessionError = {
+        message: "Test error",
+        recoverable: false,
+      };
+      await session.setFailed(error);
+
+      const error1 = session.error;
+      const error2 = session.error;
+
+      // Modifying one should not affect the other
+      error1!.message = "Modified";
+      expect(error2!.message).toBe("Test error");
+    });
+  });
+
+  describe("listAll", () => {
+    it("returns empty array when no sessions exist", async () => {
+      const sessions = await Session.listAll(testWorkspace);
+
+      expect(sessions).toEqual([]);
+    });
+
+    it("returns empty array when sessions directory does not exist", async () => {
+      const nonExistentWorkspace = join(tmpdir(), `non-existent-${Date.now()}`);
+
+      const sessions = await Session.listAll(nonExistentWorkspace);
+
+      expect(sessions).toEqual([]);
+    });
+
+    it("lists all sessions with summary data", async () => {
+      // Create multiple sessions
+      const config1: SessionConfig = {
+        role: "control",
+        model: "claude-sonnet-4-20250514",
+        chainId: "CHAIN-001",
+        workspaceRoot: testWorkspace,
+      };
+      const session1 = new Session(config1);
+      session1.updateTokenUsage(100, 50);
+      await session1.save();
+
+      const config2: SessionConfig = {
+        role: "impl",
+        model: "claude-sonnet-4-20250514",
+        chainId: "CHAIN-001",
+        taskId: "TASK-001",
+        workspaceRoot: testWorkspace,
+      };
+      const session2 = new Session(config2);
+      session2.updateTokenUsage(200, 100);
+      await session2.end("success");
+
+      const sessions = await Session.listAll(testWorkspace);
+
+      expect(sessions).toHaveLength(2);
+
+      // Should be sorted by startTime descending (newest first)
+      // session2 was created after session1
+      const summaries = sessions.map((s) => s.id);
+      expect(summaries).toContain(session1.id);
+      expect(summaries).toContain(session2.id);
+
+      // Check summary data
+      const s1Summary = sessions.find((s) => s.id === session1.id)!;
+      expect(s1Summary.role).toBe("control");
+      expect(s1Summary.status).toBe("running");
+      expect(s1Summary.chainId).toBe("CHAIN-001");
+      expect(s1Summary.taskId).toBeNull();
+      expect(s1Summary.tokenUsage).toEqual({ input: 100, output: 50, total: 150 });
+
+      const s2Summary = sessions.find((s) => s.id === session2.id)!;
+      expect(s2Summary.role).toBe("impl");
+      expect(s2Summary.status).toBe("completed");
+      expect(s2Summary.chainId).toBe("CHAIN-001");
+      expect(s2Summary.taskId).toBe("TASK-001");
+      expect(s2Summary.tokenUsage).toEqual({ input: 200, output: 100, total: 300 });
+    });
+
+    it("skips invalid session files", async () => {
+      // Create a valid session
+      const config: SessionConfig = {
+        role: "control",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+      const session = new Session(config);
+      await session.save();
+
+      // Create an invalid JSON file
+      const sessionsDir = join(testWorkspace, ".choragen/sessions");
+      await writeFile(join(sessionsDir, "invalid.json"), "not valid json", "utf-8");
+
+      const sessions = await Session.listAll(testWorkspace);
+
+      // Should only return the valid session
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].id).toBe(session.id);
+    });
+  });
+
+  describe("cleanup", () => {
+    it("returns 0 when sessions directory does not exist", async () => {
+      const nonExistentWorkspace = join(tmpdir(), `non-existent-${Date.now()}`);
+      const DAYS_THRESHOLD = 7;
+
+      const deleted = await Session.cleanup(nonExistentWorkspace, DAYS_THRESHOLD);
+
+      expect(deleted).toBe(0);
+    });
+
+    it("returns 0 when no sessions are old enough", async () => {
+      const config: SessionConfig = {
+        role: "control",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+      const session = new Session(config);
+      await session.save();
+      const DAYS_THRESHOLD = 7;
+
+      const deleted = await Session.cleanup(testWorkspace, DAYS_THRESHOLD);
+
+      expect(deleted).toBe(0);
+
+      // Session should still exist
+      const sessions = await Session.listAll(testWorkspace);
+      expect(sessions).toHaveLength(1);
+    });
+
+    it("deletes sessions older than specified days", async () => {
+      // Create a session
+      const config: SessionConfig = {
+        role: "impl",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+      const session = new Session(config);
+      await session.save();
+
+      // Modify the file's mtime to be 10 days ago
+      const sessionsDir = join(testWorkspace, ".choragen/sessions");
+      const filePath = join(sessionsDir, `${session.id}.json`);
+      const tenDaysAgo = new Date();
+      tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+      await utimes(filePath, tenDaysAgo, tenDaysAgo);
+      const DAYS_THRESHOLD = 7;
+
+      const deleted = await Session.cleanup(testWorkspace, DAYS_THRESHOLD);
+
+      expect(deleted).toBe(1);
+
+      // Session should no longer exist
+      const sessions = await Session.listAll(testWorkspace);
+      expect(sessions).toHaveLength(0);
+    });
+
+    it("only deletes sessions older than threshold", async () => {
+      // Create two sessions
+      const config1: SessionConfig = {
+        role: "control",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+      const oldSession = new Session(config1);
+      await oldSession.save();
+
+      const config2: SessionConfig = {
+        role: "impl",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+      const newSession = new Session(config2);
+      await newSession.save();
+
+      // Make the first session old
+      const sessionsDir = join(testWorkspace, ".choragen/sessions");
+      const oldFilePath = join(sessionsDir, `${oldSession.id}.json`);
+      const tenDaysAgo = new Date();
+      tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+      await utimes(oldFilePath, tenDaysAgo, tenDaysAgo);
+      const DAYS_THRESHOLD = 7;
+
+      const deleted = await Session.cleanup(testWorkspace, DAYS_THRESHOLD);
+
+      expect(deleted).toBe(1);
+
+      // Only new session should remain
+      const sessions = await Session.listAll(testWorkspace);
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].id).toBe(newSession.id);
+    });
+  });
+
+  describe("session data persistence for resume", () => {
+    it("persists status, error, and lastTurnIndex to JSON", async () => {
+      const config: SessionConfig = {
+        role: "impl",
+        model: "claude-sonnet-4-20250514",
+        chainId: "CHAIN-040",
+        taskId: "002",
+        workspaceRoot: testWorkspace,
+      };
+      const session = new Session(config);
+
+      // Simulate a session that was running and then failed
+      await session.incrementTurnIndex();
+      await session.incrementTurnIndex();
+      await session.setFailed({
+        message: "Connection timeout",
+        recoverable: true,
+      });
+
+      const filePath = join(testWorkspace, ".choragen/sessions", `${session.id}.json`);
+      const content = await readFile(filePath, "utf-8");
+      const data = JSON.parse(content);
+
+      expect(data).toHaveProperty("status", "failed");
+      expect(data).toHaveProperty("lastTurnIndex", 2);
+      expect(data).toHaveProperty("error");
+      expect(data.error).toEqual({
+        message: "Connection timeout",
+        recoverable: true,
+      });
+    });
+
+    it("loaded session preserves all resume data", async () => {
+      const config: SessionConfig = {
+        role: "control",
+        model: "claude-sonnet-4-20250514",
+        chainId: "CHAIN-040",
+        workspaceRoot: testWorkspace,
+      };
+      const session = new Session(config);
+
+      session.addMessage({ role: "system", content: "System prompt" });
+      session.addMessage({ role: "user", content: "User message" });
+      session.addMessage({ role: "assistant", content: "Assistant response" });
+      await session.incrementTurnIndex();
+      await session.setStatus("paused");
+
+      const loaded = await Session.load(session.id, testWorkspace);
+
+      expect(loaded).not.toBeNull();
+      expect(loaded!.status).toBe("paused");
+      expect(loaded!.lastTurnIndex).toBe(1);
+      expect(loaded!.messages).toHaveLength(3);
+      expect(loaded!.messages[0].content).toBe("System prompt");
+      expect(loaded!.messages[1].content).toBe("User message");
+      expect(loaded!.messages[2].content).toBe("Assistant response");
+    });
+
+    it("toJSON includes status, error, and lastTurnIndex", () => {
+      const config: SessionConfig = {
+        role: "impl",
+        model: "claude-sonnet-4-20250514",
+        workspaceRoot: testWorkspace,
+      };
+      const session = new Session(config);
+
+      const json = session.toJSON();
+
+      expect(json).toHaveProperty("status", "running");
+      expect(json).toHaveProperty("lastTurnIndex", 0);
+      expect(json.error).toBeUndefined();
     });
   });
 });

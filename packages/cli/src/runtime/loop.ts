@@ -12,6 +12,9 @@ import { ToolRegistry, defaultRegistry } from "./tools/registry.js";
 import { ToolExecutor, defaultExecutor, type ChildSessionConfig, type ChildSessionResult } from "./tools/executor.js";
 import { GovernanceGate, defaultGovernanceGate } from "./governance-gate.js";
 import { PromptLoader, createToolSummaries } from "./prompt-loader.js";
+import { withRetry, DEFAULT_RETRY_CONFIG, type RetryConfig } from "./retry.js";
+import { CostTracker, type CostSnapshot } from "./cost-tracker.js";
+import { CheckpointHandler, type CheckpointConfig } from "./checkpoint.js";
 
 /**
  * Default maximum iterations for safety limit.
@@ -49,6 +52,14 @@ export interface AgentSessionConfig {
   maxNestingDepth?: number;
   /** Additional context passed from parent session */
   parentContext?: string;
+  /** Retry configuration for LLM calls (default: enabled with 3 retries) */
+  retryConfig?: Partial<RetryConfig>;
+  /** Maximum total tokens (input + output), undefined = no limit */
+  maxTokens?: number;
+  /** Maximum cost in USD, undefined = no limit */
+  maxCost?: number;
+  /** Checkpoint configuration for human-in-the-loop approval */
+  checkpointConfig?: Partial<CheckpointConfig>;
 }
 
 /**
@@ -87,8 +98,10 @@ export interface SessionResult {
   tokensUsed: { input: number; output: number };
   /** Error message (if session failed) */
   error?: string;
-  /** Stop reason (end_turn, max_iterations, error, max_depth) */
-  stopReason: "end_turn" | "max_iterations" | "error" | "max_depth";
+  /** Stop reason (end_turn, max_iterations, error, max_depth, cost_limit) */
+  stopReason: "end_turn" | "max_iterations" | "error" | "max_depth" | "cost_limit" | "paused";
+  /** Cost tracking snapshot at end of session */
+  costSnapshot?: CostSnapshot;
   /** Session ID */
   sessionId: string;
   /** Child session results (for nested sessions) */
@@ -103,6 +116,7 @@ export interface LoopDependencies {
   executor?: ToolExecutor;
   governanceGate?: GovernanceGate;
   promptLoader?: PromptLoader;
+  checkpointHandler?: CheckpointHandler;
 }
 
 /**
@@ -169,7 +183,17 @@ export async function runAgentSession(
     nestingDepth = 0,
     maxNestingDepth = DEFAULT_MAX_NESTING_DEPTH,
     parentContext,
+    retryConfig,
+    maxTokens,
+    maxCost,
+    checkpointConfig,
   } = config;
+
+  // Merge retry config with defaults
+  const effectiveRetryConfig: RetryConfig = {
+    ...DEFAULT_RETRY_CONFIG,
+    ...retryConfig,
+  };
 
   // Use provided dependencies or defaults
   const registry = deps.registry ?? defaultRegistry;
@@ -193,11 +217,22 @@ export async function runAgentSession(
 
   // Session state
   const sessionId = randomUUID();
+  const checkpointHandler = deps.checkpointHandler ?? new CheckpointHandler({
+    ...checkpointConfig,
+    sessionId,
+  });
   const toolCallRecords: ToolCallRecord[] = [];
   const childSessionResults: SessionResult[] = [];
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
   let iterations = 0;
+
+  // Initialize cost tracker
+  const costTracker = new CostTracker({
+    model: provider.model,
+    maxTokens,
+    maxCost,
+  });
 
   // Get tools for role
   const toolDefinitions = registry.getToolsForRole(role);
@@ -283,12 +318,53 @@ export async function runAgentSession(
       // Log iteration start
       console.log(`[Loop] Iteration ${iterations}/${maxIterations}`);
 
-      // Call LLM
-      const response = await provider.chat(messages, tools);
+      // Call LLM with retry
+      const retryResult = await withRetry(
+        () => provider.chat(messages, tools),
+        effectiveRetryConfig
+      );
+
+      // Check if LLM call failed after all retries
+      if (!retryResult.success) {
+        const errorMessage = retryResult.error?.message ?? "Unknown LLM error";
+        const retryInfo = retryResult.wasRetryable
+          ? ` (retried ${retryResult.attempts - 1} times)`
+          : " (non-retryable)";
+        console.error(`[Loop] LLM call failed${retryInfo}: ${errorMessage}`);
+        throw retryResult.error ?? new Error(errorMessage);
+      }
+
+      const response = retryResult.data!;
 
       // Track token usage
       totalInputTokens += response.usage.inputTokens;
       totalOutputTokens += response.usage.outputTokens;
+      costTracker.addUsage(response.usage.inputTokens, response.usage.outputTokens);
+
+      // Log turn summary with cost info
+      if (costTracker.hasLimits()) {
+        console.log(`[Loop] ${costTracker.formatTurnSummary(iterations)}`);
+      }
+
+      // Check cost limits
+      const limitCheck = costTracker.checkLimits();
+      if (limitCheck.exceeded) {
+        console.log(`[Loop] Session ended: cost_limit - ${limitCheck.message}`);
+        return {
+          success: false,
+          iterations,
+          toolCalls: toolCallRecords,
+          tokensUsed: { input: totalInputTokens, output: totalOutputTokens },
+          error: limitCheck.message ?? "Cost limit exceeded",
+          stopReason: "cost_limit",
+          sessionId,
+          costSnapshot: costTracker.getSnapshot(),
+          childSessions: childSessionResults.length > 0 ? childSessionResults : undefined,
+        };
+      }
+      if (limitCheck.warning) {
+        console.log(`[Loop] WARNING: ${limitCheck.message}`);
+      }
 
       // Add assistant response to history
       if (response.content) {
@@ -304,9 +380,26 @@ export async function runAgentSession(
           governanceGate,
           executor,
           executionContext,
-          dryRun
+          dryRun,
+          checkpointHandler
         );
         toolCallRecords.push(record);
+
+        // Check if session was paused due to approval timeout
+        if (checkpointHandler.paused) {
+          console.log("[Loop] Session paused due to approval timeout");
+          return {
+            success: false,
+            iterations,
+            toolCalls: toolCallRecords,
+            tokensUsed: { input: totalInputTokens, output: totalOutputTokens },
+            error: "Session paused: approval timeout",
+            stopReason: "paused",
+            sessionId,
+            costSnapshot: costTracker.getSnapshot(),
+            childSessions: childSessionResults.length > 0 ? childSessionResults : undefined,
+          };
+        }
 
         // Add tool result to conversation
         const toolMessage = buildToolMessage(toolCall, record);
@@ -323,6 +416,7 @@ export async function runAgentSession(
           tokensUsed: { input: totalInputTokens, output: totalOutputTokens },
           stopReason: "end_turn",
           sessionId,
+          costSnapshot: costTracker.getSnapshot(),
           childSessions: childSessionResults.length > 0 ? childSessionResults : undefined,
         };
       }
@@ -338,6 +432,7 @@ export async function runAgentSession(
       error: `Maximum iterations (${maxIterations}) reached`,
       stopReason: "max_iterations",
       sessionId,
+      costSnapshot: costTracker.getSnapshot(),
       childSessions: childSessionResults.length > 0 ? childSessionResults : undefined,
     };
   } catch (err) {
@@ -351,6 +446,7 @@ export async function runAgentSession(
       error: errorMessage,
       stopReason: "error",
       sessionId,
+      costSnapshot: costTracker.getSnapshot(),
       childSessions: childSessionResults.length > 0 ? childSessionResults : undefined,
     };
   }
@@ -365,7 +461,8 @@ async function processToolCall(
   governanceGate: GovernanceGate,
   executor: ToolExecutor,
   context: { role: AgentRole; chainId?: string; taskId?: string; workspaceRoot: string },
-  dryRun: boolean
+  dryRun: boolean,
+  checkpointHandler: CheckpointHandler
 ): Promise<ToolCallRecord> {
   const timestamp = new Date().toISOString();
 
@@ -386,6 +483,28 @@ async function processToolCall(
       denialReason: validation.reason,
       timestamp,
     };
+  }
+
+  // Check if approval is required for this action
+  if (checkpointHandler.requiresApproval(toolCall.name, toolCall.arguments)) {
+    const approvalResult = await checkpointHandler.requestApproval(
+      toolCall.name,
+      toolCall.arguments
+    );
+
+    if (!approvalResult.approved) {
+      const reason = approvalResult.reason === "timeout"
+        ? "Action rejected: approval timeout"
+        : "Action rejected by human operator";
+      console.log(`[Loop] CHECKPOINT: ${reason}`);
+      return {
+        name: toolCall.name,
+        arguments: toolCall.arguments,
+        allowed: false,
+        denialReason: reason,
+        timestamp,
+      };
+    }
   }
 
   // Dry run mode - don't execute
