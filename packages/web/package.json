@@ -1,0 +1,48 @@
+{
+  "name": "@choragen/web",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Web dashboard for Choragen with tRPC API",
+  "keywords": [
+    "choragen",
+    "dashboard",
+    "trpc",
+    "nextjs"
+  ],
+  "license": "MIT",
+  "author": "Justin Neal",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@choragen/core": "workspace:*",
+    "@tanstack/react-query": "^5.0.0",
+    "@trpc/client": "^11.0.0",
+    "@trpc/react-query": "^11.0.0",
+    "@trpc/server": "^11.0.0",
+    "lucide-react": "^0.460.0",
+    "next": "^14.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "yaml": "^2.6.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.0",
+    "eslint-config-next": "16.0.8",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.0"
+  }
+}
