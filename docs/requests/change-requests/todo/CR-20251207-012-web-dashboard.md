@@ -2,9 +2,10 @@
 
 **ID**: CR-20251207-012  
 **Domain**: dashboard  
-**Status**: todo  
+**Status**: superseded  
 **Created**: 2025-12-07  
 **Owner**: agent  
+**Superseded By**: CR-20251208-002 through CR-20251208-007  
 
 ---
 
