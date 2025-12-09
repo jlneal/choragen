@@ -2,7 +2,7 @@
 
 **ID**: CR-20251208-003  
 **Domain**: web  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-08  
 **Owner**: control-agent  
 
@@ -128,19 +128,19 @@ const navigation = [
 
 ## Acceptance Criteria
 
-- [ ] Next.js 14 app with app router
-- [ ] Sidebar navigation with all main routes
-- [ ] Header with theme toggle
-- [ ] shadcn/ui installed with Button, Card, Badge, etc.
-- [ ] Dark/light theme working
-- [ ] tRPC client provider configured
-- [ ] Placeholder pages for all routes
-- [ ] Responsive sidebar (collapsible on mobile)
-- [ ] Loading skeleton components
-- [ ] Error boundary with fallback UI
-- [ ] `pnpm dev` starts dashboard on localhost:3000
-- [ ] `pnpm build` passes
-- [ ] `pnpm lint` passes
+- [x] Next.js 14 app with app router
+- [x] Sidebar navigation with all main routes
+- [x] Header with theme toggle
+- [x] shadcn/ui installed with Button, Card, Badge, etc.
+- [x] Dark/light theme working
+- [x] tRPC client provider configured
+- [x] Placeholder pages for all routes
+- [x] Responsive sidebar (collapsible on mobile)
+- [x] Loading skeleton components
+- [x] Error boundary with fallback UI
+- [x] `pnpm dev` starts dashboard on localhost:3000
+- [x] `pnpm build` passes
+- [x] `pnpm lint` passes
 
 ---
 
@@ -153,6 +153,29 @@ const navigation = [
 ## Linked Design Documents
 
 - [Web Dashboard](../../design/core/features/web-dashboard.md)
+
+---
+
+## Completion Notes
+
+**Completed**: 2025-12-09  
+**Chain**: CHAIN-043-dashboard-scaffold (7 tasks)
+
+### Summary
+
+Implemented complete dashboard scaffold for `@choragen/web`:
+
+- **shadcn/ui**: Installed 7 components (Button, Card, Badge, Skeleton, Separator, Sheet, DropdownMenu)
+- **Theming**: Dark/light theme via next-themes with system preference support
+- **Layout**: Sidebar navigation, header with theme toggle, auto-generated breadcrumbs
+- **Pages**: 9 routes with placeholder content (/, /chains, /chains/[id], /requests, /requests/[id], /sessions, /metrics, /settings)
+- **Error handling**: Loading skeletons, error boundary, 404 page
+- **Build**: ESLint 9 flat config, all builds and lint pass
+
+### Follow-up
+
+- Individual feature pages will be implemented in separate CRs
+- Real data integration pending tRPC router completion
 
 ---
 
