@@ -6,6 +6,8 @@
  */
 
 import type { AgentRole } from "./types.js";
+import type { AuditLogEntry } from "../session.js";
+import { AuditLogger } from "../session.js";
 
 /**
  * Result of a tool execution.
@@ -20,6 +22,13 @@ export interface ToolResult {
 }
 
 /**
+ * Callback for audit logging file operations.
+ */
+export type AuditLogCallback = (
+  entry: Omit<AuditLogEntry, "timestamp" | "session">
+) => Promise<void>;
+
+/**
  * Context provided to tool executors.
  */
 export interface ExecutionContext {
@@ -31,6 +40,8 @@ export interface ExecutionContext {
   taskId?: string;
   /** Workspace root directory */
   workspaceRoot: string;
+  /** Optional audit log callback for file operations */
+  auditLog?: AuditLogCallback;
 }
 
 /**
@@ -95,6 +106,10 @@ import { executeTaskStart } from "./definitions/task-start.js";
 import { executeTaskComplete } from "./definitions/task-complete.js";
 import { executeTaskApprove } from "./definitions/task-approve.js";
 import { executeSpawnImplSession } from "./definitions/spawn-impl-session.js";
+import { executeReadFile } from "./definitions/read-file.js";
+import { executeWriteFile } from "./definitions/write-file.js";
+import { executeListFiles } from "./definitions/list-files.js";
+import { executeSearchFiles } from "./definitions/search-files.js";
 
 /**
  * Map of tool names to their executor functions.
@@ -107,7 +122,90 @@ const TOOL_EXECUTORS: Map<string, ToolExecutorFn> = new Map([
   ["task:complete", executeTaskComplete],
   ["task:approve", executeTaskApprove],
   ["spawn_impl_session", executeSpawnImplSession],
+  ["read_file", executeReadFile],
+  ["write_file", executeWriteFile],
+  ["list_files", executeListFiles],
+  ["search_files", executeSearchFiles],
 ]);
+
+/**
+ * Build an audit log entry from tool execution results.
+ * Extracts tool-specific fields from params and result data.
+ */
+function buildAuditEntry(
+  toolName: string,
+  params: Record<string, unknown>,
+  result: ToolResult
+): Omit<AuditLogEntry, "timestamp" | "session"> {
+  const entry: Omit<AuditLogEntry, "timestamp" | "session"> = {
+    tool: toolName,
+    result: result.success ? "success" : "error",
+    governance: "pass", // If we got here, governance passed
+  };
+
+  // Extract path from params (common to all file tools)
+  if (params.path) {
+    entry.path = params.path as string;
+  }
+
+  // Extract tool-specific data from result
+  if (result.success && result.data) {
+    const data = result.data as Record<string, unknown>;
+
+    switch (toolName) {
+      case "read_file":
+        if (typeof data.linesReturned === "number") {
+          entry.lines = data.linesReturned;
+        }
+        break;
+
+      case "write_file":
+        if (data.action === "created" || data.action === "modified") {
+          entry.action = data.action === "modified" ? "modify" : "create";
+        }
+        if (typeof data.bytes === "number") {
+          entry.bytes = data.bytes;
+        }
+        break;
+
+      case "list_files":
+        if (typeof data.count === "number") {
+          entry.count = data.count;
+        }
+        break;
+
+      case "search_files":
+        if (typeof data.totalMatches === "number") {
+          entry.matches = data.totalMatches;
+        }
+        // For search_files, path is the search directory, not in params.path
+        if (data.query) {
+          entry.path = (params.path as string) || ".";
+        }
+        break;
+    }
+  }
+
+  return entry;
+}
+
+/**
+ * Build an audit log entry for a denied operation.
+ * Used when governance denies a file operation.
+ */
+export function buildDeniedAuditEntry(
+  toolName: string,
+  params: Record<string, unknown>,
+  reason: string
+): Omit<AuditLogEntry, "timestamp" | "session"> {
+  return {
+    tool: toolName,
+    path: params.path as string | undefined,
+    result: "denied",
+    governance: "deny",
+    reason,
+  };
+}
 
 /**
  * Tool execution dispatcher.
@@ -142,14 +240,43 @@ export class ToolExecutor {
     }
 
     try {
-      return await executor(params, context);
+      const result = await executor(params, context);
+
+      // Audit log file operations
+      if (context.auditLog && AuditLogger.shouldLog(toolName)) {
+        await this.logFileOperation(toolName, params, result, context);
+      }
+
+      return result;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      return {
+      const result: ToolResult = {
         success: false,
         error: `Tool execution failed: ${message}`,
       };
+
+      // Audit log file operation errors
+      if (context.auditLog && AuditLogger.shouldLog(toolName)) {
+        await this.logFileOperation(toolName, params, result, context);
+      }
+
+      return result;
     }
+  }
+
+  /**
+   * Log a file operation to the audit log.
+   */
+  private async logFileOperation(
+    toolName: string,
+    params: Record<string, unknown>,
+    result: ToolResult,
+    context: ExecutionContext
+  ): Promise<void> {
+    if (!context.auditLog) return;
+
+    const entry = buildAuditEntry(toolName, params, result);
+    await context.auditLog(entry);
   }
 
   /**

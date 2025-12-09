@@ -15,6 +15,10 @@ import {
   taskCompleteTool,
   taskApproveTool,
   spawnImplSessionTool,
+  readFileTool,
+  writeFileTool,
+  listFilesTool,
+  searchFilesTool,
   toProviderTool,
 } from "../runtime/tools/index.js";
 import type { ToolDefinition } from "../runtime/tools/index.js";
@@ -32,10 +36,14 @@ describe("ToolRegistry", () => {
       expect(toolNames).toContain("task:start");
       expect(toolNames).toContain("task:approve");
       expect(toolNames).toContain("spawn_impl_session");
+      expect(toolNames).toContain("read_file");
+      expect(toolNames).toContain("list_files");
+      expect(toolNames).toContain("search_files");
 
       // Control role should NOT have these tools
       expect(toolNames).not.toContain("task:status");
       expect(toolNames).not.toContain("task:complete");
+      expect(toolNames).not.toContain("write_file");
     });
 
     it("returns correct tools for impl role", () => {
@@ -47,6 +55,10 @@ describe("ToolRegistry", () => {
       expect(toolNames).toContain("chain:status");
       expect(toolNames).toContain("task:status");
       expect(toolNames).toContain("task:complete");
+      expect(toolNames).toContain("read_file");
+      expect(toolNames).toContain("write_file");
+      expect(toolNames).toContain("list_files");
+      expect(toolNames).toContain("search_files");
 
       // Impl role should NOT have these tools
       expect(toolNames).not.toContain("task:list");
@@ -55,17 +67,17 @@ describe("ToolRegistry", () => {
       expect(toolNames).not.toContain("spawn_impl_session");
     });
 
-    it("control role has 5 tools", () => {
+    it("control role has 8 tools", () => {
       const registry = new ToolRegistry();
       const controlTools = registry.getToolsForRole("control");
-      const EXPECTED_CONTROL_TOOL_COUNT = 5;
+      const EXPECTED_CONTROL_TOOL_COUNT = 8;
       expect(controlTools).toHaveLength(EXPECTED_CONTROL_TOOL_COUNT);
     });
 
-    it("impl role has 3 tools", () => {
+    it("impl role has 7 tools", () => {
       const registry = new ToolRegistry();
       const implTools = registry.getToolsForRole("impl");
-      const EXPECTED_IMPL_TOOL_COUNT = 3;
+      const EXPECTED_IMPL_TOOL_COUNT = 7;
       expect(implTools).toHaveLength(EXPECTED_IMPL_TOOL_COUNT);
     });
   });
@@ -177,8 +189,56 @@ describe("ToolRegistry", () => {
     it("returns all registered tools", () => {
       const registry = new ToolRegistry();
       const allTools = registry.getAllTools();
-      const EXPECTED_TOTAL_TOOL_COUNT = 7;
+      const EXPECTED_TOTAL_TOOL_COUNT = 11;
       expect(allTools).toHaveLength(EXPECTED_TOTAL_TOOL_COUNT);
+    });
+  });
+
+  describe("read_file is shared", () => {
+    it("read_file is available to control", () => {
+      const registry = new ToolRegistry();
+      expect(registry.canRoleUseTool("control", "read_file")).toBe(true);
+    });
+
+    it("read_file is available to impl", () => {
+      const registry = new ToolRegistry();
+      expect(registry.canRoleUseTool("impl", "read_file")).toBe(true);
+    });
+  });
+
+  describe("write_file is impl-only", () => {
+    it("write_file is available to impl", () => {
+      const registry = new ToolRegistry();
+      expect(registry.canRoleUseTool("impl", "write_file")).toBe(true);
+    });
+
+    it("write_file is NOT available to control", () => {
+      const registry = new ToolRegistry();
+      expect(registry.canRoleUseTool("control", "write_file")).toBe(false);
+    });
+  });
+
+  describe("list_files is shared", () => {
+    it("list_files is available to control", () => {
+      const registry = new ToolRegistry();
+      expect(registry.canRoleUseTool("control", "list_files")).toBe(true);
+    });
+
+    it("list_files is available to impl", () => {
+      const registry = new ToolRegistry();
+      expect(registry.canRoleUseTool("impl", "list_files")).toBe(true);
+    });
+  });
+
+  describe("search_files is shared", () => {
+    it("search_files is available to control", () => {
+      const registry = new ToolRegistry();
+      expect(registry.canRoleUseTool("control", "search_files")).toBe(true);
+    });
+
+    it("search_files is available to impl", () => {
+      const registry = new ToolRegistry();
+      expect(registry.canRoleUseTool("impl", "search_files")).toBe(true);
     });
   });
 });
@@ -248,6 +308,78 @@ describe("Tool definitions", () => {
       expect(spawnImplSessionTool.parameters.required).not.toContain("context");
     });
   });
+
+  describe("readFileTool", () => {
+    it("is available to both roles", () => {
+      expect(readFileTool.allowedRoles).toContain("control");
+      expect(readFileTool.allowedRoles).toContain("impl");
+    });
+
+    it("requires path parameter", () => {
+      expect(readFileTool.parameters.required).toContain("path");
+    });
+
+    it("has optional offset and limit parameters", () => {
+      expect(readFileTool.parameters.properties.offset).toBeDefined();
+      expect(readFileTool.parameters.properties.limit).toBeDefined();
+      expect(readFileTool.parameters.required).not.toContain("offset");
+      expect(readFileTool.parameters.required).not.toContain("limit");
+    });
+  });
+
+  describe("writeFileTool", () => {
+    it("is impl-only", () => {
+      expect(writeFileTool.allowedRoles).toEqual(["impl"]);
+    });
+
+    it("requires path and content parameters", () => {
+      expect(writeFileTool.parameters.required).toContain("path");
+      expect(writeFileTool.parameters.required).toContain("content");
+    });
+
+    it("has optional createOnly parameter", () => {
+      expect(writeFileTool.parameters.properties.createOnly).toBeDefined();
+      expect(writeFileTool.parameters.required).not.toContain("createOnly");
+    });
+  });
+
+  describe("listFilesTool", () => {
+    it("is available to both roles", () => {
+      expect(listFilesTool.allowedRoles).toContain("control");
+      expect(listFilesTool.allowedRoles).toContain("impl");
+    });
+
+    it("requires path parameter", () => {
+      expect(listFilesTool.parameters.required).toContain("path");
+    });
+
+    it("has optional pattern and recursive parameters", () => {
+      expect(listFilesTool.parameters.properties.pattern).toBeDefined();
+      expect(listFilesTool.parameters.properties.recursive).toBeDefined();
+      expect(listFilesTool.parameters.required).not.toContain("pattern");
+      expect(listFilesTool.parameters.required).not.toContain("recursive");
+    });
+  });
+
+  describe("searchFilesTool", () => {
+    it("is available to both roles", () => {
+      expect(searchFilesTool.allowedRoles).toContain("control");
+      expect(searchFilesTool.allowedRoles).toContain("impl");
+    });
+
+    it("requires query parameter", () => {
+      expect(searchFilesTool.parameters.required).toContain("query");
+    });
+
+    it("has optional path, include, and exclude parameters", () => {
+      expect(searchFilesTool.parameters.properties.path).toBeDefined();
+      expect(searchFilesTool.parameters.properties.include).toBeDefined();
+      expect(searchFilesTool.parameters.properties.exclude).toBeDefined();
+      expect(searchFilesTool.parameters.required).not.toContain("path");
+      expect(searchFilesTool.parameters.required).not.toContain("include");
+      expect(searchFilesTool.parameters.required).not.toContain("exclude");
+    });
+  });
 });
 
 describe("toProviderTool", () => {
@@ -277,5 +409,9 @@ describe("defaultRegistry", () => {
     expect(toolNames).toContain("task:complete");
     expect(toolNames).toContain("task:approve");
     expect(toolNames).toContain("spawn_impl_session");
+    expect(toolNames).toContain("read_file");
+    expect(toolNames).toContain("write_file");
+    expect(toolNames).toContain("list_files");
+    expect(toolNames).toContain("search_files");
   });
 });

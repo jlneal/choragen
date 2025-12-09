@@ -17,6 +17,10 @@ import { taskStartTool } from "./definitions/task-start.js";
 import { taskCompleteTool } from "./definitions/task-complete.js";
 import { taskApproveTool } from "./definitions/task-approve.js";
 import { spawnImplSessionTool } from "./definitions/spawn-impl-session.js";
+import { readFileTool } from "./definitions/read-file.js";
+import { writeFileTool } from "./definitions/write-file.js";
+import { listFilesTool } from "./definitions/list-files.js";
+import { searchFilesTool } from "./definitions/search-files.js";
 
 /**
  * All registered tools for Phase 1.
@@ -29,6 +33,10 @@ const ALL_TOOLS: ToolDefinition[] = [
   taskCompleteTool,
   taskApproveTool,
   spawnImplSessionTool,
+  readFileTool,
+  writeFileTool,
+  listFilesTool,
+  searchFilesTool,
 ];
 
 /**

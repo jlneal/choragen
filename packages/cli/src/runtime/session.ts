@@ -6,10 +6,95 @@
  */
 
 import { randomBytes } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { AgentRole } from "./tools/types.js";
 import type { Message } from "./providers/types.js";
+
+/**
+ * Default metrics directory relative to workspace root.
+ */
+const METRICS_DIR = ".choragen/metrics";
+
+/**
+ * Tools that should be audit logged (file operations).
+ */
+const FILE_OPERATION_TOOLS = new Set([
+  "read_file",
+  "write_file",
+  "list_files",
+  "search_files",
+]);
+
+/**
+ * Entry in the audit log for file operations.
+ */
+export interface AuditLogEntry {
+  timestamp: string;
+  session: string;
+  tool: string;
+  path?: string;
+  result: "success" | "error" | "denied";
+  /** For read_file: number of lines returned */
+  lines?: number;
+  /** For write_file: create or modify */
+  action?: "create" | "modify";
+  /** For write_file: bytes written */
+  bytes?: number;
+  /** Governance outcome: pass or deny */
+  governance?: "pass" | "deny";
+  /** Denial reason if governance denied */
+  reason?: string;
+  /** For list_files: number of entries */
+  count?: number;
+  /** For search_files: number of matches */
+  matches?: number;
+}
+
+/**
+ * Audit logger for file operations.
+ * Writes JSONL entries to .choragen/metrics/audit-{sessionId}.jsonl
+ */
+export class AuditLogger {
+  private readonly sessionId: string;
+  private readonly filePath: string;
+  private readonly metricsDir: string;
+
+  constructor(sessionId: string, workspaceRoot: string) {
+    this.sessionId = sessionId;
+    this.metricsDir = join(workspaceRoot, METRICS_DIR);
+    this.filePath = join(this.metricsDir, `audit-${sessionId}.jsonl`);
+  }
+
+  /**
+   * Check if a tool should be audit logged.
+   */
+  static shouldLog(toolName: string): boolean {
+    return FILE_OPERATION_TOOLS.has(toolName);
+  }
+
+  /**
+   * Log a file operation.
+   * @param entry - Audit log entry (session and timestamp will be auto-filled)
+   */
+  async log(entry: Omit<AuditLogEntry, "timestamp" | "session">): Promise<void> {
+    const fullEntry: AuditLogEntry = {
+      timestamp: new Date().toISOString(),
+      session: this.sessionId,
+      ...entry,
+    };
+
+    await mkdir(this.metricsDir, { recursive: true });
+    await appendFile(this.filePath, JSON.stringify(fullEntry) + "\n", "utf-8");
+  }
+
+  /**
+   * Get the audit log file path.
+   */
+  getFilePath(): string {
+    return this.filePath;
+  }
+}
 
 /**
  * Session outcome status.

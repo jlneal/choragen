@@ -2,7 +2,7 @@
 
 **ID**: CR-20251207-027  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-07  
 **Owner**: control-agent  
 
@@ -63,17 +63,23 @@ Without file operations, the runtime is a task tracker, not an implementation to
 
 ## Acceptance Criteria
 
-- [ ] `read_file` tool reads file contents with line numbers
-- [ ] `read_file` supports offset/limit for large files
-- [ ] `write_file` tool creates or overwrites files
-- [ ] `write_file` validates against governance before execution
-- [ ] `write_file` checks for lock conflicts
-- [ ] `write_file` is only available to impl role
-- [ ] `list_files` tool lists directory contents
-- [ ] `search_files` tool searches file contents (grep-like)
-- [ ] All file operations are logged to session audit trail
-- [ ] Governance violations return clear error messages
-- [ ] Lock conflicts return clear error messages with lock owner
+- [x] `read_file` tool reads file contents with line numbers
+- [x] `read_file` supports offset/limit for large files
+- [x] `write_file` tool creates or overwrites files
+- [x] `write_file` validates against governance before execution
+- [x] `write_file` checks for lock conflicts
+- [x] `write_file` is only available to impl role
+- [x] `list_files` tool lists directory contents
+- [x] `search_files` tool searches file contents (grep-like)
+- [x] All file operations are logged to session audit trail
+- [x] Governance violations return clear error messages
+- [x] Lock conflicts return clear error messages with lock owner
+
+---
+
+## Chain
+
+**Chain**: CHAIN-039-file-operations
 
 ---
 
@@ -181,4 +187,35 @@ Log to audit trail
 
 ## Completion Notes
 
-[Added when moved to done/]
+**Completed**: 2025-12-08
+
+### Implementation Summary
+
+Phase 3 of the Agent Runtime feature is complete. All file operation tools are implemented with full governance enforcement.
+
+**Files Created** (in `packages/cli/src/runtime/tools/definitions/`):
+- `read-file.ts` — Read file contents with offset/limit
+- `write-file.ts` — Write files (impl-only)
+- `list-files.ts` — List directory contents with glob filtering
+- `search-files.ts` — Grep-like file search
+
+**Files Modified**:
+- `governance-gate.ts` — Extended with file path validation and lock checking
+- `session.ts` — Added AuditLogger for file operation logging
+- `executor.ts` — Integrated audit logging for file tools
+- `registry.ts` — Registered all 4 new tools
+
+**Tool Access**:
+| Tool | control | impl |
+|------|---------|------|
+| read_file | ✓ | ✓ |
+| write_file | ✗ | ✓ |
+| list_files | ✓ | ✓ |
+| search_files | ✓ | ✓ |
+
+**Test Coverage**: 357 tests in `@choragen/cli`
+
+**Verification**:
+- `pnpm build` ✅
+- `pnpm test` ✅
+- `pnpm lint` ✅

@@ -49,6 +49,7 @@ export type {
   ToolResult,
   ExecutionContext,
   ToolExecutorFn,
+  AuditLogCallback,
 } from "./tools/index.js";
 export {
   toProviderTool,
@@ -56,6 +57,7 @@ export {
   defaultRegistry,
   ToolExecutor,
   defaultExecutor,
+  buildDeniedAuditEntry,
 } from "./tools/index.js";
 
 // Governance
@@ -76,5 +78,6 @@ export type {
   SessionToolCall,
   SessionData,
   SessionConfig,
+  AuditLogEntry,
 } from "./session.js";
-export { Session } from "./session.js";
+export { Session, AuditLogger } from "./session.js";
