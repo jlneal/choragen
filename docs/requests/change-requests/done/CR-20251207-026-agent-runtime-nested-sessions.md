@@ -2,7 +2,7 @@
 
 **ID**: CR-20251207-026  
 **Domain**: core  
-**Status**: doing  
+**Status**: done  
 **Created**: 2025-12-07  
 **Owner**: control-agent  
 
@@ -76,7 +76,7 @@ Without nested sessions, step 3 still requires human intervention—defeating th
 
 ## Commits
 
-Pending commit.
+- `13e4dc8` feat(cli): implement nested sessions for agent runtime
 
 ---
 
@@ -135,4 +135,22 @@ When spawning impl session, inject:
 
 ## Completion Notes
 
-[Added when moved to done/]
+**Completed**: 2025-12-08
+
+### Implementation Summary
+
+- Extended `SessionData` with `parentSessionId`, `childSessionIds`, `nestingDepth`
+- Added `ExtendedExecutionContext` with `spawnChildSession` function in loop.ts
+- Implemented `executeSpawnImplSession` with full nested session logic
+- Added max nesting depth enforcement (default: 2)
+- Added 11 new tests covering all nested session scenarios
+
+### Files Changed
+
+- `packages/cli/src/runtime/session.ts` - Session data model
+- `packages/cli/src/runtime/loop.ts` - Agentic loop with child spawning
+- `packages/cli/src/runtime/tools/executor.ts` - Nested context types
+- `packages/cli/src/runtime/tools/definitions/spawn-impl-session.ts` - Tool implementation
+- `packages/cli/src/runtime/tools/index.ts` - Type exports
+- `packages/cli/src/__tests__/session.test.ts` - Session tests
+- `packages/cli/src/__tests__/tool-executors.test.ts` - Tool tests
