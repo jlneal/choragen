@@ -26,7 +26,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
+    "@choragen/contracts": "workspace:*",
     "@choragen/core": "workspace:*",
+    "@clack/prompts": "^0.9.1",
     "@google/generative-ai": "^0.21.0",
     "minimatch": "^10.0.1",
     "openai": "^4.77.0"

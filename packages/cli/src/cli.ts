@@ -38,6 +38,15 @@ import {
   type SessionRole,
 } from "./commands/session.js";
 import { runAgentStart, getAgentStartHelp } from "./commands/agent.js";
+import {
+  runAgentResume,
+  runAgentListSessions,
+  runAgentCleanup,
+  getAgentResumeHelp,
+  getAgentListSessionsHelp,
+  getAgentCleanupHelp,
+} from "./commands/agent-session.js";
+import { runMenuLoop } from "./menu/index.js";
 import * as readline from "node:readline";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
@@ -1800,6 +1809,14 @@ const commands: Record<string, CommandDef> = {
   },
 
   // Agent runtime
+  agent: {
+    description: "Launch interactive agent menu",
+    usage: "agent",
+    handler: async () => {
+      await runMenuLoop({ workspaceRoot: projectRoot });
+    },
+  },
+
   "agent:start": {
     description: "Start an agent session",
     usage: "agent:start --role=<impl|control> [--provider=<name>] [--model=<name>] [--chain=<id>] [--task=<id>] [--dry-run]",
@@ -1810,6 +1827,42 @@ const commands: Record<string, CommandDef> = {
         return;
       }
       await runAgentStart(args, projectRoot);
+    },
+  },
+
+  "agent:resume": {
+    description: "Resume a paused or failed agent session",
+    usage: "agent:resume <session-id> [--json]",
+    handler: async (args) => {
+      if (args.includes("--help") || args.includes("-h")) {
+        console.log(getAgentResumeHelp());
+        return;
+      }
+      await runAgentResume(args, projectRoot);
+    },
+  },
+
+  "agent:list-sessions": {
+    description: "List all agent sessions",
+    usage: "agent:list-sessions [--status=<status>] [--limit=<n>] [--json]",
+    handler: async (args) => {
+      if (args.includes("--help") || args.includes("-h")) {
+        console.log(getAgentListSessionsHelp());
+        return;
+      }
+      await runAgentListSessions(args, projectRoot);
+    },
+  },
+
+  "agent:cleanup": {
+    description: "Remove old session files",
+    usage: "agent:cleanup [--older-than=<days>] [--dry-run] [--json]",
+    handler: async (args) => {
+      if (args.includes("--help") || args.includes("-h")) {
+        console.log(getAgentCleanupHelp());
+        return;
+      }
+      await runAgentCleanup(args, projectRoot);
     },
   },
 
