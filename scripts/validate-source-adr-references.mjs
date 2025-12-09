@@ -470,8 +470,8 @@ console.log("");
 
 if (warnings > 0) {
   printUsageInstructions();
-  console.log(`${YELLOW}⚠️  ${warnings} file(s) missing ADR references${NC}`);
-  process.exit(0); // Warnings only, not errors
+  console.log(`${RED}❌ ${warnings} file(s) missing ADR references${NC}`);
+  process.exit(1); // Error: missing ADR references block commit
 } else {
   console.log(`${GREEN}✅ All source files have ADR references${NC}`);
   process.exit(0);
