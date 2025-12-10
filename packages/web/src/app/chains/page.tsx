@@ -3,7 +3,11 @@
 
 import { useMemo, useState } from "react";
 
+import Link from "next/link";
+import { Plus } from "lucide-react";
+
 import { trpc } from "@/lib/trpc/client";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 import {
@@ -186,11 +190,21 @@ export default function ChainsPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Task Chains</h1>
-        <p className="text-muted-foreground">
-          View and manage your task chains and their progress
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Task Chains</h1>
+          <p className="text-muted-foreground">
+            View and manage your task chains and their progress
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button asChild>
+            <Link href="/chains/new">
+              <Plus className="h-4 w-4" />
+              New Chain
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Filters and Sort */}
