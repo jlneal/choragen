@@ -40,10 +40,8 @@ const navItems: NavItem[] = [
     name: "Requests",
     href: "/requests",
     icon: FileText,
-    children: [
-      { name: "Backlog", href: "/requests/backlog", icon: Archive },
-    ],
   },
+  { name: "Backlog", href: "/backlog", icon: Archive },
   { name: "Sessions", href: "/sessions", icon: Bot },
   { name: "Metrics", href: "/metrics", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },

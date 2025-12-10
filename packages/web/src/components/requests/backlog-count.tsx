@@ -34,7 +34,7 @@ export function BacklogCount({ className }: BacklogCountProps) {
 
   return (
     <Link
-      href="/requests/backlog"
+      href="/backlog"
       className={cn(
         "inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
         className
