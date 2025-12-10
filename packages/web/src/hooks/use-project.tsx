@@ -50,7 +50,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const selectProject = useCallback((nextProjectPath: string) => {
     setProjectPath(nextProjectPath);
     setRecentProjects((current) => addRecentProject(nextProjectPath, current));
-    // TODO: Notify backend via tRPC mutation (planned in TASK-057-002)
   }, []);
 
   const clearHistory = useCallback(() => {
