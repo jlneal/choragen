@@ -2,7 +2,7 @@
 
 **ID**: CR-20251209-025  
 **Domain**: core  
-**Status**: doing  
+**Status**: done  
 **Chain**: CHAIN-050  
 **Created**: 2025-12-09  
 **Owner**: agent  
@@ -103,7 +103,7 @@ groups.list()
 
 ## Commits
 
-No commits yet.
+Pending commit with [CR-20251209-025]
 
 ---
 
@@ -115,4 +115,26 @@ A request can only belong to one group at a time. Adding to a new group removes 
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented Request Groups feature:
+
+**Data Layer:**
+- `.choragen/groups.json` - Group storage with id, name, requestIds
+- `packages/web/src/server/routers/groups.ts` - Full CRUD + membership operations
+
+**tRPC Procedures:**
+- `list()`, `get()`, `create()`, `delete()`, `rename()`
+- `addRequest()`, `removeRequest()` - Membership management
+- `move()` - Group reordering
+- `getGroupForRequest()` - Lookup helper
+
+**UI Components:**
+- `RequestGroupBadge` - Badge on request cards
+- `GroupHeader` - Expand/collapse, rename, delete, move controls
+- `GroupActions` - Create group, add to group dropdown
+- `GroupCard` - Collapsible group with long-press removal
+
+**Tests:** 28 unit tests covering all operations
+
+**Bug Fixes:**
+- `generateGroupId()` includes random suffix for rapid creation
+- `addRequest` properly handles same-group edge case

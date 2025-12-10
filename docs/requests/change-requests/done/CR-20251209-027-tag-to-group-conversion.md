@@ -2,7 +2,8 @@
 
 **ID**: CR-20251209-027  
 **Domain**: dashboard  
-**Status**: todo  
+**Status**: done  
+**Chain**: CHAIN-052  
 **Created**: 2025-12-09  
 **Owner**: agent  
 
@@ -117,7 +118,7 @@ groups.previewFromTag({ tag })  // Returns requests and collision info
 
 ## Commits
 
-No commits yet.
+Pending commit with [CR-20251209-027]
 
 ---
 
@@ -129,4 +130,25 @@ The tag is not removed from requests when creating a group. Tags and groups are 
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented Tag-to-Group Conversion:
+
+**tRPC Procedures:**
+- `previewFromTag({ tag })` - Returns requests and collision info
+- `createFromTag({ tag, collisionStrategy, manualSelections? })` - Creates group with strategy
+
+**UI Components:**
+- `CollisionDialog` - Resolution UI with three options
+- `TagContextMenu` - Right-click menu on tag badges
+- Added shadcn Dialog and Checkbox components
+
+**Collision Strategies:**
+- `move-all` - All tagged requests join new group
+- `keep-existing` - Only non-grouped requests join
+- `manual` - Per-request selection via checkboxes
+
+**Tests:** 13 unit tests covering all strategies
+
+**Key Behavior:**
+- Tags preserved after conversion (independent of groups)
+- Group name defaults to tag name
+- Duplicate names get suffix (e.g., "dashboard-2")

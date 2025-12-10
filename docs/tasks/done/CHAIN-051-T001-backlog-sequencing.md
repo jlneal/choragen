@@ -3,8 +3,7 @@
 **Chain**: CHAIN-051  
 **Task**: T001  
 **Type**: impl  
-**Status**: blocked  
-**Blocked By**: CHAIN-049 (Backlog), CHAIN-050 (Groups)  
+**Status**: done  
 **Request**: CR-20251209-026  
 
 ---

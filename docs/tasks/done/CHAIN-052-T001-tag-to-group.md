@@ -3,8 +3,7 @@
 **Chain**: CHAIN-052  
 **Task**: T001  
 **Type**: impl  
-**Status**: blocked  
-**Blocked By**: CHAIN-048 (Tagging), CHAIN-050 (Groups)  
+**Status**: done  
 **Request**: CR-20251209-027  
 
 ---

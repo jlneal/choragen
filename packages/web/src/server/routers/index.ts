@@ -11,6 +11,8 @@ import { chainsRouter } from "./chains";
 import { tasksRouter } from "./tasks";
 import { requestsRouter } from "./requests";
 import { tagsRouter } from "./tags";
+import { groupsRouter } from "./groups";
+import { backlogRouter } from "./backlog";
 import { sessionsRouter } from "./sessions";
 import { metricsRouter } from "./metrics";
 import { configRouter } from "./config";
@@ -54,6 +56,18 @@ export const appRouter = router({
    * Tag management for requests (list, rename).
    */
   tags: tagsRouter,
+
+  /**
+   * Groups router.
+   * Group management for organizing related requests.
+   */
+  groups: groupsRouter,
+
+  /**
+   * Backlog router.
+   * Backlog sequencing with universal rank ordering.
+   */
+  backlog: backlogRouter,
 
   /**
    * Sessions router.

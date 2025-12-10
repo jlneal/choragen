@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { RequestStatusBadge, type RequestStatus } from "./request-status-badge";
 import { RequestTypeBadge, type RequestType } from "./request-type-badge";
 import { TagList } from "@/components/tags";
+import { RequestGroupBadge } from "@/components/groups";
 
 interface RequestCardProps {
   /** Request ID (e.g., "CR-20251208-001") */
@@ -39,8 +40,12 @@ interface RequestCardProps {
   severity?: string;
   /** Tags (optional) */
   tags?: string[];
+  /** Group name if request belongs to a group */
+  groupName?: string;
   /** Callback when a tag is clicked */
   onTagClick?: (tag: string) => void;
+  /** Callback when the group badge is clicked */
+  onGroupClick?: () => void;
   /** Callback to promote a backlog request to todo */
   onPromote?: (id: string) => void;
   /** Callback to demote a todo request to backlog */
@@ -75,7 +80,9 @@ export function RequestCard({
   owner,
   severity,
   tags,
+  groupName,
   onTagClick,
+  onGroupClick,
   onPromote,
   onDemote,
   isActionPending = false,
@@ -168,15 +175,25 @@ export function RequestCard({
             </div>
           )}
         </div>
-        {tags && tags.length > 0 && (
-          <TagList
-            tags={tags}
-            clickable={!!onTagClick}
-            onTagClick={onTagClick}
-            maxVisible={3}
-            className="mt-2"
-          />
-        )}
+        {(tags && tags.length > 0) || groupName ? (
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            {groupName && (
+              <RequestGroupBadge
+                groupName={groupName}
+                clickable={!!onGroupClick}
+                onClick={onGroupClick}
+              />
+            )}
+            {tags && tags.length > 0 && (
+              <TagList
+                tags={tags}
+                clickable={!!onTagClick}
+                onTagClick={onTagClick}
+                maxVisible={3}
+              />
+            )}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

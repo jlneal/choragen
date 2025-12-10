@@ -5,6 +5,7 @@ import { X, Tag } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { TagContextMenu } from "./tag-context-menu";
 
 interface TagBadgeProps {
   /** The tag text */
@@ -13,10 +14,14 @@ interface TagBadgeProps {
   clickable?: boolean;
   /** Whether to show a remove button */
   removable?: boolean;
+  /** Whether to show context menu on right-click/dropdown */
+  showContextMenu?: boolean;
   /** Callback when the tag is clicked */
   onClick?: (tag: string) => void;
   /** Callback when the remove button is clicked */
   onRemove?: (tag: string) => void;
+  /** Callback when a group is created from this tag */
+  onGroupCreated?: (groupId: string, groupName: string) => void;
   /** Additional class names */
   className?: string;
 }
@@ -29,8 +34,10 @@ export function TagBadge({
   tag,
   clickable = false,
   removable = false,
+  showContextMenu = false,
   onClick,
   onRemove,
+  onGroupCreated,
   className,
 }: TagBadgeProps) {
   const handleClick = () => {
@@ -46,12 +53,13 @@ export function TagBadge({
     }
   };
 
-  return (
+  const badgeContent = (
     <Badge
       variant="secondary"
       className={cn(
         "gap-1 text-xs font-normal",
         clickable && "cursor-pointer hover:bg-secondary/80",
+        showContextMenu && "cursor-context-menu",
         className
       )}
       onClick={clickable ? handleClick : undefined}
@@ -70,6 +78,16 @@ export function TagBadge({
       )}
     </Badge>
   );
+
+  if (showContextMenu) {
+    return (
+      <TagContextMenu tag={tag} onGroupCreated={onGroupCreated}>
+        {badgeContent}
+      </TagContextMenu>
+    );
+  }
+
+  return badgeContent;
 }
 
 interface TagListProps {

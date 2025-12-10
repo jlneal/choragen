@@ -3,7 +3,7 @@
 **Chain**: CHAIN-050  
 **Task**: T001  
 **Type**: impl  
-**Status**: todo  
+**Status**: done  
 **Request**: CR-20251209-025  
 
 ---

@@ -2,7 +2,8 @@
 
 **ID**: CR-20251209-026  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
+**Chain**: CHAIN-051  
 **Created**: 2025-12-09  
 **Owner**: agent  
 
@@ -110,7 +111,7 @@ backlog.getRanks()
 
 ## Commits
 
-No commits yet.
+Pending commit with [CR-20251209-026]
 
 ---
 
@@ -122,4 +123,25 @@ When a request is promoted from backlog to todo, it is removed from backlog-rank
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented Backlog Sequencing:
+
+**Data Layer:**
+- `.choragen/backlog-ranks.json` - Rank storage
+- `packages/web/src/server/routers/backlog.ts` - Ranking operations
+
+**tRPC Procedures:**
+- `getRanks()`, `reorder()`, `moveGroup()`
+- `addRequest()`, `removeRequest()`, `sync()`
+
+**UI Components:**
+- `RankBadge` - Shows priority number
+- `SortableList` - @dnd-kit drag-and-drop wrapper
+- Updated `BacklogList` with drag reordering
+
+**Tests:** 19 unit tests for ranking operations
+
+**Features:**
+- Contiguous ranks (no gaps)
+- Group re-ranking redistributes member ranks
+- Drag disabled when filters active
+- Auto-sync with actual backlog requests

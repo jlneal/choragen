@@ -8,3 +8,4 @@
 
 export { TagBadge, TagList } from "./tag-badge";
 export { TagFilter } from "./tag-filter";
+export { TagContextMenu } from "./tag-context-menu";
