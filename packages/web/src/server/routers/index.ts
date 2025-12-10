@@ -10,6 +10,7 @@ import { router, publicProcedure } from "../trpc";
 import { chainsRouter } from "./chains";
 import { tasksRouter } from "./tasks";
 import { requestsRouter } from "./requests";
+import { tagsRouter } from "./tags";
 import { sessionsRouter } from "./sessions";
 import { metricsRouter } from "./metrics";
 import { configRouter } from "./config";
@@ -47,6 +48,12 @@ export const appRouter = router({
    * File-based operations for Change Requests (CR) and Fix Requests (FR).
    */
   requests: requestsRouter,
+
+  /**
+   * Tags router.
+   * Tag management for requests (list, rename).
+   */
+  tags: tagsRouter,
 
   /**
    * Sessions router.

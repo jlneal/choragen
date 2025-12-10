@@ -23,6 +23,17 @@ const requestStatusSchema = z.enum(["todo", "doing", "done"]);
 type RequestStatus = z.infer<typeof requestStatusSchema>;
 
 /**
+ * Parse comma-separated tags from a string
+ */
+function parseTags(tagsString: string | undefined): string[] {
+  if (!tagsString) return [];
+  return tagsString
+    .split(",")
+    .map((tag) => tag.trim().toLowerCase())
+    .filter((tag) => tag.length > 0);
+}
+
+/**
  * Parsed request metadata
  */
 interface RequestMetadata {
@@ -34,6 +45,7 @@ interface RequestMetadata {
   created: string;
   owner?: string;
   severity?: string; // Only for fix requests
+  tags: string[];
   filename: string;
 }
 
@@ -71,6 +83,8 @@ function parseRequestMetadata(
   const createdMatch = content.match(/\*\*Created\*\*:\s*(\S+)/);
   const ownerMatch = content.match(/\*\*Owner\*\*:\s*(\S+)/);
   const severityMatch = content.match(/\*\*Severity\*\*:\s*(\S+)/);
+  // Tags can contain spaces and commas, so match until end of line
+  const tagsMatch = content.match(/\*\*Tags\*\*:\s*(.+?)(?:\s{2}|\n|$)/);
 
   const id = idMatch?.[1];
   if (!id) {
@@ -86,6 +100,7 @@ function parseRequestMetadata(
     created: createdMatch?.[1] || "",
     owner: ownerMatch?.[1],
     severity: severityMatch?.[1],
+    tags: parseTags(tagsMatch?.[1]),
     filename,
   };
 }
@@ -338,6 +353,118 @@ export const requestsRouter = router({
         metadata: {
           ...metadata,
           status: input.newStatus,
+        },
+      };
+    }),
+
+  /**
+   * Add a tag to a request
+   */
+  addTag: publicProcedure
+    .input(
+      z.object({
+        requestId: z.string().min(1, "Request ID is required"),
+        tag: z.string().min(1, "Tag is required").transform((t) => t.trim().toLowerCase()),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await findRequestById(ctx.projectRoot, input.requestId);
+
+      if (!result) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Request not found: ${input.requestId}`,
+        });
+      }
+
+      const { metadata, content, filePath } = result;
+
+      // Check if tag already exists
+      if (metadata.tags.includes(input.tag)) {
+        return { success: true, metadata };
+      }
+
+      // Add tag to the list
+      const newTags = [...metadata.tags, input.tag];
+      const tagsString = newTags.join(", ");
+
+      let updatedContent: string;
+      if (content.match(/\*\*Tags\*\*:/)) {
+        // Update existing Tags line
+        updatedContent = content.replace(
+          /\*\*Tags\*\*:\s*.*/,
+          `**Tags**: ${tagsString}`
+        );
+      } else {
+        // Insert Tags line after Status (or after Owner if present)
+        const insertAfterPattern = /(\*\*(?:Owner|Status)\*\*:\s*\S+\s*)/;
+        updatedContent = content.replace(
+          insertAfterPattern,
+          `$1\n**Tags**: ${tagsString}  `
+        );
+      }
+
+      await fs.writeFile(filePath, updatedContent, "utf-8");
+
+      return {
+        success: true,
+        metadata: {
+          ...metadata,
+          tags: newTags,
+        },
+      };
+    }),
+
+  /**
+   * Remove a tag from a request
+   */
+  removeTag: publicProcedure
+    .input(
+      z.object({
+        requestId: z.string().min(1, "Request ID is required"),
+        tag: z.string().min(1, "Tag is required").transform((t) => t.trim().toLowerCase()),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await findRequestById(ctx.projectRoot, input.requestId);
+
+      if (!result) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Request not found: ${input.requestId}`,
+        });
+      }
+
+      const { metadata, content, filePath } = result;
+
+      // Check if tag exists
+      if (!metadata.tags.includes(input.tag)) {
+        return { success: true, metadata };
+      }
+
+      // Remove tag from the list
+      const newTags = metadata.tags.filter((t) => t !== input.tag);
+
+      let updatedContent: string;
+      if (newTags.length === 0) {
+        // Remove the entire Tags line if no tags left
+        updatedContent = content.replace(/\*\*Tags\*\*:\s*.*\n?/, "");
+      } else {
+        // Update Tags line with remaining tags
+        const tagsString = newTags.join(", ");
+        updatedContent = content.replace(
+          /\*\*Tags\*\*:\s*.*/,
+          `**Tags**: ${tagsString}`
+        );
+      }
+
+      await fs.writeFile(filePath, updatedContent, "utf-8");
+
+      return {
+        success: true,
+        metadata: {
+          ...metadata,
+          tags: newTags,
         },
       };
     }),

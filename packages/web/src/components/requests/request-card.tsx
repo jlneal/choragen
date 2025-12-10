@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 import { RequestStatusBadge, type RequestStatus } from "./request-status-badge";
 import { RequestTypeBadge, type RequestType } from "./request-type-badge";
+import { TagList } from "@/components/tags";
 
 interface RequestCardProps {
   /** Request ID (e.g., "CR-20251208-001") */
@@ -32,6 +33,10 @@ interface RequestCardProps {
   owner?: string;
   /** Severity (optional, only for fix requests) */
   severity?: string;
+  /** Tags (optional) */
+  tags?: string[];
+  /** Callback when a tag is clicked */
+  onTagClick?: (tag: string) => void;
   /** Additional class names */
   className?: string;
 }
@@ -59,6 +64,8 @@ export function RequestCard({
   created,
   owner,
   severity,
+  tags,
+  onTagClick,
   className,
 }: RequestCardProps) {
   const severityStyle = severity ? severityConfig[severity.toLowerCase()] : null;
@@ -112,6 +119,15 @@ export function RequestCard({
               </div>
             )}
           </div>
+          {tags && tags.length > 0 && (
+            <TagList
+              tags={tags}
+              clickable={!!onTagClick}
+              onTagClick={onTagClick}
+              maxVisible={3}
+              className="mt-2"
+            />
+          )}
         </CardContent>
       </Card>
     </Link>

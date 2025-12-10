@@ -1,0 +1,9 @@
+{
+  "id": "CHAIN-051",
+  "slug": "backlog-sequencing",
+  "title": "Backlog Sequencing",
+  "requestId": "CR-20251209-026",
+  "status": "blocked",
+  "blockedBy": ["CHAIN-049", "CHAIN-050"],
+  "created": "2025-12-09"
+}

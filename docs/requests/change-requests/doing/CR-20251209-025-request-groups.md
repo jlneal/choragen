@@ -2,7 +2,8 @@
 
 **ID**: CR-20251209-025  
 **Domain**: core  
-**Status**: todo  
+**Status**: doing  
+**Chain**: CHAIN-050  
 **Created**: 2025-12-09  
 **Owner**: agent  
 

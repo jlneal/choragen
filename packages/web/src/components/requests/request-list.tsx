@@ -13,6 +13,7 @@ import { RequestCard } from "./request-card";
 import { RequestTabs, type RequestTab } from "./request-tabs";
 import { RequestFilters, type RequestFilterState } from "./request-filters";
 import { RequestSort, type RequestSortState } from "./request-sort";
+import { TagFilter } from "@/components/tags";
 import type { RequestStatus } from "./request-status-badge";
 import type { RequestType } from "./request-type-badge";
 
@@ -28,6 +29,7 @@ interface RequestItem {
   created: string;
   owner?: string;
   severity?: string;
+  tags: string[];
   filename: string;
 }
 
@@ -131,12 +133,13 @@ const STATUS_ORDER: Record<RequestStatus, number> = {
  * Handles data fetching via tRPC, filtering, sorting, and tab switching.
  */
 export function RequestList({ className }: RequestListProps) {
-  // State for tabs, filters, and sorting
+  // State for tabs, filters, sorting, and tags
   const [activeTab, setActiveTab] = useState<RequestTab>("all");
   const [filters, setFilters] = useState<RequestFilterState>({
     status: null,
     domain: null,
   });
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sort, setSort] = useState<RequestSortState>({
     field: "date",
     direction: "desc",
@@ -170,6 +173,12 @@ export function RequestList({ className }: RequestListProps) {
     return Array.from(domains).sort();
   }, [requests]);
 
+  // Extract unique tags for filter dropdown
+  const availableTags = useMemo(() => {
+    const tags = new Set(requests.flatMap((r) => r.tags || []));
+    return Array.from(tags).sort();
+  }, [requests]);
+
   // Apply filters and sorting
   const filteredAndSortedRequests = useMemo(() => {
     let result = [...requests];
@@ -182,6 +191,13 @@ export function RequestList({ className }: RequestListProps) {
     // Apply domain filter
     if (filters.domain) {
       result = result.filter((r) => r.domain === filters.domain);
+    }
+
+    // Apply tag filter (request must have ALL selected tags)
+    if (selectedTags.length > 0) {
+      result = result.filter((r) =>
+        selectedTags.every((tag) => r.tags?.includes(tag))
+      );
     }
 
     // Apply sorting
@@ -197,7 +213,7 @@ export function RequestList({ className }: RequestListProps) {
     });
 
     return result;
-  }, [requests, filters, sort]);
+  }, [requests, filters, selectedTags, sort]);
 
   // Check if we have any requests at all (before filtering)
   const hasNoRequests = !isLoading && requests.length === 0;
@@ -219,6 +235,15 @@ export function RequestList({ className }: RequestListProps) {
         <RequestSort sort={sort} onSortChange={setSort} />
       </div>
 
+      {/* Tag Filter */}
+      {availableTags.length > 0 && (
+        <TagFilter
+          selectedTags={selectedTags}
+          availableTags={availableTags}
+          onSelectionChange={setSelectedTags}
+        />
+      )}
+
       {/* Request List */}
       {isLoading ? (
         <RequestListLoading />
@@ -239,6 +264,12 @@ export function RequestList({ className }: RequestListProps) {
               created={request.created}
               owner={request.owner}
               severity={request.severity}
+              tags={request.tags}
+              onTagClick={(tag) => {
+                if (!selectedTags.includes(tag)) {
+                  setSelectedTags([...selectedTags, tag]);
+                }
+              }}
             />
           ))}
         </div>

@@ -1,0 +1,9 @@
+{
+  "id": "CHAIN-048",
+  "slug": "request-tagging",
+  "title": "Request Tagging",
+  "requestId": "CR-20251209-023",
+  "status": "done",
+  "created": "2025-12-09",
+  "tasks": ["TASK-048-001"]
+}

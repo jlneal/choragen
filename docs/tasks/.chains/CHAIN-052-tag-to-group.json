@@ -1,0 +1,9 @@
+{
+  "id": "CHAIN-052",
+  "slug": "tag-to-group",
+  "title": "Tag-to-Group Conversion",
+  "requestId": "CR-20251209-027",
+  "status": "blocked",
+  "blockedBy": ["CHAIN-048", "CHAIN-050"],
+  "created": "2025-12-09"
+}
