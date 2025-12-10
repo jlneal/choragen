@@ -304,3 +304,4 @@
 {"eventType":"task:started","entityType":"task","entityId":"002-chain-creator","chainId":"CHAIN-054-chain-management","id":"783057aa-eb21-4eb2-b9dc-665c9e1a3bae","timestamp":"2025-12-10T04:43:02.995Z"}
 {"eventType":"task:completed","entityType":"task","entityId":"002-chain-creator","chainId":"CHAIN-054-chain-management","id":"3717339a-c7c7-4809-8321-e732c1d995ec","timestamp":"2025-12-10T04:43:07.660Z"}
 {"eventType":"chain:created","entityType":"chain","entityId":"CHAIN-055-task-control","requestId":"CR-20251209-021","id":"2c8b44d1-1ec0-4f9b-bc50-3debb5b23c68","timestamp":"2025-12-10T12:45:12.400Z"}
+{"eventType":"request:closed","entityType":"request","entityId":"CR-20251209-021","id":"8de1a24c-1fdd-47fd-87a9-f2599f3ba3b8","timestamp":"2025-12-10T13:32:42.752Z"}
