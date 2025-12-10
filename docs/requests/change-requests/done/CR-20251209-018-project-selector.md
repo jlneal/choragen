@@ -2,7 +2,7 @@
 
 **ID**: CR-20251209-018  
 **Domain**: dashboard  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-09  
 **Owner**: agent  
 
@@ -103,4 +103,28 @@ Consider security implications of arbitrary directory access. May need to restri
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented via CHAIN-057-project-selector (4 tasks).
+
+### Files Added/Modified
+
+**Client-side state:**
+- `packages/web/src/lib/project-storage.ts` - localStorage helpers with 5-project limit
+- `packages/web/src/hooks/use-project.tsx` - React context + `useProject()` hook
+
+**Server-side:**
+- `packages/web/src/server/routers/project.ts` - `validate` and `switch` procedures
+- `packages/web/src/server/context.ts` - Reads `x-choragen-project-root` header
+- `packages/web/src/app/api/trpc/[trpc]/route.ts` - Passes request to context
+
+**UI:**
+- `packages/web/src/components/project/project-selector.tsx` - Dropdown with recent projects
+- `packages/web/src/components/project/project-browser.tsx` - Path input dialog
+- `packages/web/src/components/layout/header.tsx` - Integrated selector
+
+**Integration:**
+- `packages/web/src/app/layout.tsx` - `ProjectProvider` wrapping app
+- `packages/web/src/lib/trpc/provider.tsx` - Sends header, clears cache on switch
+
+### Security
+
+Server validates that directories contain `.choragen/` folder before accepting.

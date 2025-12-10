@@ -1,10 +1,11 @@
 // ADR: ADR-011-web-api-architecture
 "use client";
 
-import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileSidebar } from "@/components/layout/sidebar";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { ProjectSelector } from "@/components/project";
 import { GitStatus } from "@/components/git/git-status";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Header() {
   return (
@@ -13,8 +14,11 @@ export function Header() {
       <div className="flex-1">
         <Breadcrumbs />
       </div>
-      <GitStatus />
-      <ThemeToggle />
+      <div className="flex items-center gap-3">
+        <ProjectSelector />
+        <GitStatus />
+        <ThemeToggle />
+      </div>
     </header>
   );
 }

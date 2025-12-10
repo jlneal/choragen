@@ -17,6 +17,7 @@ import { sessionsRouter } from "./sessions";
 import { metricsRouter } from "./metrics";
 import { configRouter } from "./config";
 import { gitRouter } from "./git";
+import { projectRouter } from "./project";
 
 /**
  * Root application router.
@@ -87,6 +88,12 @@ export const appRouter = router({
    * Project and governance configuration from YAML files.
    */
   config: configRouter,
+
+  /**
+   * Project router.
+   * Validate and switch between Choragen projects.
+   */
+  project: projectRouter,
 
   /**
    * Git router.

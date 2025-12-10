@@ -19,7 +19,7 @@ const handler = (request: Request) =>
     endpoint: "/api/trpc",
     req: request,
     router: appRouter,
-    createContext,
+    createContext: ({ req }) => createContext({ req }),
     /**
      * Error handling for request processing.
      * Logs errors in development for debugging.

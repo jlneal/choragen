@@ -2,6 +2,7 @@
 
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { ProjectProvider } from "@/hooks";
 import { TRPCProvider } from "@/lib/trpc/provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -30,24 +31,26 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <TRPCProvider>
-            <div className="flex min-h-screen">
-              {/* Desktop sidebar - fixed left */}
-              <Sidebar />
+          <ProjectProvider>
+            <TRPCProvider>
+              <div className="flex min-h-screen">
+                {/* Desktop sidebar - fixed left */}
+                <Sidebar />
 
-              {/* Main content area */}
-              <div className="flex flex-1 flex-col">
-                {/* Header - sticky top */}
-                <Header />
+                {/* Main content area */}
+                <div className="flex flex-1 flex-col">
+                  {/* Header - sticky top */}
+                  <Header />
 
-                {/* Scrollable content */}
-                <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-                  {children}
-                </main>
+                  {/* Scrollable content */}
+                  <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+                    {children}
+                  </main>
+                </div>
               </div>
-            </div>
-          <Toaster />
-          </TRPCProvider>
+              <Toaster />
+            </TRPCProvider>
+          </ProjectProvider>
         </ThemeProvider>
       </body>
     </html>

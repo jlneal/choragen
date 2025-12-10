@@ -1,5 +1,7 @@
 // ADR: ADR-011-web-api-architecture
 
+import * as path from "path";
+
 /**
  * tRPC Context
  *
@@ -16,13 +18,34 @@ export interface Context {
   projectRoot: string;
 }
 
+const PROJECT_HEADER = "x-choragen-project-root";
+
+function getDefaultProjectRoot(): string {
+  return process.env.CHORAGEN_PROJECT_ROOT || process.cwd();
+}
+
+function getProjectRootFromHeader(request?: Request): string | undefined {
+  if (!request) {
+    return undefined;
+  }
+
+  const headerValue = request.headers.get(PROJECT_HEADER)?.trim();
+  if (!headerValue) {
+    return undefined;
+  }
+
+  return path.resolve(headerValue);
+}
+
 /**
  * Creates context for each tRPC request.
  * Called by the API route handler for each incoming request.
  */
-export function createContext(): Context {
+export function createContext({ req }: { req?: Request } = {}): Context {
+  const headerProjectRoot = getProjectRootFromHeader(req);
+
   return {
-    projectRoot: process.env.CHORAGEN_PROJECT_ROOT || process.cwd(),
+    projectRoot: headerProjectRoot || getDefaultProjectRoot(),
   };
 }
 

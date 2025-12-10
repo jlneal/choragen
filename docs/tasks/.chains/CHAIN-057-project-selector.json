@@ -1,0 +1,10 @@
+{
+  "id": "CHAIN-057-project-selector",
+  "sequence": 57,
+  "slug": "project-selector",
+  "requestId": "CR-20251209-018",
+  "title": "Project Selector",
+  "description": "Add project directory selector to web dashboard for switching between local Choragen projects",
+  "createdAt": "2025-12-10T14:24:00.000Z",
+  "updatedAt": "2025-12-10T14:24:00.000Z"
+}

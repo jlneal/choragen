@@ -17,3 +17,4 @@ export {
   type UseSessionFiltersState,
   type UseSessionFiltersReturn,
 } from "./use-session-filters";
+export { ProjectProvider, useProject, type ProjectContextValue } from "./use-project";

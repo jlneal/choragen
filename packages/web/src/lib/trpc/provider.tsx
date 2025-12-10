@@ -8,10 +8,13 @@
  * Wraps the application with tRPC and React Query providers.
  * This enables tRPC hooks to work in client components.
  */
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
+import { useProject } from "@/hooks";
 import { trpc } from "./client";
+
+const PROJECT_HEADER = "x-choragen-project-root";
 
 /**
  * Get the base URL for tRPC requests.
@@ -50,6 +53,8 @@ function getBaseUrl(): string {
  * ```
  */
 export function TRPCProvider({ children }: { children: React.ReactNode }) {
+  const { projectPath } = useProject();
+
   // Create QueryClient once per component instance
   // Using useState ensures it's not recreated on re-renders
   const [queryClient] = useState(
@@ -66,21 +71,28 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
       })
   );
 
-  // Create tRPC client once per component instance
-  const [trpcClient] = useState(() =>
-    trpc.createClient({
-      links: [
-        httpBatchLink({
-          url: `${getBaseUrl()}/api/trpc`,
-          // Optional: Add headers for authentication
-          // headers() {
-          //   return {
-          //     authorization: getAuthToken(),
-          //   };
-          // },
-        }),
-      ],
-    })
+  // Clear cached data when switching projects to prevent cross-project results.
+  useEffect(() => {
+    queryClient.clear();
+  }, [projectPath, queryClient]);
+
+  const trpcClient = useMemo(
+    () =>
+      trpc.createClient({
+        links: [
+          httpBatchLink({
+            url: `${getBaseUrl()}/api/trpc`,
+            headers() {
+              return projectPath
+                ? {
+                    [PROJECT_HEADER]: projectPath,
+                  }
+                : {};
+            },
+          }),
+        ],
+      }),
+    [projectPath]
   );
 
   return (
