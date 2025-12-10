@@ -60,6 +60,22 @@ const addTaskInputSchema = z.object({
 });
 
 /**
+ * Zod schema for reordering tasks in a chain
+ */
+const reorderTasksInputSchema = z.object({
+  chainId: z.string().min(1, "Chain ID is required"),
+  taskIds: z.array(z.string().min(1)).min(1, "At least one task ID is required"),
+});
+
+/**
+ * Zod schema for deleting a task from a chain
+ */
+const deleteTaskInputSchema = z.object({
+  chainId: z.string().min(1, "Chain ID is required"),
+  taskId: z.string().min(1, "Task ID is required"),
+});
+
+/**
  * Helper to create a ChainManager instance from context
  */
 function getChainManager(projectRoot: string): ChainManager {
@@ -203,5 +219,82 @@ export const chainsRouter = router({
       }
 
       return manager.getNextTask(input);
+    }),
+
+  /**
+   * Reorder tasks in a chain
+   */
+  reorderTasks: publicProcedure
+    .input(reorderTasksInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const manager = getChainManager(ctx.projectRoot);
+
+      // Verify chain exists first
+      const chain = await manager.getChain(input.chainId);
+      if (!chain) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Chain not found: ${input.chainId}`,
+        });
+      }
+
+      try {
+        const updatedChain = await manager.reorderTasks(
+          input.chainId,
+          input.taskIds
+        );
+        if (!updatedChain) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to reorder tasks",
+          });
+        }
+        return updatedChain;
+      } catch (error) {
+        if (error instanceof Error) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message,
+          });
+        }
+        throw error;
+      }
+    }),
+
+  /**
+   * Delete a task from a chain
+   */
+  deleteTask: publicProcedure
+    .input(deleteTaskInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const manager = getChainManager(ctx.projectRoot);
+
+      // Verify chain exists first
+      const chain = await manager.getChain(input.chainId);
+      if (!chain) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Chain not found: ${input.chainId}`,
+        });
+      }
+
+      // Verify task exists
+      const task = chain.tasks.find((t) => t.id === input.taskId);
+      if (!task) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Task not found: ${input.taskId}`,
+        });
+      }
+
+      const deleted = await manager.deleteTask(input.chainId, input.taskId);
+      if (!deleted) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to delete task",
+        });
+      }
+
+      return { success: true, chainId: input.chainId, taskId: input.taskId };
     }),
 });

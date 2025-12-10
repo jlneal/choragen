@@ -132,7 +132,7 @@ export class ChainManager {
       `${chainId}.json`
     );
 
-    let metadata: Partial<Chain> = {};
+    let metadata: Partial<Chain> & { taskOrder?: string[] } = {};
     try {
       const content = await fs.readFile(metadataPath, "utf-8");
       metadata = JSON.parse(content);
@@ -141,7 +141,17 @@ export class ChainManager {
     }
 
     // Load all tasks for this chain
-    const tasks = await this.taskManager.getTasksForChain(chainId);
+    let tasks = await this.taskManager.getTasksForChain(chainId);
+
+    // Sort tasks by taskOrder if present, otherwise by sequence
+    if (metadata.taskOrder && metadata.taskOrder.length > 0) {
+      const orderMap = new Map(metadata.taskOrder.map((id, idx) => [id, idx]));
+      tasks = tasks.sort((a, b) => {
+        const aOrder = orderMap.get(a.id) ?? a.sequence;
+        const bOrder = orderMap.get(b.id) ?? b.sequence;
+        return aOrder - bOrder;
+      });
+    }
 
     return {
       id: chainId,
@@ -175,6 +185,46 @@ export class ChainManager {
       requestId: chain.requestId,
       title: chain.title,
       description: chain.description,
+      createdAt: chain.createdAt.toISOString(),
+      updatedAt: chain.updatedAt.toISOString(),
+    };
+
+    // Only include optional fields if they have values
+    if (chain.type) {
+      metadata.type = chain.type;
+    }
+    if (chain.dependsOn) {
+      metadata.dependsOn = chain.dependsOn;
+    }
+    if (chain.skipDesign) {
+      metadata.skipDesign = chain.skipDesign;
+    }
+    if (chain.skipDesignJustification) {
+      metadata.skipDesignJustification = chain.skipDesignJustification;
+    }
+
+    await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2), "utf-8");
+  }
+
+  /**
+   * Write chain metadata with task order to file
+   */
+  private async writeChainMetadataWithTaskOrder(
+    chain: Chain,
+    taskOrder: string[]
+  ): Promise<void> {
+    const chainsDir = path.join(this.getTasksPath(), ".chains");
+    await fs.mkdir(chainsDir, { recursive: true });
+
+    const metadataPath = path.join(chainsDir, `${chain.id}.json`);
+    const metadata: Record<string, unknown> = {
+      id: chain.id,
+      sequence: chain.sequence,
+      slug: chain.slug,
+      requestId: chain.requestId,
+      title: chain.title,
+      description: chain.description,
+      taskOrder,
       createdAt: chain.createdAt.toISOString(),
       updatedAt: chain.updatedAt.toISOString(),
     };
@@ -353,6 +403,50 @@ export class ChainManager {
     await this.writeChainMetadata(chain);
 
     return chain;
+  }
+
+  /**
+   * Delete a task from a chain
+   */
+  async deleteTask(chainId: string, taskId: string): Promise<boolean> {
+    const chain = await this.getChain(chainId);
+    if (!chain) return false;
+
+    const task = chain.tasks.find((t) => t.id === taskId);
+    if (!task) return false;
+
+    return this.taskManager.deleteTask(chainId, taskId);
+  }
+
+  /**
+   * Reorder tasks in a chain by providing the new order of task IDs
+   * Stores the task order in chain metadata
+   */
+  async reorderTasks(chainId: string, taskIds: string[]): Promise<Chain | null> {
+    const chain = await this.getChain(chainId);
+    if (!chain) return null;
+
+    // Validate all task IDs exist in the chain
+    const existingIds = new Set(chain.tasks.map((t) => t.id));
+    for (const taskId of taskIds) {
+      if (!existingIds.has(taskId)) {
+        throw new Error(`Task ${taskId} not found in chain ${chainId}`);
+      }
+    }
+
+    // Validate all tasks are accounted for
+    if (taskIds.length !== chain.tasks.length) {
+      throw new Error(
+        `Task count mismatch: expected ${chain.tasks.length}, got ${taskIds.length}`
+      );
+    }
+
+    // Store the task order in chain metadata
+    chain.updatedAt = new Date();
+    await this.writeChainMetadataWithTaskOrder(chain, taskIds);
+
+    // Reload and return the updated chain
+    return this.getChain(chainId);
   }
 
   /**

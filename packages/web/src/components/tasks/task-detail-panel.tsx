@@ -9,7 +9,8 @@
  * acceptance criteria, constraints, and notes.
  */
 
-import { FileCode, CheckSquare, AlertTriangle, StickyNote } from "lucide-react";
+import { useState } from "react";
+import { FileCode, CheckSquare, AlertTriangle, StickyNote, Pencil } from "lucide-react";
 
 import {
   Sheet,
@@ -18,8 +19,10 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc/client";
+import { TaskEditor, type TaskEditorData } from "@/components/chains";
 
 import { TaskStatusBadge } from "./task-status-badge";
 
@@ -108,6 +111,9 @@ export function TaskDetailPanel({
   open,
   onOpenChange,
 }: TaskDetailPanelProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const utils = trpc.useUtils();
+
   // Fetch task details when panel is open and IDs are provided
   const { data: task, isLoading } = trpc.tasks.get.useQuery(
     { chainId: chainId!, taskId: taskId! },
@@ -116,29 +122,93 @@ export function TaskDetailPanel({
     }
   );
 
+  // Reset editing state when panel closes or task changes
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      setIsEditing(false);
+    }
+    onOpenChange(newOpen);
+  };
+
+  // Handle successful edit
+  const handleEditSuccess = () => {
+    // Invalidate queries to refresh data
+    if (chainId) {
+      utils.tasks.listForChain.invalidate(chainId);
+      utils.chains.get.invalidate(chainId);
+      utils.chains.getSummary.invalidate(chainId);
+    }
+    setIsEditing(false);
+  };
+
+  // Prepare task data for editor
+  const taskEditorData: TaskEditorData | null = task
+    ? {
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        acceptance: task.acceptance,
+      }
+    : null;
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-lg">
         <SheetHeader className="space-y-1">
-          <SheetTitle className="text-lg font-semibold">
-            {isLoading ? (
-              <Skeleton className="h-6 w-48" />
-            ) : (
-              task?.title ?? "Task Details"
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <SheetTitle className="text-lg font-semibold">
+                {isLoading ? (
+                  <Skeleton className="h-6 w-48" />
+                ) : isEditing ? (
+                  "Edit Task"
+                ) : (
+                  task?.title ?? "Task Details"
+                )}
+              </SheetTitle>
+              <SheetDescription className="font-mono text-xs">
+                {isLoading ? (
+                  <Skeleton className="h-4 w-32" />
+                ) : (
+                  task?.id ?? ""
+                )}
+              </SheetDescription>
+            </div>
+            {!isLoading && task && !isEditing && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+                className="flex-shrink-0"
+              >
+                <Pencil className="h-4 w-4 mr-1" />
+                Edit
+              </Button>
             )}
-          </SheetTitle>
-          <SheetDescription className="font-mono text-xs">
-            {isLoading ? (
-              <Skeleton className="h-4 w-32" />
-            ) : (
-              task?.id ?? ""
-            )}
-          </SheetDescription>
+          </div>
         </SheetHeader>
 
         <div className="h-[calc(100vh-8rem)] mt-6 pr-4 overflow-y-auto">
           {isLoading ? (
             <TaskDetailSkeleton />
+          ) : task && isEditing && chainId && taskEditorData ? (
+            /* Edit Mode */
+            <div className="space-y-4">
+              <TaskEditor
+                chainId={chainId}
+                task={taskEditorData}
+                onSuccess={handleEditSuccess}
+              />
+              <div className="border-t pt-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditing(false)}
+                >
+                  Cancel Editing
+                </Button>
+              </div>
+            </div>
           ) : task ? (
             <div className="space-y-6">
               {/* Status Badge */}

@@ -21,15 +21,14 @@ import {
 import {
   ChainHeader,
   ChainHeaderSkeleton,
-  type ChainStatus,
-  type ChainType,
-} from "@/components/chains";
-import {
   TaskList,
   TaskListSkeleton,
-  TaskDetailPanel,
-  type TaskRowData,
-} from "@/components/tasks";
+  TaskAdder,
+  type ChainStatus,
+  type ChainType,
+  type SortableTaskData,
+} from "@/components/chains";
+import { TaskDetailPanel } from "@/components/tasks";
 import { useTaskDetail } from "@/hooks";
 import { trpc } from "@/lib/trpc/client";
 
@@ -89,12 +88,12 @@ export function ChainDetailContent({ chainId }: ChainDetailContentProps) {
     useTaskDetail();
 
   // Handle task click
-  const handleTaskClick = (task: TaskRowData) => {
+  const handleTaskClick = (task: SortableTaskData) => {
     openTask(chainId, task.id);
   };
 
-  // Transform tasks to TaskRowData format
-  const taskRows: TaskRowData[] = (tasks ?? []).map((task, index) => ({
+  // Transform tasks to SortableTaskData format
+  const taskRows: SortableTaskData[] = (tasks ?? []).map((task, index) => ({
     id: task.id,
     sequence: index + 1,
     slug: task.slug,
@@ -167,15 +166,19 @@ export function ChainDetailContent({ chainId }: ChainDetailContentProps) {
             All tasks in this chain and their current status
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           {isTasksLoading ? (
             <TaskListSkeleton count={3} />
           ) : (
-            <TaskList
-              tasks={taskRows}
-              selectedTaskId={taskId ?? undefined}
-              onTaskClick={handleTaskClick}
-            />
+            <>
+              <TaskList
+                chainId={chainId}
+                tasks={taskRows}
+                selectedTaskId={taskId ?? undefined}
+                onTaskClick={handleTaskClick}
+              />
+              <TaskAdder chainId={chainId} />
+            </>
           )}
         </CardContent>
       </Card>

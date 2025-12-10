@@ -2,7 +2,7 @@
 
 **ID**: CR-20251209-020  
 **Domain**: dashboard  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-09  
 **Owner**: agent  
 
@@ -75,7 +75,7 @@ tasks.update({ taskId, updates })
 
 ## Commits
 
-No commits yet.
+_Populated on close_
 
 ---
 
@@ -87,4 +87,20 @@ Task reordering should update the chain's task array in `.chains/CHAIN-xxx.json`
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+**Completed**: 2025-12-10
+
+### Implemented
+
+- **ChainCreator**: Form to create chain from request with validation
+- **TaskAdder**: Quick-add task form with required/optional fields
+- **TaskList**: Draggable task list with @dnd-kit, optimistic updates
+- **TaskEditor**: Inline editing with click-to-edit title, expandable description/acceptance
+- **chains.reorderTasks**: tRPC mutation for task reordering
+- **chains.deleteTask**: tRPC mutation with confirmation dialog
+- **tasks.update**: tRPC mutation for task editing
+- Toast notifications for all mutations
+- Full query invalidation for data consistency
+
+### Chain
+
+CHAIN-054-chain-management (6 tasks, all complete)
