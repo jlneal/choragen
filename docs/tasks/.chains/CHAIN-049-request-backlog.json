@@ -3,7 +3,7 @@
   "slug": "request-backlog",
   "title": "Request Backlog",
   "requestId": "CR-20251209-024",
-  "status": "todo",
+  "status": "done",
   "created": "2025-12-09",
   "tasks": ["T001", "T002", "T003", "T004"]
 }

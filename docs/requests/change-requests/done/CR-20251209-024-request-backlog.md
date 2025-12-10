@@ -2,7 +2,7 @@
 
 **ID**: CR-20251209-024  
 **Domain**: core  
-**Status**: doing  
+**Status**: done  
 **Chain**: CHAIN-049  
 **Created**: 2025-12-09  
 **Owner**: agent  
@@ -99,7 +99,7 @@ requests.demote({ requestId })   // todo → backlog
 
 ## Commits
 
-No commits yet.
+See git log for CHAIN-049.
 
 ---
 
@@ -111,4 +111,33 @@ When promoting from backlog to todo, the request is appended to the end of the t
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented request backlog feature for the web dashboard:
+
+**T001 — Backlog Infrastructure**:
+- Created `docs/requests/change-requests/backlog/` and `docs/requests/fix-requests/backlog/`
+- Added `backlog` to RequestStatus type and status enum
+- Updated requests router to scan backlog directory
+- Added backlog filter option and status badge styling (slate)
+
+**T002 — Promote/Demote Operations**:
+- `requests.promote({ requestId })` — moves backlog → todo
+- `requests.demote({ requestId })` — moves todo → backlog
+- Both validate request is in correct state before moving
+- 10 unit tests covering success and error cases
+
+**T003 — Backlog UI**:
+- Created `/requests/backlog` page
+- Added BacklogList and BacklogCount components
+- Added promote button to backlog request cards
+- Added demote button to todo request cards
+- Updated sidebar with backlog link under Requests
+- Added backlog count display in requests page header
+
+**Verification**:
+- Typecheck: ✅ Pass
+- Lint: ✅ Pass
+- Tests: ✅ 65 passing
+- Build: ✅ Pass
+
+**Chain**: CHAIN-049-request-backlog
+**Completed**: 2025-12-09

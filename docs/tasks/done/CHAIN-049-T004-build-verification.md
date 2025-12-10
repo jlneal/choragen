@@ -3,7 +3,7 @@
 **Chain**: CHAIN-049  
 **Task**: T004  
 **Type**: control  
-**Status**: todo  
+**Status**: done  
 **Request**: CR-20251209-024  
 
 ---
