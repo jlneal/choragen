@@ -468,4 +468,118 @@ export const requestsRouter = router({
         },
       };
     }),
+
+  /**
+   * Promote a request from backlog to todo
+   */
+  promote: publicProcedure
+    .input(z.object({ requestId: z.string().min(1, "Request ID is required") }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await findRequestById(ctx.projectRoot, input.requestId);
+
+      if (!result) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Request not found: ${input.requestId}`,
+        });
+      }
+
+      const { metadata, content, filePath } = result;
+
+      // Verify request is in backlog
+      if (metadata.status !== "backlog") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Request ${input.requestId} is not in backlog (current status: ${metadata.status})`,
+        });
+      }
+
+      // Calculate new file path (todo directory)
+      const newDirPath = path.join(
+        getRequestsDir(ctx.projectRoot),
+        REQUEST_DIRS[metadata.type],
+        "todo"
+      );
+      const newFilePath = path.join(newDirPath, metadata.filename);
+
+      // Update status in content
+      const updatedContent = content.replace(
+        /(\*\*Status\*\*:\s*)\S+/,
+        "$1todo"
+      );
+
+      // Ensure target directory exists
+      await fs.mkdir(newDirPath, { recursive: true });
+
+      // Write to new location
+      await fs.writeFile(newFilePath, updatedContent, "utf-8");
+
+      // Remove from old location
+      await fs.unlink(filePath);
+
+      return {
+        success: true,
+        metadata: {
+          ...metadata,
+          status: "todo" as RequestStatus,
+        },
+      };
+    }),
+
+  /**
+   * Demote a request from todo to backlog
+   */
+  demote: publicProcedure
+    .input(z.object({ requestId: z.string().min(1, "Request ID is required") }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await findRequestById(ctx.projectRoot, input.requestId);
+
+      if (!result) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Request not found: ${input.requestId}`,
+        });
+      }
+
+      const { metadata, content, filePath } = result;
+
+      // Verify request is in todo
+      if (metadata.status !== "todo") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Request ${input.requestId} is not in todo (current status: ${metadata.status})`,
+        });
+      }
+
+      // Calculate new file path (backlog directory)
+      const newDirPath = path.join(
+        getRequestsDir(ctx.projectRoot),
+        REQUEST_DIRS[metadata.type],
+        "backlog"
+      );
+      const newFilePath = path.join(newDirPath, metadata.filename);
+
+      // Update status in content
+      const updatedContent = content.replace(
+        /(\*\*Status\*\*:\s*)\S+/,
+        "$1backlog"
+      );
+
+      // Ensure target directory exists
+      await fs.mkdir(newDirPath, { recursive: true });
+
+      // Write to new location
+      await fs.writeFile(newFilePath, updatedContent, "utf-8");
+
+      // Remove from old location
+      await fs.unlink(filePath);
+
+      return {
+        success: true,
+        metadata: {
+          ...metadata,
+          status: "backlog" as RequestStatus,
+        },
+      };
+    }),
 });
