@@ -11,7 +11,7 @@ export default [
   },
   js.configs.recommended,
   {
-    files: ["**/*.ts", "**/*.tsx"],
+    files: ["packages/web/**/*.ts", "packages/web/**/*.tsx", "**/*.ts", "**/*.tsx"],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
