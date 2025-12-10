@@ -2,7 +2,7 @@
 
 **ID**: CR-20251207-012  
 **Domain**: dashboard  
-**Status**: superseded  
+**Status**: done  
 **Created**: 2025-12-07  
 **Owner**: agent  
 **Superseded By**: CR-20251208-002 through CR-20251208-007  
@@ -129,11 +129,11 @@ Initially read-only. Write operations (create request, start task) in Phase 2.
 
 ## Acceptance Criteria (Phase 1)
 
-- [ ] Dashboard shows active chains with progress
-- [ ] Metrics page displays key metrics from CR-011
-- [ ] Chain detail shows task list with status
-- [ ] Request list shows CR/FR with status
-- [ ] Responsive design (desktop + tablet)
+- [x] Dashboard shows active chains with progress
+- [x] Metrics page displays key metrics from CR-011
+- [x] Chain detail shows task list with status
+- [x] Request list shows CR/FR with status
+- [x] Responsive design (desktop + tablet)
 
 ## Dependencies
 
@@ -151,4 +151,15 @@ Yes - ADR for dashboard tech stack and API design
 
 ## Commits
 
-[Populated by `choragen request:close`]
+## Completion Notes
+
+This CR was superseded and implemented via smaller, focused CRs:
+
+- **CR-20251208-002** — Web API Server (tRPC + Next.js scaffold)
+- **CR-20251208-003** — Dashboard Scaffold (layout, navigation, home page)
+- **CR-20251208-004** — Chain & Task Viewer
+- **CR-20251208-005** — Request Browser
+- **CR-20251208-006** — Metrics Dashboard
+- **CR-20251208-007** — Agent Session Monitor
+
+All Phase 1 functionality delivered. Phase 2 (Control Plane) and Phase 3 (Agent Management) remain future work.
