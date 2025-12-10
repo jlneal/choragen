@@ -2,7 +2,7 @@
 
 **ID**: CR-20251208-005  
 **Domain**: web  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-08  
 **Owner**: control-agent  
 
@@ -132,20 +132,20 @@ RequestTimeline    // Status history (future)
 
 ## Acceptance Criteria
 
-- [ ] `/requests` page lists all requests
-- [ ] Tabs to switch between CR and FR
-- [ ] Request cards show: ID, title, domain, status, criteria progress
-- [ ] Filter by status (todo, doing, done)
-- [ ] Filter by domain
-- [ ] Sort by date, status
-- [ ] `/requests/[id]` shows request detail
-- [ ] Render request content (What, Why, Scope sections)
-- [ ] Display acceptance criteria with checkboxes
-- [ ] Show linked chains with status
-- [ ] Empty states for no requests
-- [ ] Loading skeletons while fetching
-- [ ] `pnpm build` passes
-- [ ] `pnpm lint` passes
+- [x] `/requests` page lists all requests
+- [x] Tabs to switch between CR and FR
+- [x] Request cards show: ID, title, domain, status, criteria progress
+- [x] Filter by status (todo, doing, done)
+- [x] Filter by domain
+- [x] Sort by date, status
+- [x] `/requests/[id]` shows request detail
+- [x] Render request content (What, Why, Scope sections)
+- [x] Display acceptance criteria with checkboxes
+- [x] Show linked chains with status
+- [x] Empty states for no requests
+- [x] Loading skeletons while fetching
+- [x] `pnpm build` passes
+- [x] `pnpm lint` passes
 
 ---
 
@@ -159,6 +159,19 @@ RequestTimeline    // Status history (future)
 ## Linked Design Documents
 
 - [Web Dashboard](../../design/core/features/web-dashboard.md)
+
+---
+
+## Completion Notes
+
+Implemented full request browser for the web dashboard:
+
+- **List page** (`/requests`): Tabs for All/CR/FR, status and domain filters, date/status sorting
+- **Detail page** (`/requests/[id]`): Header with metadata, content sections, acceptance criteria checklist with progress, linked chains
+- **Components**: 10 new components in `src/components/requests/` following established patterns
+- **States**: Loading skeletons and empty states throughout
+
+All 14 acceptance criteria met. Build and lint pass.
 
 ---
 

@@ -1,0 +1,15 @@
+{
+  "id": "CHAIN-045-request-browser",
+  "title": "Request Browser",
+  "requestId": "CR-20251208-005",
+  "status": "done",
+  "created": "2025-12-09",
+  "tasks": [
+    "TASK-045-001-request-list-components",
+    "TASK-045-002-request-list-page",
+    "TASK-045-003-request-detail-components",
+    "TASK-045-004-request-detail-page",
+    "TASK-045-005-empty-loading-states",
+    "TASK-045-006-build-lint-verification"
+  ]
+}
