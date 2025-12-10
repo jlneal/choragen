@@ -2,8 +2,9 @@
 
 **ID**: CR-20251209-019  
 **Domain**: dashboard  
-**Status**: doing  
+**Status**: done  
 **Created**: 2025-12-09  
+**Completed**: 2025-12-09
 **Owner**: agent  
 
 ---
@@ -83,9 +84,7 @@ All operations write to the file system via `@choragen/core`:
 
 ## Commits
 
-No commits yet.
-
----
+- 5dbb0a3 feat(web): add request CRUD operations
 
 ## Implementation Notes
 
@@ -95,4 +94,21 @@ Ensure pre-commit validation rules are applied when closing requests (completion
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented full CRUD operations for requests in the web dashboard:
+
+**Backend (4 tRPC procedures):**
+- `requests.create` — Create new CR/FR with auto-generated IDs (CR-YYYYMMDD-NNN format)
+- `requests.update` — Edit title, domain, description, scope sections
+- `requests.close` — Add completion notes and move to done/
+- `requests.delete` — Remove request files
+
+**Frontend (4 components/pages):**
+- `RequestForm` — Create form with type selector, validation, domain dropdown
+- `RequestActions` — Dropdown with status-aware transitions (promote, demote, start, close, delete)
+- `/requests/new` page — New request creation with "New Request" button on list page
+- Detail page integration — Actions dropdown in request header
+
+**Tests:**
+- 25 comprehensive unit tests covering all CRUD operations and error cases
+
+All 9 tasks in CHAIN-053-request-management completed successfully.
