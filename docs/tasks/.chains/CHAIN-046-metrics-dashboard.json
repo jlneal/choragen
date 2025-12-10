@@ -1,0 +1,16 @@
+{
+  "id": "CHAIN-046",
+  "slug": "metrics-dashboard",
+  "title": "Metrics Dashboard",
+  "requestId": "CR-20251208-006",
+  "status": "done",
+  "createdAt": "2025-12-09T00:24:00Z",
+  "tasks": [
+    "TASK-046-001",
+    "TASK-046-002",
+    "TASK-046-003",
+    "TASK-046-004",
+    "TASK-046-005",
+    "TASK-046-006"
+  ]
+}
