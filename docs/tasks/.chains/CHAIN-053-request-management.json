@@ -1,0 +1,10 @@
+{
+  "id": "CHAIN-053-request-management",
+  "sequence": 53,
+  "slug": "request-management",
+  "requestId": "CR-20251209-019",
+  "title": "Request Management CRUD",
+  "description": "",
+  "createdAt": "2025-12-10T03:41:37.843Z",
+  "updatedAt": "2025-12-10T03:41:37.843Z"
+}

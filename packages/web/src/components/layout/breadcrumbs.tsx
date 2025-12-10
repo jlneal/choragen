@@ -7,7 +7,20 @@ import { ChevronRight, Home } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-function formatSegment(segment: string): string {
+/**
+ * Custom label overrides for specific paths.
+ * Key is the full path, value is the display label.
+ */
+const PATH_LABEL_OVERRIDES: Record<string, string> = {
+  "/requests/new": "New Request",
+};
+
+function formatSegment(segment: string, fullPath: string): string {
+  // Check for path-specific override
+  if (PATH_LABEL_OVERRIDES[fullPath]) {
+    return PATH_LABEL_OVERRIDES[fullPath];
+  }
+
   // Convert kebab-case or snake_case to Title Case
   return segment
     .replace(/[-_]/g, " ")
@@ -27,7 +40,7 @@ export function Breadcrumbs() {
   // Build breadcrumb items with cumulative paths
   const breadcrumbs = segments.map((segment, index) => {
     const href = "/" + segments.slice(0, index + 1).join("/");
-    const label = formatSegment(segment);
+    const label = formatSegment(segment, href);
     const isLast = index === segments.length - 1;
 
     return { href, label, isLast };

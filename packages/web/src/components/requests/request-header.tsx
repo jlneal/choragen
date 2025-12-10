@@ -31,6 +31,8 @@ interface RequestHeaderProps {
   created: string;
   /** Owner (optional) */
   owner?: string;
+  /** Optional actions slot (e.g., RequestActions dropdown) */
+  actions?: React.ReactNode;
   /** Additional class names */
   className?: string;
 }
@@ -66,6 +68,7 @@ export function RequestHeader({
   domain,
   created,
   owner,
+  actions,
   className,
 }: RequestHeaderProps) {
   return (
@@ -89,6 +92,7 @@ export function RequestHeader({
         <div className="flex items-center gap-2 flex-shrink-0">
           <RequestTypeBadge type={type} />
           <RequestStatusBadge status={status} />
+          {actions}
         </div>
       </div>
 

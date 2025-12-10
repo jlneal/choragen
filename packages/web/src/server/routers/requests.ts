@@ -191,12 +191,342 @@ const listFiltersSchema = z.object({
 }).optional();
 
 /**
+ * Zod schema for create request input
+ */
+const createRequestInputSchema = z.object({
+  type: z.enum(["cr", "fr"]),
+  title: z.string().min(1, "Title is required"),
+  domain: z.string().min(1, "Domain is required"),
+  description: z.string().optional(),
+  owner: z.string().optional(),
+  severity: z.enum(["high", "medium", "low"]).optional(),
+});
+
+/**
+ * Generate a slug from a title
+ */
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .substring(0, 50)
+    .replace(/-$/, "");
+}
+
+/**
+ * Get today's date in YYYYMMDD format
+ */
+function getDateString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}${month}${day}`;
+}
+
+/**
+ * Get today's date in YYYY-MM-DD format
+ */
+function getFormattedDate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Find the next available sequence number for a given date and type
+ */
+async function findNextSequence(
+  projectRoot: string,
+  type: "cr" | "fr",
+  dateString: string
+): Promise<string> {
+  const prefix = type === "cr" ? "CR" : "FR";
+  const pattern = new RegExp(`^${prefix}-${dateString}-(\\d{3})`);
+  
+  const requestType: RequestType = type === "cr" ? "change-request" : "fix-request";
+  const statuses: RequestStatus[] = ["backlog", "todo", "doing", "done"];
+  
+  let maxSeq = 0;
+  
+  for (const status of statuses) {
+    const dirPath = path.join(
+      getRequestsDir(projectRoot),
+      REQUEST_DIRS[requestType],
+      status
+    );
+    
+    try {
+      const files = await fs.readdir(dirPath);
+      for (const filename of files) {
+        const match = filename.match(pattern);
+        if (match) {
+          const seq = parseInt(match[1], 10);
+          if (seq > maxSeq) {
+            maxSeq = seq;
+          }
+        }
+      }
+    } catch {
+      // Directory doesn't exist, continue
+    }
+  }
+  
+  return String(maxSeq + 1).padStart(3, "0");
+}
+
+/**
+ * Generate markdown content for a Change Request
+ */
+function generateCRContent(
+  id: string,
+  title: string,
+  domain: string,
+  formattedDate: string,
+  description?: string,
+  owner?: string
+): string {
+  return `# Change Request: ${title}
+
+**ID**: ${id}  
+**Domain**: ${domain}  
+**Status**: todo  
+**Created**: ${formattedDate}  
+**Owner**: ${owner || "agent"}  
+
+---
+
+## What
+
+${description || "{{DESCRIPTION}}"}
+
+---
+
+## Why
+
+{{MOTIVATION}}
+
+---
+
+## Scope
+
+**In Scope**:
+- {{IN_SCOPE_1}}
+
+**Out of Scope**:
+- {{OUT_OF_SCOPE_1}}
+
+---
+
+## Affected Design Documents
+
+- {{DESIGN_DOC_1}}
+
+---
+
+## Linked ADRs
+
+- {{ADR_1}}
+
+---
+
+## Commits
+
+No commits yet.
+
+---
+
+## Implementation Notes
+
+{{NOTES}}
+
+---
+
+## Completion Notes
+
+[Added when moved to done/ - summary of what was actually implemented]
+`;
+}
+
+/**
+ * Generate markdown content for a Fix Request
+ */
+function generateFRContent(
+  id: string,
+  title: string,
+  domain: string,
+  formattedDate: string,
+  description?: string,
+  owner?: string,
+  severity?: string
+): string {
+  return `# Fix Request: ${title}
+
+**ID**: ${id}  
+**Domain**: ${domain}  
+**Status**: todo  
+**Created**: ${formattedDate}  
+**Severity**: ${severity || "medium"}  
+**Owner**: ${owner || "agent"}  
+
+---
+
+## Problem
+
+${description || "{{PROBLEM_DESCRIPTION}}"}
+
+---
+
+## Expected Behavior
+
+{{EXPECTED}}
+
+---
+
+## Actual Behavior
+
+{{ACTUAL}}
+
+---
+
+## Steps to Reproduce
+
+1. {{STEP_1}}
+2. {{STEP_2}}
+3. {{STEP_3}}
+
+---
+
+## Root Cause Analysis
+
+{{ROOT_CAUSE}}
+
+---
+
+## Proposed Fix
+
+{{PROPOSED_FIX}}
+
+---
+
+## Affected Files
+
+- {{FILE_1}}
+
+---
+
+## Linked ADRs
+
+- {{ADR_1}}
+
+---
+
+## Commits
+
+No commits yet.
+
+---
+
+## Verification
+
+- [ ] Bug no longer reproducible
+- [ ] Regression test added
+- [ ] Related functionality still works
+
+---
+
+## Completion Notes
+
+[Added when moved to done/]
+`;
+}
+
+/**
  * Zod schema for update status mutation
  */
 const updateStatusInputSchema = z.object({
   requestId: z.string().min(1, "Request ID is required"),
   newStatus: requestStatusSchema,
 });
+
+/**
+ * Zod schema for update request mutation
+ */
+const updateRequestInputSchema = z.object({
+  requestId: z.string().min(1, "Request ID is required"),
+  updates: z.object({
+    title: z.string().min(1).optional(),
+    domain: z.string().min(1).optional(),
+    description: z.string().optional(),
+    scope: z.object({
+      inScope: z.array(z.string()).optional(),
+      outOfScope: z.array(z.string()).optional(),
+    }).optional(),
+  }),
+});
+
+/**
+ * Update the title in markdown content (the heading)
+ */
+function updateTitle(content: string, newTitle: string, type: RequestType): string {
+  const prefix = type === "change-request" ? "Change Request" : "Fix Request";
+  return content.replace(
+    new RegExp(`^(#\\s+${prefix}:\\s*).+$`, "m"),
+    `$1${newTitle}`
+  );
+}
+
+/**
+ * Update a metadata field in markdown content
+ */
+function updateMetadataField(content: string, field: string, value: string): string {
+  const pattern = new RegExp(`(\\*\\*${field}\\*\\*:\\s*)\\S+`);
+  return content.replace(pattern, `$1${value}`);
+}
+
+/**
+ * Update the description/What section in markdown content
+ */
+function updateDescriptionSection(content: string, description: string, type: RequestType): string {
+  // For CRs, the section is "## What", for FRs it's "## Problem"
+  const sectionName = type === "change-request" ? "What" : "Problem";
+  
+  // Match from section header to next section (---) or end
+  const pattern = new RegExp(
+    `(## ${sectionName}\\s*\\n\\n)([\\s\\S]*?)(\\n---\\n|$)`,
+    "m"
+  );
+  
+  return content.replace(pattern, `$1${description}\n$3`);
+}
+
+/**
+ * Update the Scope section in markdown content (CR only)
+ */
+function updateScopeSection(
+  content: string,
+  scope: { inScope?: string[]; outOfScope?: string[] }
+): string {
+  // Build the new scope content
+  const inScopeItems = scope.inScope && scope.inScope.length > 0
+    ? scope.inScope.map((item) => `- ${item}`).join("\n")
+    : "- {{IN_SCOPE_1}}";
+  
+  const outOfScopeItems = scope.outOfScope && scope.outOfScope.length > 0
+    ? scope.outOfScope.map((item) => `- ${item}`).join("\n")
+    : "- {{OUT_OF_SCOPE_1}}";
+  
+  const newScopeContent = `**In Scope**:\n${inScopeItems}\n\n**Out of Scope**:\n${outOfScopeItems}`;
+  
+  // Match the entire Scope section
+  const pattern = /## Scope\s*\n\n[\s\S]*?(?=\n---\n|$)/m;
+  
+  return content.replace(pattern, `## Scope\n\n${newScopeContent}`);
+}
 
 /**
  * Requests router with file-based operations
@@ -222,6 +552,61 @@ export const requestsRouter = router({
 
       // Sort by created date descending
       return allRequests.sort((a, b) => b.created.localeCompare(a.created));
+    }),
+
+  /**
+   * Create a new request (CR or FR)
+   */
+  create: publicProcedure
+    .input(createRequestInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const dateString = getDateString();
+      const formattedDate = getFormattedDate();
+      const seq = await findNextSequence(ctx.projectRoot, input.type, dateString);
+      
+      const prefix = input.type === "cr" ? "CR" : "FR";
+      const id = `${prefix}-${dateString}-${seq}`;
+      const slug = generateSlug(input.title);
+      const filename = `${id}-${slug}.md`;
+      
+      const requestType: RequestType = input.type === "cr" ? "change-request" : "fix-request";
+      const dirPath = path.join(
+        getRequestsDir(ctx.projectRoot),
+        REQUEST_DIRS[requestType],
+        "todo"
+      );
+      
+      // Generate content based on type
+      const content = input.type === "cr"
+        ? generateCRContent(id, input.title, input.domain, formattedDate, input.description, input.owner)
+        : generateFRContent(id, input.title, input.domain, formattedDate, input.description, input.owner, input.severity);
+      
+      // Ensure directory exists
+      await fs.mkdir(dirPath, { recursive: true });
+      
+      // Write file
+      const filePath = path.join(dirPath, filename);
+      await fs.writeFile(filePath, content, "utf-8");
+      
+      // Return created metadata
+      const metadata: RequestMetadata = {
+        id,
+        type: requestType,
+        title: input.title,
+        domain: input.domain,
+        status: "todo",
+        created: formattedDate,
+        owner: input.owner || "agent",
+        severity: input.type === "fr" ? (input.severity || "medium") : undefined,
+        tags: [],
+        filename,
+      };
+      
+      return {
+        success: true,
+        metadata,
+        filePath: path.relative(ctx.projectRoot, filePath),
+      };
     }),
 
   /**
@@ -353,6 +738,64 @@ export const requestsRouter = router({
         metadata: {
           ...metadata,
           status: input.newStatus,
+        },
+      };
+    }),
+
+  /**
+   * Update request content (title, domain, description, scope)
+   */
+  update: publicProcedure
+    .input(updateRequestInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const result = await findRequestById(ctx.projectRoot, input.requestId);
+
+      if (!result) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Request not found: ${input.requestId}`,
+        });
+      }
+
+      const { metadata, filePath } = result;
+      let { content } = result;
+      const { updates } = input;
+
+      // Track what was updated for the response
+      let updatedTitle = metadata.title;
+      let updatedDomain = metadata.domain;
+
+      // Update title if provided
+      if (updates.title !== undefined) {
+        content = updateTitle(content, updates.title, metadata.type);
+        updatedTitle = updates.title;
+      }
+
+      // Update domain if provided
+      if (updates.domain !== undefined) {
+        content = updateMetadataField(content, "Domain", updates.domain);
+        updatedDomain = updates.domain;
+      }
+
+      // Update description if provided
+      if (updates.description !== undefined) {
+        content = updateDescriptionSection(content, updates.description, metadata.type);
+      }
+
+      // Update scope if provided (only for CRs)
+      if (updates.scope !== undefined && metadata.type === "change-request") {
+        content = updateScopeSection(content, updates.scope);
+      }
+
+      // Write updated content back to file
+      await fs.writeFile(filePath, content, "utf-8");
+
+      return {
+        success: true,
+        metadata: {
+          ...metadata,
+          title: updatedTitle,
+          domain: updatedDomain,
         },
       };
     }),
@@ -527,6 +970,76 @@ export const requestsRouter = router({
     }),
 
   /**
+   * Close a request (move from doing to done with completion notes)
+   */
+  close: publicProcedure
+    .input(
+      z.object({
+        requestId: z.string().min(1, "Request ID is required"),
+        completionNotes: z.string().min(1, "Completion notes are required"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await findRequestById(ctx.projectRoot, input.requestId);
+
+      if (!result) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Request not found: ${input.requestId}`,
+        });
+      }
+
+      const { metadata, content, filePath } = result;
+
+      // Verify request is in doing status
+      if (metadata.status !== "doing") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Request ${input.requestId} is not in doing status (current status: ${metadata.status}). Only active work can be closed.`,
+        });
+      }
+
+      // Calculate new file path (done directory)
+      const newDirPath = path.join(
+        getRequestsDir(ctx.projectRoot),
+        REQUEST_DIRS[metadata.type],
+        "done"
+      );
+      const newFilePath = path.join(newDirPath, metadata.filename);
+
+      // Update status in content
+      let updatedContent = content.replace(
+        /(\*\*Status\*\*:\s*)\S+/,
+        "$1done"
+      );
+
+      // Update completion notes section
+      // Replace the placeholder text with actual completion notes
+      updatedContent = updatedContent.replace(
+        /## Completion Notes\s*\n\n\[Added when moved to done[^\]]*\]/,
+        `## Completion Notes\n\n${input.completionNotes}`
+      );
+
+      // Ensure target directory exists
+      await fs.mkdir(newDirPath, { recursive: true });
+
+      // Write to new location
+      await fs.writeFile(newFilePath, updatedContent, "utf-8");
+
+      // Remove from old location
+      await fs.unlink(filePath);
+
+      return {
+        success: true,
+        metadata: {
+          ...metadata,
+          status: "done" as RequestStatus,
+        },
+        message: `Request ${input.requestId} closed and moved to done/`,
+      };
+    }),
+
+  /**
    * Demote a request from todo to backlog
    */
   demote: publicProcedure
@@ -580,6 +1093,32 @@ export const requestsRouter = router({
           ...metadata,
           status: "backlog" as RequestStatus,
         },
+      };
+    }),
+
+  /**
+   * Delete a request permanently
+   */
+  delete: publicProcedure
+    .input(z.object({ requestId: z.string().min(1, "Request ID is required") }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await findRequestById(ctx.projectRoot, input.requestId);
+
+      if (!result) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Request not found: ${input.requestId}`,
+        });
+      }
+
+      const { filePath } = result;
+
+      // Delete the file
+      await fs.unlink(filePath);
+
+      return {
+        success: true,
+        deletedId: input.requestId,
       };
     }),
 });

@@ -2,7 +2,7 @@
 
 **ID**: CR-20251209-019  
 **Domain**: dashboard  
-**Status**: todo  
+**Status**: doing  
 **Created**: 2025-12-09  
 **Owner**: agent  
 

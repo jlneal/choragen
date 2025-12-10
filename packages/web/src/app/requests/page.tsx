@@ -1,7 +1,11 @@
 // ADR: ADR-011-web-api-architecture
 
+import Link from "next/link";
+import { Plus } from "lucide-react";
+
 import { RequestList } from "@/components/requests";
 import { BacklogCount } from "@/components/requests/backlog-count";
+import { Button } from "@/components/ui/button";
 
 export default function RequestsPage() {
   return (
@@ -14,7 +18,15 @@ export default function RequestsPage() {
             Browse change requests and fix requests across your workspace
           </p>
         </div>
-        <BacklogCount />
+        <div className="flex items-center gap-3">
+          <BacklogCount />
+          <Button asChild>
+            <Link href="/requests/new">
+              <Plus className="h-4 w-4" />
+              New Request
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Request List */}

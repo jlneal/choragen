@@ -9,6 +9,7 @@
  * Handles loading and error states.
  */
 
+import { useRouter } from "next/navigation";
 import { AlertCircle } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,7 @@ import {
   AcceptanceCriteriaListSkeleton,
   LinkedChains,
   LinkedChainsSkeleton,
+  RequestActions,
 } from "@/components/requests";
 import type { RequestType } from "@/components/requests";
 import type { RequestStatus } from "@/components/requests";
@@ -36,7 +38,30 @@ interface RequestDetailClientProps {
  * RequestDetailClient fetches and displays full request details.
  */
 export function RequestDetailClient({ id }: RequestDetailClientProps) {
+  const router = useRouter();
+  const utils = trpc.useUtils();
   const { data, isLoading, error } = trpc.requests.getContent.useQuery(id);
+
+  /**
+   * Handle action completion - refetch data to reflect changes
+   */
+  const handleActionComplete = () => {
+    utils.requests.getContent.invalidate(id);
+  };
+
+  /**
+   * Handle delete - redirect to requests list
+   */
+  const handleDelete = () => {
+    router.push("/requests");
+  };
+
+  /**
+   * Handle edit - navigate to edit page
+   */
+  const handleEdit = () => {
+    router.push(`/requests/${id}/edit`);
+  };
 
   // Loading state
   if (isLoading) {
@@ -92,6 +117,16 @@ export function RequestDetailClient({ id }: RequestDetailClientProps) {
         domain={metadata.domain}
         created={metadata.created}
         owner={metadata.owner}
+        actions={
+          <RequestActions
+            requestId={metadata.id}
+            status={metadata.status as RequestStatus}
+            title={metadata.title}
+            onEdit={handleEdit}
+            onActionComplete={handleActionComplete}
+            onDelete={handleDelete}
+          />
+        }
       />
 
       {/* Content Sections */}
