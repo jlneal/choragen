@@ -1,0 +1,15 @@
+{
+  "id": "CHAIN-047",
+  "slug": "agent-session-monitor",
+  "title": "Agent Session Monitor",
+  "requestId": "CR-20251208-007",
+  "status": "done",
+  "createdAt": "2025-12-10T01:26:00Z",
+  "tasks": [
+    "TASK-047-001",
+    "TASK-047-002",
+    "TASK-047-003",
+    "TASK-047-004",
+    "TASK-047-005"
+  ]
+}

@@ -12,3 +12,8 @@ export {
   TIME_RANGE_OPTIONS,
 } from "./use-time-range";
 export { useMetrics, type UseMetricsReturn } from "./use-metrics";
+export {
+  useSessionFilters,
+  type UseSessionFiltersState,
+  type UseSessionFiltersReturn,
+} from "./use-session-filters";
