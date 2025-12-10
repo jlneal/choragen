@@ -1,0 +1,10 @@
+{
+  "id": "CHAIN-056-git-integration",
+  "sequence": 56,
+  "slug": "git-integration",
+  "requestId": "CR-20251209-022",
+  "title": "Git Integration",
+  "description": "Add Git status display and commit capabilities to the web dashboard",
+  "createdAt": "2025-12-10T13:38:00.000Z",
+  "updatedAt": "2025-12-10T13:38:00.000Z"
+}

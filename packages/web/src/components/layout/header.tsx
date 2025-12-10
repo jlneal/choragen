@@ -4,6 +4,7 @@
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileSidebar } from "@/components/layout/sidebar";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { GitStatus } from "@/components/git/git-status";
 
 export function Header() {
   return (
@@ -12,6 +13,7 @@ export function Header() {
       <div className="flex-1">
         <Breadcrumbs />
       </div>
+      <GitStatus />
       <ThemeToggle />
     </header>
   );

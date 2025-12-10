@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { GitSectionCompact } from "@/components/git/git-section";
 
 export default function Home() {
   return (
@@ -43,6 +44,9 @@ export default function Home() {
           value="—"
         />
       </div>
+
+      {/* Git Section */}
+      <GitSectionCompact />
 
       {/* Recent Activity */}
       <Card>

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   GitBranch,
+  GitCommitHorizontal,
   FileText,
   Bot,
   BarChart3,
@@ -34,6 +35,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Chains", href: "/chains", icon: GitBranch },
+  { name: "Git", href: "/git", icon: GitCommitHorizontal },
   {
     name: "Requests",
     href: "/requests",

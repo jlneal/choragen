@@ -2,7 +2,7 @@
 
 **ID**: CR-20251209-022  
 **Domain**: dashboard  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-09  
 **Owner**: agent  
 
@@ -86,7 +86,7 @@ Auto-generate commit message format:
 
 ## Commits
 
-No commits yet.
+- `a393e0c` feat(web): add git integration to dashboard
 
 ---
 
@@ -98,4 +98,21 @@ Use `simple-git` or similar library for git operations. Ensure commit hooks stil
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented full git integration for the web dashboard via CHAIN-056:
+
+**Backend (tRPC Router)**:
+- `git.status()` — branch, staged, modified, untracked files
+- `git.stage({ files })` / `git.unstage({ files })`
+- `git.commit({ message, requestId? })` — with hook support
+- `git.log({ limit })` — commit history
+
+**UI Components**:
+- `GitStatus` — header indicator with branch name and clean/dirty state
+- `GitPanel` — file staging with batch operations
+- `CommitDialog` — conventional commit message builder with CR/FR selector
+- `CommitHistory` — recent commits with reference highlighting and links
+- `GitSection` / dedicated `/git` page
+
+**Tests**: 205 total (36 new for git features)
+
+**Dependencies**: `simple-git`, `@radix-ui/react-tooltip`, `@radix-ui/react-label`, `@radix-ui/react-select`

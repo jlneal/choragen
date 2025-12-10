@@ -16,6 +16,7 @@ import { backlogRouter } from "./backlog";
 import { sessionsRouter } from "./sessions";
 import { metricsRouter } from "./metrics";
 import { configRouter } from "./config";
+import { gitRouter } from "./git";
 
 /**
  * Root application router.
@@ -86,6 +87,12 @@ export const appRouter = router({
    * Project and governance configuration from YAML files.
    */
   config: configRouter,
+
+  /**
+   * Git router.
+   * Git status, staging, committing, and history.
+   */
+  git: gitRouter,
 });
 
 /**
