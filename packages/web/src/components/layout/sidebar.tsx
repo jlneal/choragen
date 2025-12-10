@@ -11,6 +11,7 @@ import {
   BarChart3,
   Settings,
   Menu,
+  Archive,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -23,10 +24,24 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-const navItems = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  children?: { name: string; href: string; icon: typeof LayoutDashboard }[];
+}
+
+const navItems: NavItem[] = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Chains", href: "/chains", icon: GitBranch },
-  { name: "Requests", href: "/requests", icon: FileText },
+  {
+    name: "Requests",
+    href: "/requests",
+    icon: FileText,
+    children: [
+      { name: "Backlog", href: "/requests/backlog", icon: Archive },
+    ],
+  },
   { name: "Sessions", href: "/sessions", icon: Bot },
   { name: "Metrics", href: "/metrics", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
@@ -40,23 +55,50 @@ function NavLinks({ onLinkClick }: { onLinkClick?: () => void }) {
       {navItems.map((item) => {
         const isActive =
           pathname === item.href ||
-          (item.href !== "/" && pathname.startsWith(item.href));
+          (item.href !== "/" && pathname.startsWith(item.href) && !item.children?.some(c => pathname === c.href));
+        const isParentActive = item.children?.some(c => pathname === c.href);
 
         return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onLinkClick}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              isActive
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          <div key={item.href}>
+            <Link
+              href={item.href}
+              onClick={onLinkClick}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : isParentActive
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.name}
+            </Link>
+            {item.children && (isActive || isParentActive) && (
+              <div className="ml-4 mt-1 flex flex-col gap-1">
+                {item.children.map((child) => {
+                  const isChildActive = pathname === child.href;
+                  return (
+                    <Link
+                      key={child.href}
+                      href={child.href}
+                      onClick={onLinkClick}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition-colors",
+                        isChildActive
+                          ? "bg-accent text-accent-foreground font-medium"
+                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      )}
+                    >
+                      <child.icon className="h-3.5 w-3.5" />
+                      {child.name}
+                    </Link>
+                  );
+                })}
+              </div>
             )}
-          >
-            <item.icon className="h-4 w-4" />
-            {item.name}
-          </Link>
+          </div>
         );
       })}
     </nav>

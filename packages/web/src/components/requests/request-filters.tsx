@@ -28,6 +28,8 @@ interface RequestFiltersProps {
   onFiltersChange: (filters: RequestFilterState) => void;
   /** Available domains extracted from requests */
   availableDomains: string[];
+  /** Hide the status filter (useful for status-specific pages like backlog) */
+  hideStatusFilter?: boolean;
   className?: string;
 }
 
@@ -49,6 +51,7 @@ export function RequestFilters({
   filters,
   onFiltersChange,
   availableDomains,
+  hideStatusFilter = false,
   className,
 }: RequestFiltersProps) {
   const hasActiveFilters = filters.status !== null || filters.domain !== null;
@@ -74,22 +77,24 @@ export function RequestFilters({
   return (
     <div className={cn("flex flex-wrap items-center gap-4", className)}>
       {/* Status filters */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-muted-foreground">Status:</span>
-        <div className="flex gap-1">
-          {statusOptions.map((option) => (
-            <Button
-              key={option.value}
-              variant={filters.status === option.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleStatusChange(option.value)}
-              className="h-7 px-2.5 text-xs"
-            >
-              {option.label}
-            </Button>
-          ))}
+      {!hideStatusFilter && (
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">Status:</span>
+          <div className="flex gap-1">
+            {statusOptions.map((option) => (
+              <Button
+                key={option.value}
+                variant={filters.status === option.value ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleStatusChange(option.value)}
+                className="h-7 px-2.5 text-xs"
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Domain filter */}
       {availableDomains.length > 0 && (

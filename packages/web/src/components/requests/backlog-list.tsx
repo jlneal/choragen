@@ -5,17 +5,16 @@ import { useMemo, useState } from "react";
 import { FileText, Search } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc/client";
 
 import { RequestCard } from "./request-card";
-import { RequestTabs, type RequestTab } from "./request-tabs";
+import type { RequestStatus } from "./request-status-badge";
+import type { RequestType } from "./request-type-badge";
 import { RequestFilters, type RequestFilterState } from "./request-filters";
 import { RequestSort, type RequestSortState } from "./request-sort";
 import { TagFilter } from "@/components/tags";
-import type { RequestStatus } from "./request-status-badge";
-import type { RequestType } from "./request-type-badge";
+import { RequestCardSkeleton } from "./request-list";
 
 /**
  * Request data structure from tRPC
@@ -33,41 +32,14 @@ interface RequestItem {
   filename: string;
 }
 
-interface RequestListProps {
+interface BacklogListProps {
   className?: string;
-}
-
-/**
- * Loading skeleton for a single request card
- */
-function RequestCardSkeleton() {
-  return (
-    <Card>
-      <div className="p-4 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="h-4 w-64" />
-          </div>
-          <div className="flex gap-2">
-            <Skeleton className="h-5 w-10" />
-            <Skeleton className="h-5 w-16" />
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-4 w-16" />
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-20" />
-        </div>
-      </div>
-    </Card>
-  );
 }
 
 /**
  * Loading state with multiple skeleton cards
  */
-function RequestListLoading() {
+function BacklogListLoading() {
   const SKELETON_COUNT = 4;
   return (
     <div className="grid gap-4">
@@ -81,17 +53,16 @@ function RequestListLoading() {
 /**
  * Empty state when no requests match filters
  */
-function RequestListEmpty() {
+function BacklogListEmpty() {
   return (
     <Card>
       <CardContent className="flex flex-col items-center justify-center py-12 text-center">
         <div className="rounded-full bg-muted p-4 mb-4">
           <Search className="h-8 w-8 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold mb-2">No requests found</h3>
+        <h3 className="text-lg font-semibold mb-2">No backlog requests found</h3>
         <p className="text-sm text-muted-foreground max-w-md">
-          No requests match your current filters. Try adjusting your filters or
-          create a new request to get started.
+          No backlog requests match your current filters. Try adjusting your filters.
         </p>
       </CardContent>
     </Card>
@@ -99,20 +70,19 @@ function RequestListEmpty() {
 }
 
 /**
- * Empty state when there are no requests at all
+ * Empty state when there are no backlog requests at all
  */
-function RequestListNoRequests() {
+function BacklogListNoRequests() {
   return (
     <Card>
       <CardContent className="flex flex-col items-center justify-center py-12 text-center">
         <div className="rounded-full bg-muted p-4 mb-4">
           <FileText className="h-8 w-8 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold mb-2">No requests yet</h3>
+        <h3 className="text-lg font-semibold mb-2">Backlog is empty</h3>
         <p className="text-sm text-muted-foreground max-w-md">
-          Requests drive all work in Choragen. Change Requests (CRs) add new
-          features, while Fix Requests (FRs) address bugs and issues. Create
-          your first request to get started.
+          No requests are currently in the backlog. Requests in the backlog are
+          ideas or low-priority items that haven&apos;t been scheduled for work yet.
         </p>
       </CardContent>
     </Card>
@@ -120,22 +90,10 @@ function RequestListNoRequests() {
 }
 
 /**
- * Status sort order for sorting by status
+ * BacklogList displays only backlog requests with promote functionality.
  */
-const STATUS_ORDER: Record<RequestStatus, number> = {
-  doing: 0,
-  todo: 1,
-  backlog: 2,
-  done: 3,
-};
-
-/**
- * RequestList is the main client component for displaying requests.
- * Handles data fetching via tRPC, filtering, sorting, and tab switching.
- */
-export function RequestList({ className }: RequestListProps) {
-  // State for tabs, filters, sorting, and tags
-  const [activeTab, setActiveTab] = useState<RequestTab>("all");
+export function BacklogList({ className }: BacklogListProps) {
+  // State for filters, sorting, and tags
   const [filters, setFilters] = useState<RequestFilterState>({
     status: null,
     domain: null,
@@ -145,85 +103,44 @@ export function RequestList({ className }: RequestListProps) {
     field: "date",
     direction: "desc",
   });
-  const [actionPendingId, setActionPendingId] = useState<string | null>(null);
+  const [promotingId, setPromotingId] = useState<string | null>(null);
 
-  // Fetch requests based on active tab
-  const allQuery = trpc.requests.list.useQuery(undefined, {
-    enabled: activeTab === "all",
-  });
-  const crQuery = trpc.requests.listChangeRequests.useQuery(undefined, {
-    enabled: activeTab === "change-request",
-  });
-  const frQuery = trpc.requests.listFixRequests.useQuery(undefined, {
-    enabled: activeTab === "fix-request",
-  });
+  // Fetch only backlog requests
+  const { data: requests = [], isLoading, refetch } = trpc.requests.list.useQuery(
+    { status: "backlog" }
+  );
 
-  // Promote and demote mutations
+  // Promote mutation
   const promoteMutation = trpc.requests.promote.useMutation({
     onSuccess: () => {
-      allQuery.refetch();
-      crQuery.refetch();
-      frQuery.refetch();
-      setActionPendingId(null);
+      refetch();
+      setPromotingId(null);
     },
     onError: () => {
-      setActionPendingId(null);
-    },
-  });
-
-  const demoteMutation = trpc.requests.demote.useMutation({
-    onSuccess: () => {
-      allQuery.refetch();
-      crQuery.refetch();
-      frQuery.refetch();
-      setActionPendingId(null);
-    },
-    onError: () => {
-      setActionPendingId(null);
+      setPromotingId(null);
     },
   });
 
   const handlePromote = (requestId: string) => {
-    setActionPendingId(requestId);
+    setPromotingId(requestId);
     promoteMutation.mutate({ requestId });
   };
 
-  const handleDemote = (requestId: string) => {
-    setActionPendingId(requestId);
-    demoteMutation.mutate({ requestId });
-  };
-
-  // Get the active query based on tab
-  const activeQuery =
-    activeTab === "all"
-      ? allQuery
-      : activeTab === "change-request"
-        ? crQuery
-        : frQuery;
-
-  const requests = (activeQuery.data ?? []) as RequestItem[];
-  const isLoading = activeQuery.isLoading;
-
   // Extract unique domains for filter dropdown
   const availableDomains = useMemo(() => {
-    const domains = new Set(requests.map((r) => r.domain));
+    const domains = new Set((requests as RequestItem[]).map((r) => r.domain));
     return Array.from(domains).sort();
   }, [requests]);
 
   // Extract unique tags for filter dropdown
   const availableTags = useMemo(() => {
-    const tags = new Set(requests.flatMap((r) => r.tags || []));
+    const tags = new Set((requests as RequestItem[]).flatMap((r) => r.tags || []));
     return Array.from(tags).sort();
   }, [requests]);
 
   // Apply filters and sorting
   const filteredAndSortedRequests = useMemo(() => {
-    let result = [...requests];
-
-    // Apply status filter
-    if (filters.status) {
-      result = result.filter((r) => r.status === filters.status);
-    }
+    let result = [...(requests as RequestItem[])];
 
     // Apply domain filter
     if (filters.domain) {
@@ -239,14 +156,8 @@ export function RequestList({ className }: RequestListProps) {
 
     // Apply sorting
     result.sort((a, b) => {
-      if (sort.field === "date") {
-        const comparison = a.created.localeCompare(b.created);
-        return sort.direction === "desc" ? -comparison : comparison;
-      } else {
-        // Sort by status
-        const comparison = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
-        return sort.direction === "desc" ? -comparison : comparison;
-      }
+      const comparison = a.created.localeCompare(b.created);
+      return sort.direction === "desc" ? -comparison : comparison;
     });
 
     return result;
@@ -259,15 +170,13 @@ export function RequestList({ className }: RequestListProps) {
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Tabs */}
-      <RequestTabs activeTab={activeTab} onTabChange={setActiveTab} />
-
       {/* Filters and Sort */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <RequestFilters
-          filters={filters}
-          onFiltersChange={setFilters}
+          filters={{ ...filters, status: null }}
+          onFiltersChange={(f) => setFilters({ ...f, status: null })}
           availableDomains={availableDomains}
+          hideStatusFilter
         />
         <RequestSort sort={sort} onSortChange={setSort} />
       </div>
@@ -283,11 +192,11 @@ export function RequestList({ className }: RequestListProps) {
 
       {/* Request List */}
       {isLoading ? (
-        <RequestListLoading />
+        <BacklogListLoading />
       ) : hasNoRequests ? (
-        <RequestListNoRequests />
+        <BacklogListNoRequests />
       ) : hasNoFilteredResults ? (
-        <RequestListEmpty />
+        <BacklogListEmpty />
       ) : (
         <div className="grid gap-4">
           {filteredAndSortedRequests.map((request) => (
@@ -302,14 +211,13 @@ export function RequestList({ className }: RequestListProps) {
               owner={request.owner}
               severity={request.severity}
               tags={request.tags}
-              onTagClick={(tag) => {
+              onPromote={handlePromote}
+              isActionPending={promotingId === request.id}
+              onTagClick={(tag: string) => {
                 if (!selectedTags.includes(tag)) {
                   setSelectedTags([...selectedTags, tag]);
                 }
               }}
-              onPromote={handlePromote}
-              onDemote={handleDemote}
-              isActionPending={actionPendingId === request.id}
             />
           ))}
         </div>
@@ -318,7 +226,4 @@ export function RequestList({ className }: RequestListProps) {
   );
 }
 
-/**
- * Export skeleton and empty state components for reuse
- */
-export { RequestCardSkeleton, RequestListLoading, RequestListNoRequests };
+export { BacklogListLoading, BacklogListNoRequests };
