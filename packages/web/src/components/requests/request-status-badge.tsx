@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 /**
  * Valid request status values
  */
-export type RequestStatus = "todo" | "doing" | "done";
+export type RequestStatus = "backlog" | "todo" | "doing" | "done";
 
 interface RequestStatusBadgeProps {
   status: RequestStatus;
@@ -20,6 +20,10 @@ const statusConfig: Record<
   RequestStatus,
   { label: string; className: string }
 > = {
+  backlog: {
+    label: "Backlog",
+    className: "bg-slate-100 text-slate-700 hover:bg-slate-100/80 dark:bg-slate-800 dark:text-slate-300",
+  },
   todo: {
     label: "Todo",
     className: "bg-blue-100 text-blue-700 hover:bg-blue-100/80 dark:bg-blue-900 dark:text-blue-300",

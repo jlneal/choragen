@@ -35,6 +35,7 @@ interface RequestFiltersProps {
  * Status filter options with labels
  */
 const statusOptions: { value: RequestStatus; label: string }[] = [
+  { value: "backlog", label: "Backlog" },
   { value: "todo", label: "Todo" },
   { value: "doing", label: "In Progress" },
   { value: "done", label: "Done" },

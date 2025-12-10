@@ -125,7 +125,8 @@ function RequestListNoRequests() {
 const STATUS_ORDER: Record<RequestStatus, number> = {
   doing: 0,
   todo: 1,
-  done: 2,
+  backlog: 2,
+  done: 3,
 };
 
 /**

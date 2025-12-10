@@ -19,7 +19,7 @@ type RequestType = "change-request" | "fix-request";
 /**
  * Request status enum
  */
-const requestStatusSchema = z.enum(["todo", "doing", "done"]);
+const requestStatusSchema = z.enum(["backlog", "todo", "doing", "done"]);
 type RequestStatus = z.infer<typeof requestStatusSchema>;
 
 /**
@@ -151,7 +151,7 @@ async function findRequestById(
   requestId: string
 ): Promise<{ metadata: RequestMetadata; content: string; filePath: string } | null> {
   const types: RequestType[] = ["change-request", "fix-request"];
-  const statuses: RequestStatus[] = ["todo", "doing", "done"];
+  const statuses: RequestStatus[] = ["backlog", "todo", "doing", "done"];
 
   for (const type of types) {
     for (const status of statuses) {
@@ -210,7 +210,7 @@ export const requestsRouter = router({
     .query(async ({ ctx, input }) => {
       const statuses: RequestStatus[] = input?.status
         ? [input.status]
-        : ["todo", "doing", "done"];
+        : ["backlog", "todo", "doing", "done"];
 
       const allRequests: RequestMetadata[] = [];
 
@@ -232,7 +232,7 @@ export const requestsRouter = router({
     .query(async ({ ctx, input }) => {
       const statuses: RequestStatus[] = input?.status
         ? [input.status]
-        : ["todo", "doing", "done"];
+        : ["backlog", "todo", "doing", "done"];
 
       const requests: RequestMetadata[] = [];
 
@@ -252,7 +252,7 @@ export const requestsRouter = router({
     .query(async ({ ctx, input }) => {
       const statuses: RequestStatus[] = input?.status
         ? [input.status]
-        : ["todo", "doing", "done"];
+        : ["backlog", "todo", "doing", "done"];
 
       const requests: RequestMetadata[] = [];
 
