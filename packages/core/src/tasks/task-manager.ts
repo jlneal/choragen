@@ -248,6 +248,13 @@ export class TaskManager {
   }
 
   /**
+   * Unblock a task (blocked → todo)
+   */
+  async unblockTask(chainId: string, taskId: string): Promise<TransitionResult> {
+    return this.transitionTask(chainId, taskId, "todo");
+  }
+
+  /**
    * Get the next available task for a chain
    */
   async getNextTask(chainId: string): Promise<Task | null> {

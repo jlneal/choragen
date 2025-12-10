@@ -8,7 +8,7 @@
  */
 import { z } from "zod";
 import { router, publicProcedure, TRPCError } from "../trpc";
-import { TaskManager, type TaskStatus } from "@choragen/core";
+import { TaskManager, MetricsCollector, type TaskStatus } from "@choragen/core";
 
 /**
  * Zod schema for task status values
@@ -83,6 +83,13 @@ const reworkTaskInputSchema = z.object({
  */
 function getTaskManager(projectRoot: string): TaskManager {
   return new TaskManager(projectRoot);
+}
+
+/**
+ * Helper to create a MetricsCollector instance from context
+ */
+function getMetricsCollector(projectRoot: string): MetricsCollector {
+  return new MetricsCollector(projectRoot);
 }
 
 /**
@@ -290,5 +297,61 @@ export const tasksRouter = router({
       }
 
       return result;
+    }),
+
+  /**
+   * Unblock a task (blocked → todo)
+   */
+  unblock: publicProcedure
+    .input(getTaskInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const manager = getTaskManager(ctx.projectRoot);
+      const result = await manager.unblockTask(input.chainId, input.taskId);
+
+      if (!result.success) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: result.error || "Failed to unblock task",
+        });
+      }
+
+      return result;
+    }),
+
+  /**
+   * Get task history (status transitions from pipeline events)
+   *
+   * Returns a list of status transition events for a task, derived from
+   * the MetricsCollector pipeline events. Each entry includes the event type,
+   * timestamp, and optional metadata like rework reason.
+   */
+  getHistory: publicProcedure
+    .input(getTaskInputSchema)
+    .query(async ({ ctx, input }) => {
+      const collector = getMetricsCollector(ctx.projectRoot);
+
+      // Get all events for this task
+      const events = await collector.getEvents({
+        chainId: input.chainId,
+      });
+
+      // Filter to events for this specific task and map to history entries
+      const taskEvents = events
+        .filter(
+          (event) =>
+            event.entityType === "task" && event.entityId === input.taskId
+        )
+        .map((event) => ({
+          id: event.id,
+          eventType: event.eventType,
+          timestamp: event.timestamp,
+          metadata: event.metadata,
+        }))
+        .sort(
+          (a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+
+      return taskEvents;
     }),
 });

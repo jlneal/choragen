@@ -10,7 +10,16 @@
  */
 
 import { useState } from "react";
-import { FileCode, CheckSquare, AlertTriangle, StickyNote, Pencil } from "lucide-react";
+import {
+  FileCode,
+  CheckSquare,
+  AlertTriangle,
+  StickyNote,
+  Pencil,
+  History,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 
 import {
   Sheet,
@@ -24,7 +33,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc/client";
 import { TaskEditor, type TaskEditorData } from "@/components/chains";
 
-import { TaskStatusBadge } from "./task-status-badge";
+import { TaskStatusBadge, type TaskStatus } from "./task-status-badge";
+import { TaskActions } from "./task-actions";
+import { ReworkDialog } from "./rework-dialog";
+import { TaskHistory } from "./task-history";
 
 interface TaskDetailPanelProps {
   /** Chain ID of the task to display */
@@ -112,6 +124,8 @@ export function TaskDetailPanel({
   onOpenChange,
 }: TaskDetailPanelProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
+  const [isReworkDialogOpen, setIsReworkDialogOpen] = useState(false);
   const utils = trpc.useUtils();
 
   // Fetch task details when panel is open and IDs are provided
@@ -122,10 +136,11 @@ export function TaskDetailPanel({
     }
   );
 
-  // Reset editing state when panel closes or task changes
+  // Reset state when panel closes
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       setIsEditing(false);
+      setIsHistoryExpanded(false);
     }
     onOpenChange(newOpen);
   };
@@ -139,6 +154,21 @@ export function TaskDetailPanel({
       utils.chains.getSummary.invalidate(chainId);
     }
     setIsEditing(false);
+  };
+
+  // Handle successful action (start, complete, approve, etc.)
+  const handleActionSuccess = () => {
+    // Queries are invalidated by TaskActions internally
+  };
+
+  // Handle rework action - opens the dialog instead of immediate action
+  const handleReworkClick = () => {
+    setIsReworkDialogOpen(true);
+  };
+
+  // Handle successful rework
+  const handleReworkSuccess = () => {
+    setIsReworkDialogOpen(false);
   };
 
   // Prepare task data for editor
@@ -211,9 +241,20 @@ export function TaskDetailPanel({
             </div>
           ) : task ? (
             <div className="space-y-6">
-              {/* Status Badge */}
-              <div>
+              {/* Status Badge and Actions */}
+              <div className="space-y-3">
                 <TaskStatusBadge status={task.status} showIcon />
+                {chainId && (
+                  <TaskActions
+                    chainId={chainId}
+                    taskId={task.id}
+                    status={task.status as TaskStatus}
+                    onSuccess={handleActionSuccess}
+                    onReworkClick={
+                      task.status === "in-review" ? handleReworkClick : undefined
+                    }
+                  />
+                )}
               </div>
 
               {/* Description */}
@@ -309,6 +350,30 @@ export function TaskDetailPanel({
                   </div>
                 </div>
               )}
+
+              {/* Task History - Collapsible */}
+              {chainId && (
+                <div className="border-t pt-4 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+                    className="flex items-center gap-2 w-full text-left text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {isHistoryExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                    <History className="h-4 w-4" />
+                    Task History
+                  </button>
+                  {isHistoryExpanded && (
+                    <div className="mt-4">
+                      <TaskHistory chainId={chainId} taskId={task.id} />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex items-center justify-center h-32 text-muted-foreground">
@@ -316,6 +381,18 @@ export function TaskDetailPanel({
             </div>
           )}
         </div>
+
+        {/* Rework Dialog */}
+        {chainId && taskId && task && (
+          <ReworkDialog
+            isOpen={isReworkDialogOpen}
+            onClose={() => setIsReworkDialogOpen(false)}
+            chainId={chainId}
+            taskId={taskId}
+            taskTitle={task.title}
+            onSuccess={handleReworkSuccess}
+          />
+        )}
       </SheetContent>
     </Sheet>
   );

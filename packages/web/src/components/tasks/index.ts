@@ -14,3 +14,6 @@ export {
   TaskListSkeleton,
 } from "./task-list";
 export { TaskDetailPanel } from "./task-detail-panel";
+export { TaskActions } from "./task-actions";
+export { ReworkDialog } from "./rework-dialog";
+export { TaskHistory, TaskHistorySkeleton } from "./task-history";

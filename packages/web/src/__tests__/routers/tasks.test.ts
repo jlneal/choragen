@@ -29,6 +29,7 @@ const mockTaskManager = {
   approveTask: vi.fn(),
   reworkTask: vi.fn(),
   blockTask: vi.fn(),
+  unblockTask: vi.fn(),
 };
 
 describe("tasks router", () => {
@@ -449,6 +450,43 @@ describe("tasks router", () => {
 
       await expect(
         caller.tasks.block({
+          chainId: "CHAIN-001",
+          taskId: "001-task",
+        })
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+      });
+    });
+  });
+
+  describe("unblock", () => {
+    it("unblocks a task (blocked → todo)", async () => {
+      const mockResult = {
+        success: true,
+        task: { id: "001-task", status: "todo" },
+      };
+      mockTaskManager.unblockTask.mockResolvedValue(mockResult);
+
+      const result = await caller.tasks.unblock({
+        chainId: "CHAIN-001",
+        taskId: "001-task",
+      });
+
+      expect(result).toEqual(mockResult);
+      expect(mockTaskManager.unblockTask).toHaveBeenCalledWith(
+        "CHAIN-001",
+        "001-task"
+      );
+    });
+
+    it("throws BAD_REQUEST when unblock fails", async () => {
+      mockTaskManager.unblockTask.mockResolvedValue({
+        success: false,
+        error: "Task is not blocked",
+      });
+
+      await expect(
+        caller.tasks.unblock({
           chainId: "CHAIN-001",
           taskId: "001-task",
         })
