@@ -2,7 +2,7 @@
 
 **ID**: CR-20251207-011  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-07  
 **Owner**: agent  
 
@@ -116,11 +116,11 @@ Events are emitted by existing commands:
 
 ## Acceptance Criteria
 
-- [ ] Events logged to `.choragen/metrics/events.jsonl`
-- [ ] `metrics:summary` shows key metrics
-- [ ] Rework rate calculable from events
-- [ ] Export to JSON/CSV works
-- [ ] No performance impact on normal operations
+- [x] Events logged to `.choragen/metrics/events.jsonl`
+- [x] `metrics:summary` shows key metrics
+- [x] Rework rate calculable from events
+- [x] Export to JSON/CSV works
+- [x] No performance impact on normal operations
 
 ## Dependencies
 
@@ -138,4 +138,13 @@ Yes - ADR for metrics storage format and aggregation strategy
 
 ## Commits
 
-[Populated by `choragen request:close`]
+## Completion Notes
+
+Pipeline metrics system fully implemented:
+
+- **Core**: `MetricsCollector` class in `packages/core/src/metrics/`
+- **CLI**: `metrics:summary`, `metrics:export`, `metrics:import` commands
+- **Web**: Metrics dashboard at `/metrics` with charts and time filtering
+- **Storage**: JSONL append-only event log at `.choragen/metrics/events.jsonl`
+
+Implemented via CHAIN-031-pipeline-metrics.
