@@ -84,9 +84,82 @@ function getNextRank(ranks: RankEntry[]): number {
 }
 
 /**
+ * Backlog item with request metadata
+ */
+interface BacklogItem {
+  id: string;
+  type: "cr" | "fr";
+  title: string;
+  status: string;
+  domain?: string;
+  rank: number;
+}
+
+/**
+ * Read request metadata from a file
+ */
+async function readRequestMetadata(
+  projectRoot: string,
+  requestId: string
+): Promise<{ title: string; domain?: string; type: "cr" | "fr" } | null> {
+  const requestTypes = ["change-requests", "fix-requests"] as const;
+  const statuses = ["backlog", "todo", "doing", "done"] as const;
+
+  for (const reqType of requestTypes) {
+    for (const status of statuses) {
+      const dirPath = path.join(projectRoot, "docs", "requests", reqType, status);
+      try {
+        const files = await fs.readdir(dirPath);
+        for (const filename of files) {
+          if (!filename.endsWith(".md")) continue;
+          const filePath = path.join(dirPath, filename);
+          const content = await fs.readFile(filePath, "utf-8");
+          const idMatch = content.match(/\*\*ID\*\*:\s*(\S+)/);
+          if (idMatch?.[1] === requestId) {
+            const titleMatch = content.match(/^#\s+(?:Change Request|Fix Request):\s*(.+)$/m);
+            const domainMatch = content.match(/\*\*Domain\*\*:\s*(\S+)/);
+            return {
+              title: titleMatch?.[1]?.trim() || filename.replace(".md", ""),
+              domain: domainMatch?.[1],
+              type: reqType === "change-requests" ? "cr" : "fr",
+            };
+          }
+        }
+      } catch {
+        // Directory doesn't exist, continue
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Backlog router with ranking operations
  */
 export const backlogRouter = router({
+  /**
+   * List all backlog items with metadata, sorted by rank
+   */
+  list: publicProcedure.query(async ({ ctx }) => {
+    const data = await readRanks(ctx.projectRoot);
+    const ranks = normalizeRanks(data.ranks);
+
+    const items: BacklogItem[] = [];
+    for (const entry of ranks) {
+      const metadata = await readRequestMetadata(ctx.projectRoot, entry.requestId);
+      items.push({
+        id: entry.requestId,
+        type: metadata?.type ?? "cr",
+        title: metadata?.title ?? entry.requestId,
+        status: "backlog",
+        domain: metadata?.domain,
+        rank: entry.rank,
+      });
+    }
+
+    return items;
+  }),
+
   /**
    * Get all ranks sorted by rank number
    */
