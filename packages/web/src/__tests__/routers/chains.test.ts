@@ -12,6 +12,10 @@ import { TRPCError } from "@trpc/server";
 // Mock @choragen/core
 vi.mock("@choragen/core", () => ({
   ChainManager: vi.fn().mockImplementation(() => mockChainManager),
+  WorkflowManager: vi.fn().mockImplementation(() => ({})),
+  WORKFLOW_STATUSES: ["active", "paused", "completed", "failed", "cancelled"] as const,
+  MESSAGE_ROLES: ["human", "control", "impl", "system"] as const,
+  loadTemplate: vi.fn(),
 }));
 
 // Mock chain manager instance

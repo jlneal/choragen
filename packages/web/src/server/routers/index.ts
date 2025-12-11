@@ -18,6 +18,7 @@ import { metricsRouter } from "./metrics";
 import { configRouter } from "./config";
 import { gitRouter } from "./git";
 import { projectRouter } from "./project";
+import { workflowRouter } from "./workflow";
 
 /**
  * Root application router.
@@ -100,6 +101,12 @@ export const appRouter = router({
    * Git status, staging, committing, and history.
    */
   git: gitRouter,
+
+  /**
+   * Workflow router.
+   * Exposes workflow orchestration APIs.
+   */
+  workflow: workflowRouter,
 });
 
 /**

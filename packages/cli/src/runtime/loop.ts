@@ -15,6 +15,8 @@ import { PromptLoader, createToolSummaries } from "./prompt-loader.js";
 import { withRetry, DEFAULT_RETRY_CONFIG, type RetryConfig } from "./retry.js";
 import { CostTracker, type CostSnapshot } from "./cost-tracker.js";
 import { CheckpointHandler, type CheckpointConfig } from "./checkpoint.js";
+import { loadWorkflowSessionContext } from "./context.js";
+import type { MessageRole, StageType, WorkflowMessageMetadata } from "@choragen/core";
 
 /**
  * Default maximum iterations for safety limit.
@@ -38,6 +40,10 @@ export interface AgentSessionConfig {
   chainId?: string;
   /** Active task ID (optional) */
   taskId?: string;
+  /** Workflow ID (optional) */
+  workflowId?: string;
+  /** Workflow stage index (optional, defaults to workflow.currentStage) */
+  stageIndex?: number;
   /** Workspace root directory */
   workspaceRoot: string;
   /** Maximum iterations before forced termination (default: 50) */
@@ -130,6 +136,10 @@ export interface ExtendedExecutionContext {
   chainId?: string;
   /** Current task ID (if in a task context) */
   taskId?: string;
+  /** Workflow ID (if in a workflow context) */
+  workflowId?: string;
+  /** Workflow stage type (if in a workflow context) */
+  stageType?: StageType;
   /** Workspace root directory */
   workspaceRoot: string;
   /** Current session ID */
@@ -176,6 +186,8 @@ export async function runAgentSession(
     provider,
     chainId,
     taskId,
+    workflowId,
+    stageIndex,
     workspaceRoot,
     maxIterations = DEFAULT_MAX_ITERATIONS,
     dryRun = false,
@@ -234,9 +246,57 @@ export async function runAgentSession(
     maxCost,
   });
 
+  // Load workflow context if provided
+  let workflowContext: Awaited<ReturnType<typeof loadWorkflowSessionContext>> = null;
+  if (workflowId) {
+    try {
+      workflowContext = await loadWorkflowSessionContext(workspaceRoot, workflowId, stageIndex);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`[Loop] Workflow load failed: ${message}`);
+      return {
+        success: false,
+        iterations: 0,
+        toolCalls: [],
+        tokensUsed: { input: 0, output: 0 },
+        error: message,
+        stopReason: "error",
+        sessionId,
+      };
+    }
+  }
+
+  const workflowMessageRole: MessageRole = role === "impl" ? "impl" : "control";
+  const recordWorkflowMessage = async (
+    messageRole: MessageRole,
+    content: string,
+    metadata?: WorkflowMessageMetadata
+  ): Promise<void> => {
+    if (!workflowContext) return;
+    try {
+      await workflowContext.manager.addMessage(workflowContext.workflow.id, {
+        role: messageRole,
+        content,
+        stageIndex: workflowContext.stageIndex,
+        metadata,
+      });
+    } catch (err) {
+      console.error(
+        `[Loop] Failed to record workflow message: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    }
+  };
+
   // Get tools for role
-  const toolDefinitions = registry.getToolsForRole(role);
-  const tools: Tool[] = registry.getProviderToolsForRole(role);
+  const stageType = workflowContext?.stageType;
+  const toolDefinitions = stageType
+    ? registry.getToolsForStage(role, stageType)
+    : registry.getToolsForRole(role);
+  const tools: Tool[] = stageType
+    ? registry.getProviderToolsForStage(role, stageType)
+    : registry.getProviderToolsForRole(role);
 
   // Build system prompt
   const systemPrompt = await promptLoader.load(role, {
@@ -299,6 +359,8 @@ export async function runAgentSession(
     role,
     chainId,
     taskId,
+    workflowId: workflowContext?.workflow.id,
+    stageType,
     workspaceRoot,
     sessionId,
     parentSessionId,
@@ -370,6 +432,7 @@ export async function runAgentSession(
       if (response.content) {
         messages.push({ role: "assistant", content: response.content });
         console.log(`[Loop] Assistant: ${response.content.slice(0, 100)}...`);
+        await recordWorkflowMessage(workflowMessageRole, response.content);
       }
 
       // Process tool calls
@@ -404,6 +467,10 @@ export async function runAgentSession(
         // Add tool result to conversation
         const toolMessage = buildToolMessage(toolCall, record);
         messages.push(toolMessage);
+        await recordWorkflowMessage("system", toolMessage.content, {
+          tool: toolCall.name,
+          allowed: record.allowed,
+        });
       }
 
       // Check stop condition

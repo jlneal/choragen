@@ -14,6 +14,10 @@ vi.mock("@choragen/core", () => ({
   TaskManager: vi.fn().mockImplementation(() => mockTaskManager),
   // Re-export ChainManager mock for chains router (used by appRouter)
   ChainManager: vi.fn().mockImplementation(() => ({})),
+  WorkflowManager: vi.fn().mockImplementation(() => ({})),
+  WORKFLOW_STATUSES: ["active", "paused", "completed", "failed", "cancelled"] as const,
+  MESSAGE_ROLES: ["human", "control", "impl", "system"] as const,
+  loadTemplate: vi.fn(),
 }));
 
 // Mock task manager instance
