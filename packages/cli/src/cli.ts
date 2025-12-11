@@ -4,7 +4,16 @@
  * CLI implementation
  */
 
-import { ChainManager, LockManager, CHAIN_TYPES, type ChainType, MetricsCollector, type TokenUsage } from "@choragen/core";
+import {
+  ChainManager,
+  LockManager,
+  CHAIN_TYPES,
+  WORKFLOW_STATUSES,
+  type ChainType,
+  MetricsCollector,
+  type TokenUsage,
+  type WorkflowStatus,
+} from "@choragen/core";
 import {
   parseGovernanceFile,
   GovernanceChecker,
@@ -46,6 +55,15 @@ import {
   getAgentListSessionsHelp,
   getAgentCleanupHelp,
 } from "./commands/agent-session.js";
+import {
+  startWorkflow,
+  listWorkflows,
+  getWorkflowStatus,
+  advanceWorkflow,
+  approveWorkflowGate,
+  formatWorkflowStatus,
+  formatWorkflowList,
+} from "./commands/workflow.js";
 import { runMenuLoop } from "./menu/index.js";
 import * as readline from "node:readline";
 import { spawn } from "node:child_process";
@@ -587,6 +605,128 @@ const commands: Record<string, CommandDef> = {
         const typeCol = typeStr.padEnd(16);
         console.log(`${chain.id} ${typeCol} [${status}] - ${chain.title}`);
       }
+    },
+  },
+
+  // Workflow lifecycle
+  "workflow:start": {
+    description: "Create and start a workflow from a template",
+    usage: "workflow:start <request-id> [--template=standard]",
+    handler: async (args) => {
+      const positional: string[] = [];
+      let template: string | undefined;
+
+      for (const arg of args) {
+        if (arg.startsWith("--template=")) {
+          template = arg.slice("--template=".length);
+        } else {
+          positional.push(arg);
+        }
+      }
+
+      const [requestId] = positional;
+      if (!requestId) {
+        console.error("Usage: choragen workflow:start <request-id> [--template=standard]");
+        process.exit(1);
+      }
+
+      const result = await startWorkflow(projectRoot, requestId, { template });
+      if (!result.success || !result.workflow) {
+        console.error(result.error || "Failed to start workflow");
+        process.exit(1);
+      }
+
+      console.log(`Created workflow: ${result.workflow.id}`);
+      console.log(`Request: ${result.workflow.requestId}`);
+      console.log(formatWorkflowStatus(result.workflow));
+    },
+  },
+
+  "workflow:status": {
+    description: "Show workflow status",
+    usage: "workflow:status <workflow-id>",
+    handler: async (args) => {
+      const [workflowId] = args;
+      if (!workflowId) {
+        console.error("Usage: choragen workflow:status <workflow-id>");
+        process.exit(1);
+      }
+
+      const result = await getWorkflowStatus(projectRoot, workflowId);
+      if (!result.success || !result.workflow) {
+        console.error(result.error || "Failed to get workflow status");
+        process.exit(1);
+      }
+
+      console.log(formatWorkflowStatus(result.workflow));
+    },
+  },
+
+  "workflow:list": {
+    description: "List workflows",
+    usage: "workflow:list [--status=active]",
+    handler: async (args) => {
+      let statusFilter: WorkflowStatus | undefined;
+      for (const arg of args) {
+        if (arg.startsWith("--status=")) {
+          const value = arg.slice("--status=".length) as WorkflowStatus;
+          if (!WORKFLOW_STATUSES.includes(value)) {
+            console.error(`Invalid status: ${value}. Must be one of: ${WORKFLOW_STATUSES.join(", ")}`);
+            process.exit(1);
+          }
+          statusFilter = value;
+        }
+      }
+
+      const result = await listWorkflows(projectRoot, { status: statusFilter });
+      if (!result.success) {
+        console.error(result.error || "Failed to list workflows");
+        process.exit(1);
+      }
+
+      console.log(formatWorkflowList(result.workflows));
+    },
+  },
+
+  "workflow:advance": {
+    description: "Advance workflow to next stage (gate must be satisfied)",
+    usage: "workflow:advance <workflow-id>",
+    handler: async (args) => {
+      const [workflowId] = args;
+      if (!workflowId) {
+        console.error("Usage: choragen workflow:advance <workflow-id>");
+        process.exit(1);
+      }
+
+      const result = await advanceWorkflow(projectRoot, workflowId);
+      if (!result.success || !result.workflow) {
+        console.error(result.error || "Failed to advance workflow");
+        process.exit(1);
+      }
+
+      console.log(`Advanced workflow: ${result.workflow.id}`);
+      console.log(formatWorkflowStatus(result.workflow));
+    },
+  },
+
+  "workflow:approve": {
+    description: "Approve human gate on current workflow stage",
+    usage: "workflow:approve <workflow-id>",
+    handler: async (args) => {
+      const [workflowId] = args;
+      if (!workflowId) {
+        console.error("Usage: choragen workflow:approve <workflow-id>");
+        process.exit(1);
+      }
+
+      const result = await approveWorkflowGate(projectRoot, workflowId);
+      if (!result.success || !result.workflow) {
+        console.error(result.error || "Failed to approve workflow gate");
+        process.exit(1);
+      }
+
+      console.log(`Approved gate for workflow: ${result.workflow.id}`);
+      console.log(formatWorkflowStatus(result.workflow));
     },
   },
 

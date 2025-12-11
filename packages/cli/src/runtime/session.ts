@@ -10,6 +10,7 @@ import { appendFile, mkdir, readdir, readFile, stat, unlink, writeFile } from "n
 import { dirname, join } from "node:path";
 import type { AgentRole } from "./tools/types.js";
 import type { Message } from "./providers/types.js";
+import type { StageType } from "@choragen/core";
 
 /**
  * Default metrics directory relative to workspace root.
@@ -127,6 +128,8 @@ export interface SessionSummary {
   tokenUsage: SessionTokenUsage;
   chainId: string | null;
   taskId: string | null;
+  workflowId?: string | null;
+  stageIndex?: number | null;
 }
 
 /**
@@ -170,6 +173,9 @@ export interface SessionData {
   model: string;
   chainId: string | null;
   taskId: string | null;
+  workflowId: string | null;
+  stageIndex: number | null;
+  stageType: StageType | null;
   startTime: string;
   endTime: string | null;
   outcome: SessionOutcome | null;
@@ -198,6 +204,9 @@ export interface SessionConfig {
   model: string;
   chainId?: string;
   taskId?: string;
+  workflowId?: string;
+  stageIndex?: number;
+  stageType?: StageType;
   workspaceRoot: string;
   /** Parent session ID (for nested sessions) */
   parentSessionId?: string;
@@ -264,6 +273,9 @@ export class Session {
         model: config.model,
         chainId: config.chainId ?? null,
         taskId: config.taskId ?? null,
+        workflowId: config.workflowId ?? null,
+        stageIndex: config.stageIndex ?? null,
+        stageType: config.stageType ?? null,
         startTime: new Date().toISOString(),
         endTime: null,
         outcome: null,
@@ -338,6 +350,8 @@ export class Session {
             tokenUsage: { ...data.tokenUsage },
             chainId: data.chainId,
             taskId: data.taskId,
+            workflowId: data.workflowId ?? null,
+            stageIndex: data.stageIndex ?? null,
           });
         } catch {
           // Skip invalid session files
@@ -428,6 +442,27 @@ export class Session {
    */
   get taskId(): string | null {
     return this.data.taskId;
+  }
+
+  /**
+   * Get the workflow ID.
+   */
+  get workflowId(): string | null {
+    return this.data.workflowId ?? null;
+  }
+
+  /**
+   * Get the workflow stage index.
+   */
+  get stageIndex(): number | null {
+    return this.data.stageIndex ?? null;
+  }
+
+  /**
+   * Get the workflow stage type.
+   */
+  get stageType(): StageType | null {
+    return this.data.stageType ?? null;
   }
 
   /**

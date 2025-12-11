@@ -8,6 +8,8 @@
 import type { AgentRole, ToolDefinition } from "./types.js";
 import { toProviderTool } from "./types.js";
 import type { Tool } from "../providers/types.js";
+import type { StageType } from "@choragen/core";
+import { isToolAllowedForStage } from "@choragen/core";
 
 // Import all tool definitions
 import { chainStatusTool } from "./definitions/chain-status.js";
@@ -70,6 +72,17 @@ export class ToolRegistry {
   }
 
   /**
+   * Get tools available for a specific role and stage.
+   * Stage filtering is additive to role-based filtering. If stageType is null/undefined,
+   * only role-based filtering is applied.
+   */
+  getToolsForStage(role: AgentRole, stageType?: StageType | null): ToolDefinition[] {
+    const roleTools = this.getToolsForRole(role);
+    if (!stageType) return roleTools;
+    return roleTools.filter((tool) => isToolAllowedForStage(stageType, tool.name));
+  }
+
+  /**
    * Get tools in provider format for a specific role.
    * Strips role information for LLM consumption.
    * @param role - Agent role ("control" or "impl")
@@ -77,6 +90,14 @@ export class ToolRegistry {
    */
   getProviderToolsForRole(role: AgentRole): Tool[] {
     return this.getToolsForRole(role).map(toProviderTool);
+  }
+
+  /**
+   * Get tools in provider format for a specific role and stage.
+   * If stageType is null/undefined, only role filtering is applied.
+   */
+  getProviderToolsForStage(role: AgentRole, stageType?: StageType | null): Tool[] {
+    return this.getToolsForStage(role, stageType).map(toProviderTool);
   }
 
   /**

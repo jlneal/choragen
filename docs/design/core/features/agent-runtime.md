@@ -316,6 +316,7 @@ Session complete. Tokens: 12,450 input / 3,200 output
 
 ## Linked Scenarios
 
+- [Human-Driven Development](../scenarios/human-driven-development.md)
 - [Agent Runtime Orchestration](../scenarios/agent-runtime-orchestration.md)
 - [Control Agent Workflow](../scenarios/control-agent-workflow.md)
 - [Implementation Agent Workflow](../scenarios/implementation-agent-workflow.md)
@@ -325,6 +326,22 @@ Session complete. Tokens: 12,450 input / 3,200 output
 ## Linked ADRs
 
 - ADR-010: Agent Runtime Architecture
+
+---
+
+## Relationship to Workflow Orchestration
+
+The Agent Runtime is the **execution layer**—it runs individual agent sessions with role-gated tools and governance enforcement.
+
+The [Workflow Orchestration](./workflow-orchestration.md) layer sits **above** the runtime, managing:
+- Multi-stage processes (design → review → implement → verify)
+- Stage gates that require human approval
+- Workflow-level state that persists across sessions
+
+Together they form the "chassis":
+- **Workflow Orchestration** = The steering and transmission (process control)
+- **Agent Runtime** = The engine (execution capability)
+- **Governance** = The safety systems (constraints and enforcement)
 
 ---
 

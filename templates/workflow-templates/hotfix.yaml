@@ -1,0 +1,26 @@
+name: hotfix
+stages:
+  - name: request
+    type: request
+    gate:
+      type: human_approval
+      prompt: "FR created. Proceed directly to implementation?"
+
+  - name: implementation
+    type: implementation
+    gate:
+      type: chain_complete
+
+  - name: verification
+    type: verification
+    gate:
+      type: verification_pass
+      commands:
+        - "pnpm build"
+        - "pnpm test"
+
+  - name: completion
+    type: review
+    gate:
+      type: human_approval
+      prompt: "Hotfix ready. Approve and merge?"
