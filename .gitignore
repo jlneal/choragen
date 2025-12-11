@@ -28,6 +28,7 @@ coverage/
 # Turbo
 .turbo/
 
-# Choragen session state (local only)
+# Choragen local state (sessions, config with API keys)
 .choragen/session.json
 .choragen/sessions/
+.choragen/config.json

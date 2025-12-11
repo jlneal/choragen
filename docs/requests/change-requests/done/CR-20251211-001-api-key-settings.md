@@ -47,15 +47,15 @@ A settings page provides a unified, discoverable way to configure the agent runt
 
 ## Acceptance Criteria
 
-- [ ] `/settings` route exists with API key configuration UI
-- [ ] Can enter API keys for Anthropic, OpenAI, Google, Ollama
-- [ ] Keys are saved to `.choragen/config.json`
-- [ ] Server loads keys from config file on startup
-- [ ] Environment variables override config file values
-- [ ] Settings page shows which providers are configured (without revealing keys)
-- [ ] "Test Connection" button validates key works
-- [ ] Chat interface checks for configured provider before allowing agent invocation
-- [ ] Keys are never sent to the client (server-side only)
+- [x] `/settings` route exists with API key configuration UI
+- [x] Can enter API keys for Anthropic, OpenAI, Google, Ollama
+- [x] Keys are saved to `.choragen/config.json`
+- [x] Server loads keys from config file on startup
+- [x] Environment variables override config file values
+- [x] Settings page shows which providers are configured (without revealing keys)
+- [x] "Test Connection" button validates key works
+- [x] Chat interface checks for configured provider before allowing agent invocation
+- [x] Keys are never sent to the client (server-side only)
 
 ---
 
