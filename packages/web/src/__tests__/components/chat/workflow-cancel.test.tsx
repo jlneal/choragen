@@ -4,7 +4,7 @@
  * @test-type unit
  */
 
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 

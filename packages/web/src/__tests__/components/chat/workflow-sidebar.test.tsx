@@ -5,10 +5,35 @@
  */
 
 import React from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { WorkflowSidebar } from "@/components/chat/workflow-sidebar";
+
+const invalidateMock = vi.fn();
+
+vi.mock("@/lib/trpc/client", () => ({
+  trpc: {
+    useUtils: () => ({
+      workflow: {
+        get: { invalidate: invalidateMock },
+        list: { invalidate: invalidateMock },
+        getHistory: { invalidate: invalidateMock },
+      },
+    }),
+    workflow: {
+      cancel: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+      pause: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+      resume: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+    },
+  },
+}));
 
 const stages = [
   { name: "Plan", status: "completed" },

@@ -48,7 +48,7 @@ describe("Navigation links to workflows", () => {
         requestId="CR-123"
         taskCount={3}
         progress={50}
-        status="active"
+        status="in-progress"
         workflowId="WF-456"
       />
     );
@@ -65,7 +65,7 @@ describe("Navigation links to workflows", () => {
         requestId="CR-124"
         taskCount={2}
         progress={20}
-        status="paused"
+        status="backlog"
       />
     );
 

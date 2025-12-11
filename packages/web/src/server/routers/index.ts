@@ -19,6 +19,7 @@ import { configRouter } from "./config";
 import { gitRouter } from "./git";
 import { projectRouter } from "./project";
 import { workflowRouter } from "./workflow";
+import { settingsRouter } from "./settings";
 
 /**
  * Root application router.
@@ -107,6 +108,12 @@ export const appRouter = router({
    * Exposes workflow orchestration APIs.
    */
   workflow: workflowRouter,
+
+  /**
+   * Settings router.
+   * Provider configuration and connection testing.
+   */
+  settings: settingsRouter,
 });
 
 /**

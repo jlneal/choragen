@@ -13,6 +13,15 @@ import { ChatInput } from "@/components/chat/chat-input";
 
 const useWorkflowMessagesMock = vi.fn();
 const mutateMock = vi.fn();
+const invalidateMock = vi.fn();
+const providerStatusMock = {
+  providers: { anthropic: true, openai: true, google: false, ollama: false },
+  isConfigured: true,
+  isLoading: false,
+  isError: false,
+  error: null,
+  refresh: vi.fn(),
+};
 
 vi.mock("@/hooks/use-workflow-messages", () => ({
   useWorkflowMessages: (workflowId: string, initial?: unknown[]) =>
@@ -20,8 +29,19 @@ vi.mock("@/hooks/use-workflow-messages", () => ({
   sortMessagesByTimestamp: (messages: unknown[]) => messages,
 }));
 
+vi.mock("@/hooks/use-provider-status", () => ({
+  useProviderStatus: () => providerStatusMock,
+}));
+
 vi.mock("@/lib/trpc/client", () => ({
   trpc: {
+    useUtils: () => ({
+      workflow: {
+        get: { invalidate: invalidateMock },
+        list: { invalidate: invalidateMock },
+        getHistory: { invalidate: invalidateMock },
+      },
+    }),
     workflow: {
       sendMessage: {
         useMutation: (options?: { onSuccess?: () => void }) => {
@@ -30,6 +50,24 @@ vi.mock("@/lib/trpc/client", () => ({
             isPending: false,
           };
         },
+      },
+      cancel: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isPending: false,
+        }),
+      },
+      pause: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isPending: false,
+        }),
+      },
+      resume: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isPending: false,
+        }),
       },
     },
   },

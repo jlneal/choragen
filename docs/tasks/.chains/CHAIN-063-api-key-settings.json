@@ -1,0 +1,10 @@
+{
+  "id": "CHAIN-063-api-key-settings",
+  "sequence": 63,
+  "slug": "api-key-settings",
+  "requestId": "CR-20251211-001",
+  "title": "API Key Settings Page",
+  "description": "Add settings page for configuring LLM provider API keys",
+  "createdAt": "2025-12-11T13:41:00.000Z",
+  "updatedAt": "2025-12-11T13:41:00.000Z"
+}
