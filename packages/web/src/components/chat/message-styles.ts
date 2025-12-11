@@ -110,7 +110,7 @@ export function getMessageStyle(message: WorkflowMessage): MessageStyle {
     alignmentClass,
     wrapperClass,
     bubbleClass: cn(
-      "max-w-[720px] rounded-lg p-3 shadow-sm",
+      "w-full max-w-full sm:max-w-[720px] rounded-lg p-3 shadow-sm",
       type === "system" ? "text-sm" : "text-sm",
       bubbleClass(type)
     ),

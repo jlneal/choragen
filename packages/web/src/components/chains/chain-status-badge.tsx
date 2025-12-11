@@ -59,6 +59,10 @@ const statusConfig: Record<
 export function ChainStatusBadge({ status, className }: ChainStatusBadgeProps) {
   const config = statusConfig[status];
 
+  if (!config) {
+    return null;
+  }
+
   return (
     <Badge
       variant="outline"

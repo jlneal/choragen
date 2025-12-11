@@ -12,6 +12,14 @@ The Web Chat Interface is the primary human interaction point for driving Chorag
 
 This replaces the need for humans to directly manipulate Choragen primitives (requests, chains, tasks) or copy handoff prompts between IDE sessions.
 
+**Implementation references**
+- History list and error card: `packages/web/src/app/chat/history/page.tsx`
+- Workflow chat page: `packages/web/src/app/chat/[workflowId]/page.tsx`
+- Chat container, typing/error/skeleton states: `packages/web/src/components/chat/chat-container.tsx`
+- Message rendering: `packages/web/src/components/chat/message-list.tsx`, `packages/web/src/components/chat/message-item.tsx`
+- Sidebar actions (pause/resume/cancel): `packages/web/src/components/chat/workflow-sidebar.tsx`, `packages/web/src/components/chat/workflow-actions.tsx`
+- Workflow API used by chat: `packages/web/src/server/routers/workflow.ts`
+
 ---
 
 ## Problem
@@ -108,13 +116,26 @@ interface ChatContainerProps {
 }
 
 function ChatContainer({ workflowId }: ChatContainerProps) {
-  const messages = trpc.workflow.getHistory.useQuery({ workflowId });
-  const subscription = trpc.workflow.onMessage.useSubscription({ workflowId });
-  
+  const { messages, isLoading, error, reconnect } = useWorkflowMessages(workflowId);
+  const sorted = useMemo(() => sortMessagesByTimestamp(messages), [messages]);
+
   return (
-    <div className="flex flex-col h-full">
-      <ChatHeader workflowId={workflowId} />
-      <MessageList messages={messages.data} />
+    <div className="relative flex h-full flex-col gap-3 overflow-hidden pb-24 md:pb-0">
+      {error ? (
+        <ErrorMessage
+          variant="network"
+          title="Connection lost"
+          message="We will retry automatically."
+          onRetry={reconnect}
+          onDismiss={() => undefined}
+          autoRetry
+        />
+      ) : null}
+      {isLoading ? (
+        <MessageSkeletonStack />
+      ) : (
+        <MessageList messages={sorted} footerContent={<TypingIndicator />} workflowId={workflowId} />
+      )}
       <ChatInput workflowId={workflowId} />
     </div>
   );
@@ -134,7 +155,7 @@ Different message types render differently:
 | `gate_prompt` | Card with approve/reject buttons | Approve, Reject |
 | `artifact` | Expandable card with preview | View, Edit |
 | `tool_call` | Collapsible detail view | Expand |
-| `error` | Red alert banner | Retry, Dismiss |
+| `error` | Red-accent alert banner | Retry, Dismiss |
 
 ### Gate Prompt
 
@@ -208,19 +229,21 @@ Shows current workflow state alongside chat:
 
 ```tsx
 function WorkflowSidebar({ workflowId }: { workflowId: string }) {
-  const workflow = trpc.workflow.get.useQuery({ id: workflowId });
+  const workflow = trpc.workflow.get.useQuery(workflowId);
   
   return (
-    <aside className="w-64 border-l p-4">
-      <h3 className="font-semibold">Workflow Progress</h3>
-      <StageList stages={workflow.data?.stages} currentStage={workflow.data?.currentStage} />
-      
-      <h3 className="font-semibold mt-4">Artifacts</h3>
-      <ArtifactList workflowId={workflowId} />
-      
-      <h3 className="font-semibold mt-4">Metrics</h3>
-      <WorkflowMetrics workflowId={workflowId} />
-    </aside>
+    <WorkflowSidebar
+      workflowId={workflowId}
+      requestId={workflow?.data?.requestId}
+      status={workflow?.data?.status}
+      template={workflow?.data?.template}
+      stageSummary={deriveStageSummary(workflow?.data?.currentStage, workflow?.data?.stages?.length)}
+      updatedAt={workflow?.data?.updatedAt}
+      stages={workflow?.data?.stages}
+      currentStageIndex={workflow?.data?.currentStage}
+      messages={workflow?.data?.messages}
+      createdAt={workflow?.data?.createdAt}
+    />
   );
 }
 ```
@@ -350,25 +373,24 @@ The chat interface integrates with the existing web app:
 | `/workflows` | Redirect to `/chat` (alias) |
 
 Existing pages link to chat:
-- Session cards → "Open in Chat"
-- Chain cards → "View Workflow"
+- Session cards → Workflow link when `workflowId` exists (`packages/web/src/components/sessions/session-card.tsx`)
+- Chain cards → Workflow link when `workflowId` exists (`packages/web/src/components/chains/chain-card.tsx`)
 - Request cards → "Start Workflow"
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] Chat interface renders message history
-- [ ] Human can send messages to active workflow
-- [ ] Agent responses appear in real-time
-- [ ] Gate prompts display with approve/reject actions
-- [ ] Artifacts are linked and expandable
-- [ ] Tool calls are visible (collapsible)
-- [ ] Workflow sidebar shows current stage and progress
-- [ ] Can switch between active workflows
-- [ ] Can start new workflow from chat
-- [ ] Can start workflow from existing backlog CR
-- [ ] Mobile-responsive layout
+- [x] Chat interface renders message history (`chat-container.tsx`, `message-list.tsx`)
+- [x] Human can send messages to active workflow (`chat-input.tsx`, `workflow.sendMessage`)
+- [x] Agent responses appear in real-time (`use-workflow-messages` + `workflow.onMessage`)
+- [x] Gate prompts display with approve/reject actions (`gate-prompt.tsx`, `workflow.satisfyGate`)
+- [x] Artifacts are linked and expandable (`artifact-link.tsx`)
+- [x] Tool calls are visible (collapsible) (`tool-call-display.tsx`)
+- [x] Workflow sidebar shows current stage and progress (`workflow-sidebar.tsx`)
+- [x] Can switch between active workflows (history routing)
+- [x] Can start new workflow from chat/history views
+- [x] Mobile-responsive layout (sticky input, full-width bubbles)
 
 ---
 

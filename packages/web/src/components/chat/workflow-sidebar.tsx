@@ -3,15 +3,24 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BarChart2, Timer, FileCode } from "lucide-react";
+import { BarChart2, FileCode, Menu, Timer } from "lucide-react";
 
 import type { WorkflowMessage } from "@choragen/core";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { StageList, type WorkflowStageDisplay } from "./stage-list";
 import { ArtifactList } from "./artifact-list";
+import { WorkflowActions } from "./workflow-actions";
 
 interface WorkflowSidebarProps {
   workflowId: string;
@@ -24,6 +33,7 @@ interface WorkflowSidebarProps {
   stages?: WorkflowStageDisplay[];
   currentStageIndex?: number;
   messages?: WorkflowSidebarMessage[];
+  defaultOpen?: boolean;
 }
 
 type WorkflowSidebarMessage = WorkflowMessage & { timestamp: Date | string };
@@ -66,8 +76,9 @@ export function WorkflowSidebar({
   currentStageIndex,
   messages,
   createdAt,
+  defaultOpen = false,
 }: WorkflowSidebarProps) {
-  const [collapsed, setCollapsed] = useState(true);
+  const [isSheetOpen, setIsSheetOpen] = useState(defaultOpen);
   const durationMinutes = useMemo(() => calculateDurationMinutes(createdAt), [createdAt]);
   const messageCount = messages?.length ?? 0;
   const progress = useMemo(
@@ -77,14 +88,19 @@ export function WorkflowSidebar({
 
   const sidebarContent = (
     <Card>
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-lg">Workflow details</CardTitle>
-        <CardDescription className="flex items-center gap-2">
-          <Badge variant="secondary" className="capitalize">
-            {status ?? "unknown"}
-          </Badge>
-          <span className="font-mono text-xs text-muted-foreground">{workflowId}</span>
-        </CardDescription>
+      <CardHeader className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="space-y-1">
+            <CardTitle className="text-lg">Workflow details</CardTitle>
+            <CardDescription className="flex items-center gap-2">
+              <Badge variant="secondary" className="capitalize">
+                {status ?? "unknown"}
+              </Badge>
+              <span className="font-mono text-xs text-muted-foreground">{workflowId}</span>
+            </CardDescription>
+          </div>
+          <WorkflowActions workflowId={workflowId} status={status} />
+        </div>
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
         <div className="grid grid-cols-2 gap-3">
@@ -147,15 +163,30 @@ export function WorkflowSidebar({
   return (
     <div className="space-y-2">
       <div className="lg:hidden">
-        <button
-          type="button"
-          onClick={() => setCollapsed((prev) => !prev)}
-          className="w-full rounded-md border bg-card px-3 py-2 text-left text-sm font-medium"
-        >
-          {collapsed ? "Show workflow sidebar" : "Hide workflow sidebar"}
-        </button>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              className="flex w-full items-center justify-between rounded-md border bg-card px-3 py-2 text-left text-sm font-medium min-h-[44px]"
+            >
+              <span>Workflow details</span>
+              <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                <Menu className="h-4 w-4" />
+                {isSheetOpen ? "Hide" : "Show"}
+              </span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
+            <SheetHeader className="sr-only">
+              <SheetTitle>Workflow details</SheetTitle>
+            </SheetHeader>
+            <div className="pt-2">{sidebarContent}</div>
+          </SheetContent>
+        </Sheet>
       </div>
-      <div className={cn(collapsed ? "hidden lg:block" : "block")}>{sidebarContent}</div>
+      <div className={cn("hidden lg:block")}>
+        <div className="lg:sticky lg:top-4">{sidebarContent}</div>
+      </div>
     </div>
   );
 }

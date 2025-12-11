@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { WorkflowSidebar } from "@/components/chat/workflow-sidebar";
+import { WorkflowActions } from "@/components/chat/workflow-actions";
 
 const DEFAULT_STAGE_INDEX = 0;
 
@@ -176,6 +177,7 @@ export function ChatWorkflowContent({ workflowId }: ChatWorkflowContentProps) {
             isLoading={isLoading}
             messages={workflow?.messages}
             workflowId={workflowId}
+            status={workflow?.status}
           />
           <InputAreaCard />
         </div>
@@ -205,6 +207,7 @@ function ConversationCard({
   messages,
   isLoading,
   workflowId,
+  status,
 }: {
   messages?: {
     id?: string;
@@ -215,6 +218,7 @@ function ConversationCard({
   }[];
   isLoading: boolean;
   workflowId: string;
+  status?: string;
 }) {
   return (
     <Card className="h-full">
@@ -226,7 +230,12 @@ function ConversationCard({
             <span className="font-mono">{workflowId}</span>
           </CardDescription>
         </div>
-        <Badge variant="outline">Streaming soon</Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="capitalize">
+            {status ?? "unknown"}
+          </Badge>
+          <WorkflowActions workflowId={workflowId} status={status} />
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {isLoading ? (

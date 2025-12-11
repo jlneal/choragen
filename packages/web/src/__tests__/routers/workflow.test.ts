@@ -262,6 +262,66 @@ describe("workflow router", () => {
     });
   });
 
+  describe("cancel", () => {
+    it("cancels workflow via updateStatus", async () => {
+      const result = await caller.workflow.cancel({ workflowId: "WF-20251211-001" });
+
+      expect(result).toEqual(mockWorkflow);
+      expect(mockWorkflowManager.updateStatus).toHaveBeenCalledWith(
+        "WF-20251211-001",
+        "cancelled"
+      );
+    });
+
+    it("throws BAD_REQUEST on cancel failure", async () => {
+      mockWorkflowManager.updateStatus.mockRejectedValueOnce(new Error("Already completed"));
+
+      await expect(
+        caller.workflow.cancel({ workflowId: "WF-20251211-001" })
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    });
+  });
+
+  describe("pause", () => {
+    it("pauses workflow", async () => {
+      const result = await caller.workflow.pause({ workflowId: "WF-20251211-001" });
+
+      expect(result).toEqual(mockWorkflow);
+      expect(mockWorkflowManager.updateStatus).toHaveBeenCalledWith(
+        "WF-20251211-001",
+        "paused"
+      );
+    });
+
+    it("throws BAD_REQUEST on pause failure", async () => {
+      mockWorkflowManager.updateStatus.mockRejectedValueOnce(new Error("Already paused"));
+
+      await expect(
+        caller.workflow.pause({ workflowId: "WF-20251211-001" })
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    });
+  });
+
+  describe("resume", () => {
+    it("resumes workflow to active", async () => {
+      const result = await caller.workflow.resume({ workflowId: "WF-20251211-001" });
+
+      expect(result).toEqual(mockWorkflow);
+      expect(mockWorkflowManager.updateStatus).toHaveBeenCalledWith(
+        "WF-20251211-001",
+        "active"
+      );
+    });
+
+    it("throws BAD_REQUEST on resume failure", async () => {
+      mockWorkflowManager.updateStatus.mockRejectedValueOnce(new Error("Cannot resume"));
+
+      await expect(
+        caller.workflow.resume({ workflowId: "WF-20251211-001" })
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    });
+  });
+
   describe("onMessage subscription", () => {
     it("yields existing messages on subscribe", async () => {
       const messages = [

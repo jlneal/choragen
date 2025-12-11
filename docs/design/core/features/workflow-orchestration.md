@@ -12,6 +12,12 @@ Workflow Orchestration adds a **process layer** on top of the Agent Runtime. Whi
 
 This is the "assembly line" that ensures work flows through defined stages in order, with appropriate checkpoints for human oversight.
 
+**Implementation references**
+- Workflow API and subscriptions: `packages/web/src/server/routers/workflow.ts`
+- Workflow chat entrypoint: `packages/web/src/app/chat/[workflowId]/page.tsx`
+- Workflow history view: `packages/web/src/app/chat/history/page.tsx`
+- Chat components consuming workflow state: `packages/web/src/components/chat/`
+
 ---
 
 ## Problem
@@ -440,15 +446,14 @@ The web chat interface interacts with workflows via tRPC:
 
 ```typescript
 // Start workflow from chat
-workflowRouter.create.mutate({
-  intent: "Add pagination to backlog",
-  template: "standard",
-});
+workflowRouter.create.mutate({ requestId: "CR-20251210-004", template: "standard" });
 
 // Send message to active workflow
 workflowRouter.sendMessage.mutate({
   workflowId: "WF-20251210-001",
+  role: "human",
   content: "Yes, proceed to implementation",
+  stageIndex: 0,
 });
 
 // Satisfy gate
@@ -458,27 +463,32 @@ workflowRouter.satisfyGate.mutate({
 });
 
 // Get workflow state (for UI)
-workflowRouter.get.query({ id: "WF-20251210-001" });
+workflowRouter.get.query("WF-20251210-001");
 
 // Stream messages (for real-time updates)
 workflowRouter.onMessage.subscribe({ workflowId: "WF-20251210-001" });
+
+// Pause/Resume/Cancel controls
+workflowRouter.pause.mutate({ workflowId: "WF-20251210-001" });
+workflowRouter.resume.mutate({ workflowId: "WF-20251210-001" });
+workflowRouter.cancel.mutate({ workflowId: "WF-20251210-001" });
 ```
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] Workflows can be created from a template
-- [ ] Stages execute in defined order
-- [ ] Gates block advancement until satisfied
-- [ ] Human approval gates pause for user input
+- [x] Workflows can be created from a template (`workflow.create`)
+- [x] Stages execute in defined order (managed by `WorkflowManager` in `@choragen/core`)
+- [x] Gates block advancement until satisfied (`satisfyGate`, gate prompts in chat)
+- [x] Human approval gates pause for user input (`gate-prompt.tsx`)
 - [ ] Chain complete gates auto-advance when chain finishes
 - [ ] Verification gates run commands and check results
-- [ ] Agent sessions are scoped to current stage
-- [ ] Tool availability is filtered by stage type
-- [ ] Workflow state persists across restarts
-- [ ] Conversation history is preserved as audit trail
-- [ ] Web chat can create, interact with, and monitor workflows
+- [x] Agent sessions are scoped to current stage (workflow status + sidebar actions)
+- [x] Tool availability is filtered by stage type (runtime enforcement)
+- [x] Workflow state persists across restarts (`WorkflowManager` storage)
+- [x] Conversation history is preserved as audit trail (`workflow.getHistory`, chat onMessage)
+- [x] Web chat can create, interact with, and monitor workflows (`workflow` router + chat UI)
 
 ---
 

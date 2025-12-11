@@ -86,6 +86,20 @@ npx choragen task:add CHAIN-001-auth-feature implement "Implement auth flow"
 npx choragen agent:start --role=control
 ```
 
+## Workflow Chat Quick Start
+
+```bash
+# Start the web dashboard
+pnpm --filter @choragen/web dev
+
+# Open http://localhost:3000/chat
+# - Start a workflow or pick one from History (`packages/web/src/app/chat/history/page.tsx`)
+# - Chat with an active workflow (`packages/web/src/app/chat/[workflowId]/page.tsx`)
+# - Pause/Resume/Cancel from the sidebar (`packages/web/src/components/chat/workflow-sidebar.tsx`)
+# - Live messages and error handling via chat components (`packages/web/src/components/chat/`)
+# - Workflow API routes power the UI (`packages/web/src/server/routers/workflow.ts`)
+```
+
 ## Who This Is For
 
 Choragen is for developers who:

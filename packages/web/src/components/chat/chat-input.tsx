@@ -8,6 +8,7 @@ import type { MessageRole } from "@choragen/core";
 import { trpc } from "@/lib/trpc/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const DEFAULT_STAGE_INDEX = 0;
 
@@ -79,19 +80,25 @@ export function ChatInput({
   return (
     <form
       onSubmit={handleSend}
-      className={className}
+      className={cn("w-full", className)}
       aria-label="Send workflow message"
       role="form"
     >
-      <div className="flex items-center gap-2 rounded-md border bg-card p-3">
+      <div className="flex flex-col gap-2 rounded-md border bg-card p-3 shadow-sm sm:flex-row sm:items-center">
         <Input
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           placeholder="Message the workflow..."
           disabled={sendMessage.isPending}
+          className="min-h-[44px]"
           aria-label="Chat message input"
         />
-        <Button type="submit" size="sm" disabled={isDisabled}>
+        <Button
+          type="submit"
+          size="sm"
+          disabled={isDisabled}
+          className="w-full min-h-[44px] min-w-[44px] sm:w-auto"
+        >
           {sendMessage.isPending ? "Sending..." : "Send"}
         </Button>
       </div>

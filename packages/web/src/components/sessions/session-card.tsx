@@ -1,7 +1,7 @@
 // ADR: ADR-011-web-api-architecture
 
 import Link from "next/link";
-import { Clock, Files, User, Timer } from "lucide-react";
+import { Clock, Files, User, Timer, MessageSquare } from "lucide-react";
 
 import {
   Card,
@@ -20,6 +20,8 @@ import { SessionStatusBadge, type SessionStatus } from "./session-status-badge";
 export interface Session {
   /** Chain ID this session is working on */
   chainId: string;
+  /** Linked workflow (optional) */
+  workflowId?: string;
   /** Agent role (impl/control) */
   agent: string;
   /** When the session started */
@@ -113,6 +115,15 @@ export function SessionCard({ session, className }: SessionCardProps) {
               <Files className="h-3.5 w-3.5" />
               <span>{filesCount} file{filesCount !== 1 ? "s" : ""}</span>
             </div>
+            {session.workflowId ? (
+              <Link
+                href={`/chat/${session.workflowId}`}
+                className="inline-flex items-center gap-1.5 text-foreground underline-offset-4 hover:underline"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                <span className="font-medium">Workflow {session.workflowId}</span>
+              </Link>
+            ) : null}
             <div className="flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5" />
               <span>Started {formatRelativeTime(session.startedAt)}</span>

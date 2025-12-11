@@ -65,6 +65,18 @@ const updateStatusInputSchema = z.object({
   status: workflowStatusEnum,
 });
 
+const cancelWorkflowInputSchema = z.object({
+  workflowId: z.string().min(1, "Workflow ID is required"),
+});
+
+const pauseWorkflowInputSchema = z.object({
+  workflowId: z.string().min(1, "Workflow ID is required"),
+});
+
+const resumeWorkflowInputSchema = z.object({
+  workflowId: z.string().min(1, "Workflow ID is required"),
+});
+
 const onMessageInputSchema = z.object({
   workflowId: z.string().min(1, "Workflow ID is required"),
 });
@@ -233,6 +245,58 @@ export const workflowRouter = router({
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: error instanceof Error ? error.message : "Failed to update status",
+        });
+      }
+    }),
+
+  /**
+   * Cancel an active workflow
+   */
+  cancel: publicProcedure
+    .input(cancelWorkflowInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const manager = getWorkflowManager(ctx.projectRoot);
+
+      try {
+        return await manager.updateStatus(input.workflowId, "cancelled");
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: error instanceof Error ? error.message : "Failed to cancel workflow",
+        });
+      }
+    }),
+
+  /**
+   * Pause an active workflow
+   */
+  pause: publicProcedure
+    .input(pauseWorkflowInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const manager = getWorkflowManager(ctx.projectRoot);
+      try {
+        return await manager.updateStatus(input.workflowId, "paused");
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: error instanceof Error ? error.message : "Failed to pause workflow",
+        });
+      }
+    }),
+
+  /**
+   * Resume a paused workflow
+   */
+  resume: publicProcedure
+    .input(resumeWorkflowInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const manager = getWorkflowManager(ctx.projectRoot);
+      try {
+        return await manager.updateStatus(input.workflowId, "active");
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: error instanceof Error ? error.message : "Failed to resume workflow",
         });
       }
     }),

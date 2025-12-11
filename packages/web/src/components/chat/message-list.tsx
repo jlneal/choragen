@@ -2,7 +2,7 @@
 // Design doc: docs/design/core/features/web-chat-interface.md
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import type { WorkflowMessage } from "@choragen/core";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ export interface MessageListProps {
   messages?: WorkflowMessage[];
   className?: string;
   workflowId?: string;
+  footerContent?: ReactNode;
 }
 
 /**
@@ -28,7 +29,7 @@ export function scrollToBottom(container: {
   container.scrollTop = nextScrollTop;
 }
 
-export function MessageList({ messages, className, workflowId }: MessageListProps) {
+export function MessageList({ messages, className, workflowId, footerContent }: MessageListProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -39,12 +40,13 @@ export function MessageList({ messages, className, workflowId }: MessageListProp
   return (
     <ScrollArea
       ref={viewportRef}
-      className={cn("min-h-[240px] flex-1 rounded-md border bg-card", className)}
+      className={cn("min-h-[240px] flex-1 rounded-md border bg-card overflow-x-hidden", className)}
     >
       <div className="flex flex-col gap-3 p-4">
         {(messages ?? []).map((message) => (
           <MessageItem key={message.id} message={message} workflowId={workflowId} />
         ))}
+        {footerContent}
       </div>
     </ScrollArea>
   );

@@ -1,7 +1,7 @@
 // ADR: ADR-011-web-api-architecture
 
 import Link from "next/link";
-import { FileText, ListTodo } from "lucide-react";
+import { FileText, ListTodo, MessageSquare } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -36,6 +36,8 @@ interface ChainCardProps {
   progress: number;
   /** Current chain status */
   status: ChainStatus;
+  /** Associated workflow ID (optional) */
+  workflowId?: string;
   /** Additional class names */
   className?: string;
 }
@@ -66,6 +68,7 @@ export function ChainCard({
   taskCount,
   progress,
   status,
+  workflowId,
   className,
 }: ChainCardProps) {
   const typeStyle = type ? typeConfig[type] : null;
@@ -113,6 +116,15 @@ export function ChainCard({
                 {taskCount} {taskCount === 1 ? "task" : "tasks"}
               </span>
             </div>
+            {workflowId ? (
+              <Link
+                href={`/chat/${workflowId}`}
+                className="inline-flex items-center gap-1.5 text-foreground underline-offset-4 hover:underline"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                <span className="font-medium">{workflowId}</span>
+              </Link>
+            ) : null}
           </div>
           <ChainProgress progress={progress} showLabel size="sm" />
         </CardContent>
