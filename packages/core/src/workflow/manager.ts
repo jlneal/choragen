@@ -22,6 +22,8 @@ import type {
   MessageRole,
 } from "./types.js";
 import type { WorkflowTemplate, WorkflowTemplateStage } from "./templates.js";
+import { TransitionHookRunner, HookExecutionError } from "./hook-runner.js";
+import type { HookRunResult, TransitionHookContext } from "./hook-runner.js";
 import {
   ensureWorkflowDirs,
   loadWorkflow,
@@ -66,11 +68,16 @@ export class WorkflowManager {
   private commandRunner: CommandRunner;
   private chainStatusChecker: ChainStatusChecker;
   private chainManager?: ChainManager;
+  private hookRunner?: TransitionHookRunner;
 
-  constructor(projectRoot: string, options: { commandRunner?: CommandRunner; chainStatusChecker?: ChainStatusChecker } = {}) {
+  constructor(
+    projectRoot: string,
+    options: { commandRunner?: CommandRunner; chainStatusChecker?: ChainStatusChecker; hookRunner?: TransitionHookRunner } = {}
+  ) {
     this.projectRoot = projectRoot;
     this.commandRunner = options.commandRunner ?? this.defaultCommandRunner.bind(this);
     this.chainStatusChecker = options.chainStatusChecker ?? this.defaultChainStatusChecker.bind(this);
+    this.hookRunner = options.hookRunner;
   }
 
   /**
@@ -91,6 +98,7 @@ export class WorkflowManager {
         chainId: stageDef.chainId,
         sessionId: stageDef.sessionId,
         gate,
+        hooks: stageDef.hooks,
         startedAt: status === "active" ? now : undefined,
       };
 
@@ -157,6 +165,19 @@ export class WorkflowManager {
     const stage = workflow.stages[workflow.currentStage];
     await this.ensureGateSatisfied(workflow, stage);
 
+    const hookRunner = this.getHookRunner();
+    await this.runHookAndRecord(
+      "onExit",
+      hookRunner,
+      workflow,
+      stage,
+      {
+        workflowId: workflow.id,
+        stageIndex: workflow.currentStage,
+        chainId: stage.chainId,
+      }
+    );
+
     stage.status = "completed";
     stage.completedAt = new Date();
 
@@ -171,6 +192,17 @@ export class WorkflowManager {
       if (nextStage.gate.type === "auto" && !nextStage.gate.satisfied) {
         this.markGateSatisfied(nextStage, "system");
       }
+      await this.runHookAndRecord(
+        "onEnter",
+        hookRunner,
+        workflow,
+        nextStage,
+        {
+          workflowId: workflow.id,
+          stageIndex: workflow.currentStage,
+          chainId: nextStage.chainId,
+        }
+      );
       this.addGatePromptIfNeeded(workflow, workflow.currentStage);
     }
 
@@ -229,6 +261,59 @@ export class WorkflowManager {
     workflow.updatedAt = new Date();
     await this.persistWorkflow(workflow);
     return workflow;
+  }
+
+  private async runHookAndRecord(
+    hookName: "onEnter" | "onExit",
+    hookRunner: TransitionHookRunner,
+    workflow: Workflow,
+    stage: WorkflowStage,
+    context: TransitionHookContext
+  ): Promise<HookRunResult | null> {
+    const actions = stage.hooks?.[hookName];
+    if (!actions || actions.length === 0) return null;
+
+    try {
+      const result = hookName === "onEnter" ? await hookRunner.runOnEnter(stage, context) : await hookRunner.runOnExit(stage, context);
+      this.recordHookResults(workflow, result);
+      return result;
+    } catch (error) {
+      if (error instanceof HookExecutionError) {
+        this.recordHookResults(workflow, error.result);
+      }
+      throw error;
+    }
+  }
+
+  private recordHookResults(workflow: Workflow, result: HookRunResult): void {
+    if (!result.results.length) return;
+
+    const summary = result.results
+      .map((actionResult) => `${actionResult.action.type}:${actionResult.success ? "ok" : "fail"}`)
+      .join(", ");
+
+    const message: WorkflowMessage = {
+      id: randomUUID(),
+      role: "system",
+      content: `Hook ${result.hook} for stage ${result.stageName}: ${summary}`,
+      stageIndex: result.stageIndex,
+      metadata: {
+        type: "hook_results",
+        hook: result.hook,
+        stageName: result.stageName,
+        results: result.results,
+      },
+      timestamp: new Date(),
+    };
+
+    workflow.messages.push(message);
+  }
+
+  private getHookRunner(): TransitionHookRunner {
+    if (!this.hookRunner) {
+      this.hookRunner = new TransitionHookRunner(this.projectRoot, { commandRunner: this.commandRunner });
+    }
+    return this.hookRunner;
   }
 
   private initializeGate(gate: WorkflowTemplateStage["gate"]): StageGate {

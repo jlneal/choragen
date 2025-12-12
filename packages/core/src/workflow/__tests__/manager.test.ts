@@ -14,7 +14,15 @@ import type { TaskStatus } from "../../tasks/types.js";
 
 const SUCCESS_RESULT: CommandResult = { exitCode: 0, stdout: "", stderr: "" };
 
+const templateMeta = () => ({
+  builtin: false,
+  version: 1,
+  createdAt: new Date("2024-01-01T00:00:00Z"),
+  updatedAt: new Date("2024-01-01T00:00:00Z"),
+});
+
 const baseTemplate: WorkflowTemplate = {
+  ...templateMeta(),
   name: "standard",
   stages: [
     {
@@ -125,6 +133,7 @@ describe("WorkflowManager", () => {
 
   it("checks chain_complete gate before advancing", async () => {
     const chainTemplate: WorkflowTemplate = {
+      ...templateMeta(),
       name: "chain-complete",
       stages: [
         { name: "Impl", type: "implementation", gate: { type: "chain_complete", chainId: "CHAIN-123" } },
@@ -141,6 +150,7 @@ describe("WorkflowManager", () => {
 
   it("fails verification_pass gate when a command fails", async () => {
     const verificationTemplate: WorkflowTemplate = {
+      ...templateMeta(),
       name: "verify",
       stages: [
         { name: "Verify", type: "verification", gate: { type: "verification_pass", commands: ["echo ok"] } },
@@ -155,6 +165,7 @@ describe("WorkflowManager", () => {
 
   it("runs verification_pass commands successfully", async () => {
     const verificationTemplate: WorkflowTemplate = {
+      ...templateMeta(),
       name: "verify",
       stages: [
         { name: "Verify", type: "verification", gate: { type: "verification_pass", commands: ["echo ok"] } },
@@ -209,6 +220,7 @@ describe("WorkflowManager", () => {
 
   it("emits gate prompt when human approval stage becomes active on create", async () => {
     const template: WorkflowTemplate = {
+      ...templateMeta(),
       name: "gate",
       stages: [
         {
@@ -232,6 +244,7 @@ describe("WorkflowManager", () => {
 
   it("emits gate prompt when advancing into a human approval stage", async () => {
     const template: WorkflowTemplate = {
+      ...templateMeta(),
       name: "gate-advance",
       stages: [
         { name: "Auto", type: "request", gate: { type: "auto" } },

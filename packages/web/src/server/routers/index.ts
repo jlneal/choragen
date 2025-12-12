@@ -19,6 +19,7 @@ import { configRouter } from "./config";
 import { gitRouter } from "./git";
 import { projectRouter } from "./project";
 import { workflowRouter } from "./workflow";
+import { workflowTemplateRouter } from "./workflow-template";
 import { settingsRouter } from "./settings";
 import { roleRouter } from "./role";
 import { toolRouter } from "./tool";
@@ -110,6 +111,12 @@ export const appRouter = router({
    * Exposes workflow orchestration APIs.
    */
   workflow: workflowRouter,
+
+  /**
+   * Workflow template router.
+   * CRUD + versioning for workflow templates.
+   */
+  workflowTemplates: workflowTemplateRouter,
 
   /**
    * Settings router.

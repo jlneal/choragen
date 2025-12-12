@@ -71,6 +71,40 @@ export const GATE_TYPES: readonly GateType[] = [
   "verification_pass",
 ] as const;
 
+/**
+ * An action executed during stage transitions
+ */
+export interface TransitionAction {
+  /** Action type */
+  type: "command" | "task_transition" | "file_move" | "custom";
+
+  /** For command: shell command to run */
+  command?: string;
+
+  /** For task_transition: the transition to apply */
+  taskTransition?: "start" | "complete" | "approve";
+
+  /** For file_move: source and destination patterns */
+  fileMove?: { from: string; to: string };
+
+  /** For custom: handler name registered in runtime */
+  handler?: string;
+
+  /** Whether failure blocks the transition (default: true) */
+  blocking?: boolean;
+}
+
+/**
+ * Hooks executed when entering or exiting a stage
+ */
+export interface StageTransitionHooks {
+  /** Actions to run when entering this stage */
+  onEnter?: TransitionAction[];
+
+  /** Actions to run when exiting this stage */
+  onExit?: TransitionAction[];
+}
+
 /** Message role identifies who sent the message */
 export type MessageRole = "human" | "control" | "impl" | "system";
 
@@ -129,6 +163,9 @@ export interface WorkflowStage {
 
   /** Gate configuration for advancing to next stage */
   gate: StageGate;
+
+  /** Optional transition hooks */
+  hooks?: StageTransitionHooks;
 
   /** When this stage started */
   startedAt?: Date;

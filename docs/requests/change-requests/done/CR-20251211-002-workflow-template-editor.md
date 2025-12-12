@@ -2,7 +2,7 @@
 
 **ID**: CR-20251211-002  
 **Domain**: core  
-**Status**: doing  
+**Status**: done  
 **Created**: 2025-12-11  
 **Owner**: agent  
 
@@ -110,4 +110,24 @@ No commits yet.
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented via CHAIN-065-workflow-template-editor (8 tasks).
+
+**Core (@choragen/core)**:
+- Extended `WorkflowTemplate` with `roleId`, `version`, `displayName`, `description`, `createdAt`, `updatedAt`
+- Added `StageTransitionHooks` and `TransitionAction` types for `onEnter`/`onExit` automation
+- Implemented `TemplateManager` with CRUD, duplication, and version history
+- Implemented `TransitionHookRunner` for executing stage transition hooks
+- Integrated hooks into `WorkflowManager.advance()`
+
+**Web (@choragen/web)**:
+- Added `workflowTemplates` tRPC router with full API (list, get, create, update, delete, duplicate, listVersions, getVersion, restoreVersion)
+- Built `/workflows` list page with filtering (All/Built-in/Custom), search, and actions
+- Built `/workflows/[name]` editor with template form and stage display
+- Built `/workflows/new` creation page
+- Built stage editor component with role dropdown, gate config, hooks preview, tool preview
+- Added drag-and-drop stage reordering using @dnd-kit
+- Built `/workflows/[name]/versions` history page with restore functionality
+
+**Follow-up items**:
+- Full hook editor UI (currently read-only preview)
+- Template inheritance (out of scope for this CR)

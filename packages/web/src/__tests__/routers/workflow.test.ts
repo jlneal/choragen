@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createCallerFactory } from "@/server/trpc";
 import { appRouter } from "@/server/routers";
 import { TRPCError } from "@trpc/server";
-import { loadTemplate, type WorkflowMessage } from "@choragen/core";
+import { loadTemplate, type WorkflowMessage, type WorkflowTemplate } from "@choragen/core";
 
 const mockWorkflow = {
   id: "WF-20251211-001",
@@ -22,9 +22,13 @@ const mockWorkflow = {
   updatedAt: new Date("2025-12-11T00:00:00Z"),
 };
 
-const mockTemplate = {
+const mockTemplate: WorkflowTemplate = {
   name: "standard",
   stages: [],
+  builtin: true,
+  version: 1,
+  createdAt: new Date("2025-12-11T00:00:00Z"),
+  updatedAt: new Date("2025-12-11T00:00:00Z"),
 };
 
 // Mock @choragen/core

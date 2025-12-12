@@ -11,6 +11,13 @@ import * as os from "node:os";
 import { WorkflowManager } from "@choragen/core";
 import { runAgentSession, type LLMProvider, type ChatResponse, type Message, type Tool } from "../index.js";
 
+const templateMeta = () => ({
+  builtin: false,
+  version: 1,
+  createdAt: new Date("2024-01-01T00:00:00Z"),
+  updatedAt: new Date("2024-01-01T00:00:00Z"),
+});
+
 class MockLLMProvider implements LLMProvider {
   readonly name = "anthropic" as const;
   readonly model = "mock-model";
@@ -53,6 +60,7 @@ describe("workflow-aware agent sessions", () => {
     const workflow = await manager.create({
       requestId: "CR-1",
       template: {
+        ...templateMeta(),
         name: "stage-test",
         stages: [
           { name: "Request", type: "request", gate: { type: "auto" } },

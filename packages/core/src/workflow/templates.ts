@@ -10,27 +10,50 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { GATE_TYPES, STAGE_TYPES, type StageGate, type StageType } from "./types.js";
+import {
+  GATE_TYPES,
+  STAGE_TYPES,
+  type StageGate,
+  type StageTransitionHooks,
+  type StageType,
+  type TransitionAction,
+} from "./types.js";
 
 export interface WorkflowTemplateStage {
   name: string;
   type: StageType;
   gate: Omit<StageGate, "satisfied" | "satisfiedBy" | "satisfiedAt"> & Partial<Pick<StageGate, "satisfied" | "satisfiedBy" | "satisfiedAt">>;
+  roleId?: string;
+  hooks?: StageTransitionHooks;
   chainId?: string;
   sessionId?: string;
 }
 
 export interface WorkflowTemplate {
   name: string;
+  displayName?: string;
+  description?: string;
+  builtin: boolean;
+  version: number;
   stages: WorkflowTemplateStage[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export const BUILTIN_TEMPLATE_NAMES = ["standard", "hotfix", "documentation"] as const;
 const WORKFLOW_TEMPLATE_DIR = ".choragen/workflow-templates";
+const BUILTIN_TEMPLATE_VERSION = 1;
+const BUILTIN_TEMPLATE_TIMESTAMP = new Date("2024-01-01T00:00:00Z");
+const TRANSITION_ACTION_TYPES: TransitionAction["type"][] = ["command", "task_transition", "file_move", "custom"];
+const TASK_TRANSITIONS: NonNullable<TransitionAction["taskTransition"]>[] = ["start", "complete", "approve"];
 
 const BUILTIN_TEMPLATES: Record<string, WorkflowTemplate> = {
   standard: {
     name: "standard",
+    displayName: "Standard Workflow",
+    description: "Full lifecycle for change requests with design, implementation, verification, and review",
+    builtin: true,
+    version: BUILTIN_TEMPLATE_VERSION,
     stages: [
       {
         name: "request",
@@ -61,9 +84,15 @@ const BUILTIN_TEMPLATES: Record<string, WorkflowTemplate> = {
         gate: { type: "human_approval", prompt: "All checks pass. Approve and merge?" },
       },
     ],
+    createdAt: BUILTIN_TEMPLATE_TIMESTAMP,
+    updatedAt: BUILTIN_TEMPLATE_TIMESTAMP,
   },
   hotfix: {
     name: "hotfix",
+    displayName: "Hotfix Workflow",
+    description: "Accelerated workflow for urgent fixes with minimal stages",
+    builtin: true,
+    version: BUILTIN_TEMPLATE_VERSION,
     stages: [
       {
         name: "request",
@@ -86,9 +115,15 @@ const BUILTIN_TEMPLATES: Record<string, WorkflowTemplate> = {
         gate: { type: "human_approval", prompt: "Hotfix ready. Approve and merge?" },
       },
     ],
+    createdAt: BUILTIN_TEMPLATE_TIMESTAMP,
+    updatedAt: BUILTIN_TEMPLATE_TIMESTAMP,
   },
   documentation: {
     name: "documentation",
+    displayName: "Documentation Workflow",
+    description: "Streamlined workflow for documentation-only updates",
+    builtin: true,
+    version: BUILTIN_TEMPLATE_VERSION,
     stages: [
       {
         name: "request",
@@ -106,6 +141,8 @@ const BUILTIN_TEMPLATES: Record<string, WorkflowTemplate> = {
         gate: { type: "human_approval", prompt: "Documentation updated. Approve?" },
       },
     ],
+    createdAt: BUILTIN_TEMPLATE_TIMESTAMP,
+    updatedAt: BUILTIN_TEMPLATE_TIMESTAMP,
   },
 };
 
@@ -163,19 +200,50 @@ export function validateTemplate(template: WorkflowTemplate): WorkflowTemplate {
     }
   });
 
-  // Normalize satisfied fields to ensure manager receives defaults
-  return normalizeTemplate(template);
+  const normalized = normalizeTemplate(template);
+
+  if (typeof normalized.builtin !== "boolean") {
+    throw new Error(`Template ${template.name} must specify builtin flag`);
+  }
+  if (typeof normalized.version !== "number" || Number.isNaN(normalized.version)) {
+    throw new Error(`Template ${template.name} must specify a numeric version`);
+  }
+  if (!isValidDate(normalized.createdAt) || !isValidDate(normalized.updatedAt)) {
+    throw new Error(`Template ${template.name} must specify createdAt and updatedAt dates`);
+  }
+
+  normalized.stages.forEach((stage, idx) => {
+    if (stage.roleId && typeof stage.roleId !== "string") {
+      throw new Error(`Stage ${stage.name} in template ${template.name} has invalid roleId`);
+    }
+    validateHooks(stage, idx, template.name);
+  });
+
+  return normalized;
 }
 
 /**
  * Parse a YAML template into a WorkflowTemplate
  */
 function parseTemplateYaml(content: string): WorkflowTemplate {
-  const template: WorkflowTemplate = { name: "", stages: [] };
+  const template: WorkflowTemplate = {
+    name: "",
+    displayName: undefined,
+    description: undefined,
+    builtin: false,
+    version: BUILTIN_TEMPLATE_VERSION,
+    stages: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
   const lines = content.split(/\r?\n/);
   let currentStage: Partial<WorkflowTemplateStage> | null = null;
   let currentGate: Partial<StageGate> | null = null;
+  let currentHooks: StageTransitionHooks | null = null;
+  let currentHookSection: keyof StageTransitionHooks | null = null;
+  let currentAction: Partial<TransitionAction> | null = null;
   let inCommands = false;
+  let inFileMove = false;
 
   for (const rawLine of lines) {
     if (!rawLine || rawLine.trim() === "" || rawLine.trim().startsWith("#")) continue;
@@ -184,20 +252,26 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
 
     if (indent === 0) {
       inCommands = false;
+      inFileMove = false;
       currentGate = null;
       currentStage = null;
+      currentHooks = null;
+      currentHookSection = null;
+      currentAction = null;
 
-      if (trimmed.startsWith("name:")) {
-        template.name = parseScalar(trimmed.slice("name:".length).trim());
-      }
-      // stages: marker handled implicitly
+      const [key, value] = splitKeyValue(trimmed);
+      assignTemplateProp(template, key, value);
       continue;
     }
 
     // Stage start
     if (indent === 2 && trimmed.startsWith("- ")) {
       inCommands = false;
+      inFileMove = false;
       currentGate = null;
+      currentHooks = null;
+      currentHookSection = null;
+      currentAction = null;
       const stage: Partial<WorkflowTemplateStage> = { gate: { type: "auto" } as StageGate };
       currentStage = stage;
       template.stages.push(stage as WorkflowTemplateStage);
@@ -221,12 +295,62 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
           assignGateProp(currentGate, key, value);
         }
         inCommands = false;
+        inFileMove = false;
+        currentHooks = null;
+        currentHookSection = null;
+        currentAction = null;
+        continue;
+      }
+
+      if (trimmed === "hooks:" || trimmed.startsWith("hooks:")) {
+        currentHooks = currentStage.hooks ?? {};
+        currentStage.hooks = currentHooks;
+        currentHookSection = null;
+        currentAction = null;
+        inCommands = false;
+        inFileMove = false;
         continue;
       }
 
       const [key, value] = splitKeyValue(trimmed);
       assignStageProp(currentStage, key, value);
       continue;
+    }
+
+    if (indent === 6 && currentHooks) {
+      if (trimmed === "onEnter:" || trimmed.startsWith("onEnter:")) {
+        currentHookSection = "onEnter";
+        currentHooks.onEnter = currentHooks.onEnter ?? [];
+        currentAction = null;
+        inFileMove = false;
+
+        const maybeInline = trimmed.replace("onEnter:", "").trim();
+        if (maybeInline) {
+          const action: Partial<TransitionAction> = {};
+          const [key, value] = splitKeyValue(maybeInline);
+          assignActionProp(action, key, value);
+          currentHooks.onEnter.push(action as TransitionAction);
+          currentAction = action;
+        }
+        continue;
+      }
+
+      if (trimmed === "onExit:" || trimmed.startsWith("onExit:")) {
+        currentHookSection = "onExit";
+        currentHooks.onExit = currentHooks.onExit ?? [];
+        currentAction = null;
+        inFileMove = false;
+
+        const maybeInline = trimmed.replace("onExit:", "").trim();
+        if (maybeInline) {
+          const action: Partial<TransitionAction> = {};
+          const [key, value] = splitKeyValue(maybeInline);
+          assignActionProp(action, key, value);
+          currentHooks.onExit.push(action as TransitionAction);
+          currentAction = action;
+        }
+        continue;
+      }
     }
 
     // Gate properties
@@ -243,6 +367,44 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
 
       const [key, value] = splitKeyValue(trimmed);
       assignGateProp(currentGate, key, value);
+      continue;
+    }
+
+    if (indent >= 8 && currentHookSection && currentHooks) {
+      const actions = currentHookSection === "onEnter" ? currentHooks.onEnter! : currentHooks.onExit!;
+      if (trimmed.startsWith("- ")) {
+        const action: Partial<TransitionAction> = {};
+        const rest = trimmed.slice(2);
+        if (rest) {
+          const [key, value] = splitKeyValue(rest);
+          assignActionProp(action, key, value);
+        }
+        actions.push(action as TransitionAction);
+        currentAction = action;
+        inFileMove = false;
+        continue;
+      }
+
+      if (currentAction) {
+        if (trimmed === "fileMove:" || trimmed.startsWith("fileMove:")) {
+          currentAction.fileMove = currentAction.fileMove ?? { from: "", to: "" };
+          const inline = trimmed.replace("fileMove:", "").trim();
+          if (inline) {
+            const [key, value] = splitKeyValue(inline);
+            assignFileMoveProp(currentAction, key, value);
+          }
+          inFileMove = true;
+          continue;
+        }
+
+        const [key, value] = splitKeyValue(trimmed);
+        if (inFileMove) {
+          assignFileMoveProp(currentAction, key, value);
+        } else {
+          assignActionProp(currentAction, key, value);
+        }
+      }
+
       continue;
     }
 
@@ -290,9 +452,30 @@ function splitKeyValue(line: string): [string, string] {
   return [line.slice(0, idx).trim(), line.slice(idx + 1).trim()];
 }
 
+function assignTemplateProp(template: WorkflowTemplate, key: string, rawValue: string): void {
+  const value = parseScalar(rawValue);
+  if (key === "name") template.name = value;
+  if (key === "displayName") template.displayName = value;
+  if (key === "description") template.description = value;
+  if (key === "builtin") {
+    const parsed = parseBoolean(value);
+    if (parsed !== undefined) template.builtin = parsed;
+  }
+  if (key === "version" && rawValue.trim() !== "") {
+    const numeric = Number(value);
+    if (!Number.isNaN(numeric)) template.version = numeric;
+  }
+  if (key === "createdAt") {
+    template.createdAt = parseDateValue(value, template.createdAt);
+  }
+  if (key === "updatedAt") {
+    template.updatedAt = parseDateValue(value, template.updatedAt);
+  }
+}
+
 function assignStageProp(stage: Partial<WorkflowTemplateStage>, key: string, rawValue: string): void {
   const value = parseScalar(rawValue);
-  if (key === "name" || key === "type" || key === "chainId" || key === "sessionId") {
+  if (key === "name" || key === "type" || key === "chainId" || key === "sessionId" || key === "roleId") {
     (stage as Record<string, unknown>)[key] = value;
   }
 }
@@ -302,9 +485,49 @@ function assignGateProp(gate: Partial<StageGate>, key: string, rawValue: string)
   if (key === "type") gate.type = value as StageGate["type"];
   if (key === "prompt") gate.prompt = value as string;
   if (key === "chainId") gate.chainId = value as string;
-  if (key === "satisfied") gate.satisfied = value === "true";
+  if (key === "satisfied") {
+    const parsed = parseBoolean(value);
+    gate.satisfied = parsed ?? value === "true";
+  }
   if (key === "satisfiedBy") gate.satisfiedBy = value as string;
-  if (key === "satisfiedAt") gate.satisfiedAt = new Date(String(value));
+  if (key === "satisfiedAt") {
+    const parsed = new Date(String(value));
+    if (!Number.isNaN(parsed.getTime())) {
+      gate.satisfiedAt = parsed;
+    }
+  }
+}
+
+function assignActionProp(action: Partial<TransitionAction>, key: string, rawValue: string): void {
+  const value = parseScalar(rawValue);
+  if (key === "type") action.type = value as TransitionAction["type"];
+  if (key === "command") action.command = value as string;
+  if (key === "taskTransition") action.taskTransition = value as TransitionAction["taskTransition"];
+  if (key === "handler") action.handler = value as string;
+  if (key === "blocking") {
+    const parsed = parseBoolean(value);
+    if (parsed !== undefined) action.blocking = parsed;
+  }
+}
+
+function assignFileMoveProp(action: Partial<TransitionAction>, key: string, rawValue: string): void {
+  const value = parseScalar(rawValue);
+  if (!action.fileMove) action.fileMove = { from: "", to: "" };
+  if (key === "from") action.fileMove.from = value as string;
+  if (key === "to") action.fileMove.to = value as string;
+}
+
+function parseBoolean(raw: string): boolean | undefined {
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === "true") return true;
+  if (normalized === "false") return false;
+  return undefined;
+}
+
+function parseDateValue(raw: string, fallback: Date): Date {
+  const parsed = new Date(String(raw));
+  if (Number.isNaN(parsed.getTime())) return fallback;
+  return parsed;
 }
 
 function parseScalar(raw: string): string {
@@ -315,17 +538,116 @@ function parseScalar(raw: string): string {
   return value;
 }
 
+function validateHooks(stage: WorkflowTemplateStage, stageIndex: number, templateName: string): void {
+  if (!stage.hooks) return;
+
+  const hookEntries: Array<["onEnter" | "onExit", TransitionAction[] | undefined]> = [
+    ["onEnter", stage.hooks.onEnter],
+    ["onExit", stage.hooks.onExit],
+  ];
+
+  hookEntries.forEach(([hookName, actions]) => {
+    if (!actions) return;
+    actions.forEach((action, actionIndex) => validateAction(action, stage, hookName, templateName, stageIndex, actionIndex));
+  });
+}
+
+function validateAction(
+  action: TransitionAction,
+  stage: WorkflowTemplateStage,
+  hookName: "onEnter" | "onExit",
+  templateName: string,
+  stageIndex: number,
+  actionIndex: number
+): void {
+  if (!action.type || !TRANSITION_ACTION_TYPES.includes(action.type)) {
+    throw new Error(
+      `Stage ${stage.name} in template ${templateName} hook ${hookName}[${actionIndex}] has invalid action type ${String(action.type)}`
+    );
+  }
+
+  if (action.type === "command" && !action.command) {
+    throw new Error(`Stage ${stage.name} in template ${templateName} hook ${hookName}[${actionIndex}] command requires command`);
+  }
+
+  if (action.type === "task_transition") {
+    if (!action.taskTransition || !TASK_TRANSITIONS.includes(action.taskTransition)) {
+      throw new Error(
+        `Stage ${stage.name} in template ${templateName} hook ${hookName}[${actionIndex}] task_transition requires valid taskTransition`
+      );
+    }
+  }
+
+  if (action.type === "file_move") {
+    if (!action.fileMove?.from || !action.fileMove.to) {
+      throw new Error(
+        `Stage ${stage.name} in template ${templateName} hook ${hookName}[${actionIndex}] file_move requires from and to`
+      );
+    }
+  }
+
+  if (action.blocking !== undefined && typeof action.blocking !== "boolean") {
+    throw new Error(
+      `Stage ${stage.name} in template ${templateName} hook ${hookName}[${actionIndex}] blocking must be boolean`
+    );
+  }
+}
+
+function isValidDate(value: Date): boolean {
+  return value instanceof Date && !Number.isNaN(value.getTime());
+}
+
 function normalizeTemplate(template: WorkflowTemplate): WorkflowTemplate {
   return {
     ...template,
+    builtin: template.builtin ?? false,
+    version: typeof template.version === "number" && !Number.isNaN(template.version) ? template.version : BUILTIN_TEMPLATE_VERSION,
+    createdAt: normalizeDate(template.createdAt),
+    updatedAt: normalizeDate(template.updatedAt),
     stages: template.stages.map((stage) => ({
       ...stage,
+      hooks: normalizeHooks(stage.hooks),
       gate: {
-        satisfied: false,
-        satisfiedBy: stage.gate.satisfiedBy,
-        satisfiedAt: stage.gate.satisfiedAt,
         ...stage.gate,
+        satisfied: stage.gate.satisfied ?? false,
+        satisfiedBy: stage.gate.satisfiedBy,
+        satisfiedAt: stage.gate.satisfiedAt ? normalizeDate(stage.gate.satisfiedAt) : undefined,
       },
     })),
   };
+}
+
+function normalizeHooks(hooks?: StageTransitionHooks): StageTransitionHooks | undefined {
+  if (!hooks) return undefined;
+
+  const normalized: StageTransitionHooks = {};
+  if (hooks.onEnter) {
+    normalized.onEnter = hooks.onEnter.map((action) => normalizeAction(action));
+  }
+  if (hooks.onExit) {
+    normalized.onExit = hooks.onExit.map((action) => normalizeAction(action));
+  }
+  return normalized;
+}
+
+function normalizeAction(action: TransitionAction): TransitionAction {
+  const blocking =
+    typeof action.blocking === "boolean" ? action.blocking : action.blocking === undefined ? undefined : parseBoolean(String(action.blocking));
+
+  return {
+    ...action,
+    blocking: blocking ?? true,
+    fileMove: action.fileMove ? { ...action.fileMove } : undefined,
+  };
+}
+
+function normalizeDate(value: unknown): Date {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return new Date(value);
+  }
+  const parsed = new Date(String(value ?? new Date()));
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date();
+  }
+  return parsed;
 }
