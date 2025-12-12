@@ -2,7 +2,7 @@
 
 **ID**: CR-20251211-003  
 **Domain**: web  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-11  
 **Owner**: agent  
 
@@ -52,16 +52,16 @@ Without this, the workflow system is view-only. Users can see workflows but cann
 
 ## Acceptance Criteria
 
-- [ ] Chat input is enabled and functional
-- [ ] Sending a message adds it to workflow history
-- [ ] After human message, agent session is spawned for current stage
-- [ ] Agent responses stream to UI in real-time
-- [ ] Typing indicator shows while agent is processing
-- [ ] Agent tool calls are displayed (collapsible)
-- [ ] Agent completion updates workflow state
-- [ ] Gate approval triggers agent for next stage
-- [ ] Errors display with retry option
-- [ ] Works with configured API keys from CR-20251211-001
+- [x] Chat input is enabled and functional
+- [x] Sending a message adds it to workflow history
+- [x] After human message, agent session is spawned for current stage
+- [x] Agent responses stream to UI in real-time
+- [x] Typing indicator shows while agent is processing
+- [x] Agent tool calls are displayed (collapsible)
+- [x] Agent completion updates workflow state
+- [x] Gate approval triggers agent for next stage
+- [x] Errors display with retry option
+- [x] Works with configured API keys from CR-20251211-001
 
 ---
 
@@ -88,7 +88,7 @@ Without this, the workflow system is view-only. Users can see workflows but cann
 
 ## Commits
 
-No commits yet.
+- feat(web): agent invocation from chat interface [CR-20251211-003]
 
 ---
 
@@ -129,4 +129,31 @@ Streaming approach:
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented via CHAIN-066-agent-invocation-web (10 tasks).
+
+**Key deliverables:**
+- New `agent:run` CLI command for workflow-bound streaming sessions
+- `invokeAgent` tRPC mutation with workflow validation
+- SSE endpoint at `/api/agent-stream` for real-time streaming
+- `subscribeToAgentStream` client helper
+- Enhanced `ChatContainer` with auto-agent invocation after human messages
+- `TypingIndicator` with role-based labeling (impl/control)
+- `ToolCallDisplay` with collapsible args/results and status badges
+- `AgentErrorMessage` with retry and settings link for API key issues
+- `GatePrompt` chaining approval → agent invocation
+
+**Architecture:** Option B (subprocess) as recommended - web server spawns CLI subprocess and streams stdout via SSE.
+
+**Files created/modified:**
+- `packages/cli/src/commands/agent-run.ts` (new)
+- `packages/cli/src/runtime/loop.ts` (AgentSessionEvents support)
+- `packages/web/src/app/api/agent-stream/route.ts` (new)
+- `packages/web/src/lib/agent-subprocess.ts` (new)
+- `packages/web/src/lib/agent-stream.ts` (new)
+- `packages/web/src/components/chat/chat-container.tsx`
+- `packages/web/src/components/chat/typing-indicator.tsx`
+- `packages/web/src/components/chat/tool-call-display.tsx`
+- `packages/web/src/components/chat/error-message.tsx`
+- `packages/web/src/components/chat/gate-prompt.tsx`
+- `packages/web/src/server/routers/workflow.ts`
+- Tests updated throughout

@@ -9,16 +9,6 @@ import { createCallerFactory } from "@/server/trpc";
 import { appRouter } from "@/server/routers";
 import { TRPCError } from "@trpc/server";
 
-// Mock @choragen/core
-vi.mock("@choragen/core", () => ({
-  ChainManager: vi.fn().mockImplementation(() => mockChainManager),
-  WorkflowManager: vi.fn().mockImplementation(() => ({})),
-  WORKFLOW_STATUSES: ["active", "paused", "completed", "failed", "cancelled"] as const,
-  MESSAGE_ROLES: ["human", "control", "impl", "system"] as const,
-  loadTemplate: vi.fn(),
-}));
-
-// Mock chain manager instance
 const mockChainManager = {
   getAllChains: vi.fn(),
   getChain: vi.fn(),
@@ -29,6 +19,17 @@ const mockChainManager = {
   addTask: vi.fn(),
   getNextTask: vi.fn(),
 };
+
+// Mock @choragen/core
+vi.mock("@choragen/core", async () => {
+  const actual = await vi.importActual<typeof import("@choragen/core")>("@choragen/core");
+  return {
+    ...actual,
+    ChainManager: vi.fn().mockImplementation(() => mockChainManager),
+    WorkflowManager: vi.fn().mockImplementation(() => ({})),
+    loadTemplate: vi.fn(),
+  };
+});
 
 describe("chains router", () => {
   const createCaller = createCallerFactory(appRouter);

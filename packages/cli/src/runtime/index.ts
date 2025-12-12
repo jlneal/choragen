@@ -11,6 +11,7 @@ export type {
   SessionResult,
   ToolCallRecord,
   LoopDependencies,
+  AgentSessionEvents,
 } from "./loop.js";
 export { runAgentSession } from "./loop.js";
 

@@ -10,15 +10,33 @@ import type { ReactElement } from "react";
 
 const mutateMock = vi.fn();
 const useMutationMock = vi.fn();
+const invokeAgentMock = vi.fn();
 
 vi.mock("@/lib/trpc/client", () => ({
   trpc: {
+    useUtils: () => ({
+      workflow: {
+        get: { invalidate: vi.fn() },
+        list: { invalidate: vi.fn() },
+      },
+    }),
     workflow: {
       satisfyGate: {
         useMutation: (options?: { onSuccess?: () => void; onError?: () => void }) => {
           useMutationMock(options);
           return {
             mutate: mutateMock,
+            mutateAsync: mutateMock,
+            isPending: false,
+            error: null,
+          };
+        },
+      },
+      invokeAgent: {
+        useMutation: (options?: { onSuccess?: () => void; onError?: () => void }) => {
+          return {
+            mutate: invokeAgentMock,
+            mutateAsync: invokeAgentMock,
             isPending: false,
             error: null,
           };
@@ -62,6 +80,7 @@ describe("GatePrompt", () => {
   beforeEach(() => {
     mutateMock.mockReset();
     useMutationMock.mockReset();
+    invokeAgentMock.mockReset();
   });
 
   it("renders approval card with prompt text", () => {

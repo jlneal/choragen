@@ -50,6 +50,8 @@ export interface AgentSessionConfig {
   stageIndex?: number;
   /** Workspace root directory */
   workspaceRoot: string;
+  /** Optional user-provided message to seed the session */
+  inputMessage?: string;
   /** Maximum iterations before forced termination (default: 50) */
   maxIterations?: number;
   /** Dry run mode - validate but don't execute tools */
@@ -128,6 +130,7 @@ export interface LoopDependencies {
   promptLoader?: PromptLoader;
   checkpointHandler?: CheckpointHandler;
   roleManager?: RoleManager;
+  events?: AgentSessionEvents;
 }
 
 /**
@@ -170,6 +173,33 @@ const DEFAULT_ROLE_ID_MAP: Record<AgentRole, string> = {
   impl: "implementer",
 };
 
+function ensureToolCallId(toolCall: ToolCall): ToolCall {
+  if (toolCall.id) {
+    return toolCall;
+  }
+  return {
+    ...toolCall,
+    id: randomUUID(),
+  };
+}
+
+export interface AgentSessionEvents {
+  onMessage?: (event: { role: "assistant"; content: string; stageIndex?: number }) => void;
+  onToolCall?: (event: {
+    id: string;
+    name: string;
+    args: Record<string, unknown>;
+    status: "pending" | "success" | "error";
+  }) => void;
+  onToolResult?: (event: {
+    id: string;
+    name: string;
+    status: "success" | "error";
+    result?: unknown;
+    error?: string;
+  }) => void;
+}
+
 /**
  * Run an agent session with the agentic loop.
  *
@@ -200,6 +230,7 @@ export async function runAgentSession(
     workflowId,
     stageIndex,
     workspaceRoot,
+    inputMessage,
     maxIterations = DEFAULT_MAX_ITERATIONS,
     dryRun = false,
     parentSessionId,
@@ -334,6 +365,10 @@ export async function runAgentSession(
     },
   ];
 
+  if (inputMessage && inputMessage.trim().length > 0) {
+    messages.push({ role: "user", content: inputMessage.trim() });
+  }
+
   // Create the spawn child session function
   const spawnChildSession = async (childConfig: ChildSessionConfig): Promise<ChildSessionResult> => {
     console.log(`[Loop] Spawning child impl session for task ${childConfig.taskId}`);
@@ -389,6 +424,11 @@ export async function runAgentSession(
     childSessionResults,
     spawnChildSession,
   };
+
+  const events = deps.events;
+  const emitMessage = events?.onMessage;
+  const emitToolCall = events?.onToolCall;
+  const emitToolResult = events?.onToolResult;
 
   try {
     // Main loop
@@ -451,12 +491,26 @@ export async function runAgentSession(
         messages.push({ role: "assistant", content: response.content });
         console.log(`[Loop] Assistant: ${response.content.slice(0, 100)}...`);
         await recordWorkflowMessage(workflowMessageRole, response.content);
+        emitMessage?.({
+          role: "assistant",
+          content: response.content,
+          stageIndex: workflowContext?.stageIndex,
+        });
       }
 
       // Process tool calls
       for (const toolCall of response.toolCalls) {
+        const normalizedToolCall = ensureToolCallId(toolCall);
+
+        emitToolCall?.({
+          id: normalizedToolCall.id,
+          name: normalizedToolCall.name,
+          args: normalizedToolCall.arguments ?? {},
+          status: "pending",
+        });
+
         const record = await processToolCall(
-          toolCall,
+          normalizedToolCall,
           resolvedRoleId,
           role,
           governanceGate,
@@ -468,6 +522,15 @@ export async function runAgentSession(
           chainId
         );
         toolCallRecords.push(record);
+        const nextStatus =
+          !record.allowed || record.result?.success === false ? "error" : "success";
+        emitToolResult?.({
+          id: normalizedToolCall.id,
+          name: normalizedToolCall.name,
+          status: nextStatus,
+          result: record.result,
+          error: record.denialReason ?? record.result?.error,
+        });
 
         // Check if session was paused due to approval timeout
         if (checkpointHandler.paused) {
@@ -486,10 +549,10 @@ export async function runAgentSession(
         }
 
         // Add tool result to conversation
-        const toolMessage = buildToolMessage(toolCall, record);
+        const toolMessage = buildToolMessage(normalizedToolCall, record);
         messages.push(toolMessage);
         await recordWorkflowMessage("system", toolMessage.content, {
-          tool: toolCall.name,
+          tool: normalizedToolCall.name,
           allowed: record.allowed,
         });
       }

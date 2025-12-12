@@ -1,0 +1,20 @@
+{
+  "id": "CHAIN-066",
+  "slug": "agent-invocation-web",
+  "title": "Agent Invocation from Web",
+  "requestId": "CR-20251211-003",
+  "status": "done",
+  "createdAt": "2025-12-11",
+  "tasks": [
+    "001-enable-chat-input",
+    "002-invoke-agent-mutation",
+    "003-agent-session-subprocess",
+    "004-sse-streaming",
+    "005-typing-indicator-ui",
+    "006-tool-call-display",
+    "007-workflow-state-updates",
+    "008-gate-approval-trigger",
+    "009-error-handling-retry",
+    "010-integration-verification"
+  ]
+}

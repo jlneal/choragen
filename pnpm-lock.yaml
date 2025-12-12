@@ -121,6 +121,9 @@ importers:
       '@choragen/cli':
         specifier: workspace:*
         version: link:../cli
+      '@choragen/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@choragen/core':
         specifier: workspace:*
         version: link:../core

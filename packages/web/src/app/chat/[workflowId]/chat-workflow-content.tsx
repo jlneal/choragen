@@ -4,8 +4,10 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { AlertCircle, ArrowLeft, MessageSquare, Send } from "lucide-react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 
+import type { WorkflowMessage } from "@choragen/core";
+import { ChatContainer } from "@/components/chat/chat-container";
 import { trpc } from "@/lib/trpc/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +20,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import { WorkflowSidebar } from "@/components/chat/workflow-sidebar";
 import { WorkflowActions } from "@/components/chat/workflow-actions";
 
@@ -41,25 +42,6 @@ export function deriveStageSummary(
   return `Stage ${displayStage} of ${totalStages}`;
 }
 
-function formatTimestamp(timestamp?: Date | string): string {
-  if (!timestamp) {
-    return "Just now";
-  }
-
-  const parsed =
-    timestamp instanceof Date
-      ? timestamp
-      : timestamp
-        ? new Date(timestamp)
-        : null;
-
-  if (!parsed || Number.isNaN(parsed.getTime())) {
-    return "Just now";
-  }
-
-  return parsed.toLocaleString();
-}
-
 interface ChatWorkflowContentProps {
   workflowId: string;
 }
@@ -79,11 +61,16 @@ export function ChatWorkflowContent({ workflowId }: ChatWorkflowContentProps) {
   );
 
   const normalizedMessages = useMemo(
-    () =>
-      workflow?.messages.map((message) => ({
+    () => {
+      if (!workflow?.messages) {
+        return undefined;
+      }
+
+      return workflow.messages.map((message) => ({
         ...message,
         timestamp: new Date(message.timestamp as unknown as string),
-      })),
+      }));
+    },
     [workflow?.messages]
   );
 
@@ -175,11 +162,11 @@ export function ChatWorkflowContent({ workflowId }: ChatWorkflowContentProps) {
 
           <ConversationCard
             isLoading={isLoading}
-            messages={workflow?.messages}
+            messages={normalizedMessages}
             workflowId={workflowId}
             status={workflow?.status}
+            stageIndex={workflow?.currentStage}
           />
-          <InputAreaCard />
         </div>
       </div>
     </div>
@@ -204,21 +191,17 @@ function SidebarSkeleton() {
 }
 
 function ConversationCard({
-  messages,
   isLoading,
   workflowId,
   status,
+  messages,
+  stageIndex,
 }: {
-  messages?: {
-    id?: string;
-    role: string;
-    content: string;
-    stageIndex?: number;
-    timestamp?: Date | string;
-  }[];
   isLoading: boolean;
   workflowId: string;
   status?: string;
+  messages?: WorkflowMessage[];
+  stageIndex?: number;
 }) {
   return (
     <Card className="h-full">
@@ -238,27 +221,14 @@ function ConversationCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {isLoading ? (
+        {isLoading && !messages ? (
           <ConversationSkeleton />
-        ) : messages && messages.length > 0 ? (
-          messages.slice(-3).map((message) => (
-            <MessageBubble
-              key={message.id ?? message.content}
-              role={message.role}
-              content={message.content}
-              timestamp={message.timestamp}
-            />
-          ))
         ) : (
-          <div className="rounded-md border border-dashed p-6 text-center">
-            <p className="text-sm font-medium text-foreground">
-              Conversation will appear here
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Messages from humans, control agents, and implementation agents will be
-              streamed into this list.
-            </p>
-          </div>
+          <ChatContainer
+            workflowId={workflowId}
+            initialMessages={messages}
+            stageIndex={typeof stageIndex === "number" ? stageIndex : DEFAULT_STAGE_INDEX}
+          />
         )}
       </CardContent>
     </Card>
@@ -277,57 +247,5 @@ function ConversationSkeleton() {
         </div>
       ))}
     </div>
-  );
-}
-
-function MessageBubble({
-  role,
-  content,
-  timestamp,
-}: {
-  role: string;
-  content: string;
-  timestamp?: Date | string;
-}) {
-  return (
-    <div className="rounded-lg border bg-card p-3 shadow-sm">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-2 font-medium capitalize">
-          <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          {role}
-        </span>
-        <span>{formatTimestamp(timestamp)}</span>
-      </div>
-      <p className="mt-2 text-sm text-foreground">{content}</p>
-    </div>
-  );
-}
-
-function InputAreaCard() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Input area</CardTitle>
-        <CardDescription>
-          Draft messages or gate responses to drive the workflow forward.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <Textarea
-          placeholder="Message the workflow..."
-          className="min-h-[120px]"
-          disabled
-        />
-        <p className="text-xs text-muted-foreground">
-          Real-time message sending will be connected to the workflow router.
-        </p>
-      </CardContent>
-      <CardFooter className="justify-end">
-        <Button size="sm" disabled>
-          <Send className="mr-2 h-4 w-4" />
-          Send message (coming soon)
-        </Button>
-      </CardFooter>
-    </Card>
   );
 }

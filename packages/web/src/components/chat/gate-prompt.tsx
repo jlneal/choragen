@@ -20,6 +20,7 @@ interface GatePromptProps {
 
 export function GatePrompt({ workflowId, stageIndex, prompt, gateType }: GatePromptProps) {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const utils = trpc.useUtils();
 
   const satisfyGate = trpc.workflow.satisfyGate.useMutation({
     onSuccess: () => {
@@ -30,15 +31,39 @@ export function GatePrompt({ workflowId, stageIndex, prompt, gateType }: GatePro
     },
   });
 
-  const isSubmitting = satisfyGate.isPending;
+  const invokeAgent = trpc.workflow.invokeAgent.useMutation({
+    onSuccess: (session) => {
+      setStatusMessage("Agent starting...");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("agent-session-started", {
+            detail: { sessionId: session.sessionId },
+          })
+        );
+      }
+    },
+    onError: (error) => {
+      setStatusMessage(error.message || "Failed to start agent");
+    },
+  });
 
-  const handleApprove = () => {
+  const isSubmitting = satisfyGate.isPending || invokeAgent.isPending;
+
+  const handleApprove = async () => {
     setStatusMessage(null);
-    satisfyGate.mutate({
-      workflowId,
-      stageIndex,
-      satisfiedBy: "user",
-    });
+    try {
+      await satisfyGate.mutateAsync({
+        workflowId,
+        stageIndex,
+        satisfiedBy: "user",
+      });
+      await invokeAgent.mutateAsync({ workflowId });
+      utils.workflow.get.invalidate(workflowId);
+      utils.workflow.list.invalidate();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to approve gate";
+      setStatusMessage(message);
+    }
   };
 
   const handleReject = () => {

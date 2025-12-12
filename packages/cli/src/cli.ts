@@ -55,6 +55,7 @@ import {
   getAgentListSessionsHelp,
   getAgentCleanupHelp,
 } from "./commands/agent-session.js";
+import { runAgentRun } from "./commands/agent-run.js";
 import {
   startWorkflow,
   listWorkflows,
@@ -1999,6 +2000,18 @@ const commands: Record<string, CommandDef> = {
         return;
       }
       await runAgentStart(args, projectRoot);
+    },
+  },
+
+  "agent:run": {
+    description: "Run an agent session for a workflow with streaming output",
+    usage: "agent:run --workflow <id> [--stage <index>] [--message \"text\"] [--role <impl|control>]",
+    handler: async (args) => {
+      if (args.includes("--help") || args.includes("-h")) {
+        await runAgentRun(["--help"], projectRoot);
+        return;
+      }
+      await runAgentRun(args, projectRoot);
     },
   },
 

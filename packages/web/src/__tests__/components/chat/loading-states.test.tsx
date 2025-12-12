@@ -14,11 +14,36 @@ import { WorkflowCardSkeleton } from "@/components/chat/workflow-card-skeleton";
 import type { WorkflowMessage } from "@choragen/core";
 
 const useWorkflowMessagesMock = vi.fn();
+const invokeAgentMock = vi.fn();
 
 vi.mock("@/hooks/use-workflow-messages", () => ({
   useWorkflowMessages: (workflowId: string, initial?: WorkflowMessage[]) =>
     useWorkflowMessagesMock(workflowId, initial),
   sortMessagesByTimestamp: (messages: WorkflowMessage[]) => messages,
+}));
+
+vi.mock("@/lib/trpc/client", () => ({
+  trpc: {
+    useUtils: () => ({
+      workflow: {
+        get: { invalidate: vi.fn() },
+        list: { invalidate: vi.fn() },
+      },
+    }),
+    workflow: {
+      invokeAgent: {
+        useMutation: () => ({
+          mutate: invokeAgentMock,
+          mutateAsync: invokeAgentMock,
+          isPending: false,
+        }),
+      },
+    },
+  },
+}));
+
+vi.mock("@/lib/agent-stream", () => ({
+  subscribeToAgentStream: () => () => {},
 }));
 
 vi.mock("@/components/chat/chat-input", () => ({
@@ -77,7 +102,7 @@ describe("Loading states", () => {
       <ChatContainer workflowId="wf-1" initialMessages={[]} />
     );
 
-    expect(html).toContain("Assistant");
+    expect(html).toContain("Implementation agent");
     expect(html).toContain("animate-bounce");
   });
 

@@ -73,11 +73,14 @@ export function MessageItem({ message, workflowId }: MessageItemProps) {
       Array.isArray(message.metadata.toolCalls) && message.metadata.toolCalls.length > 0
         ? message.metadata.toolCalls.map((call) => {
             const callRecord = call as Record<string, unknown>;
-            const statusValue: "success" | "error" =
+            const statusValue: "pending" | "success" | "error" =
               typeof callRecord.status === "string" && callRecord.status === "error"
                 ? "error"
-                : "success";
+                : typeof callRecord.status === "string" && callRecord.status === "pending"
+                  ? "pending"
+                  : "success";
             return {
+              id: typeof callRecord.id === "string" ? callRecord.id : undefined,
               name: typeof callRecord.name === "string" ? callRecord.name : "tool",
               args: "args" in callRecord ? callRecord.args : undefined,
               result: "result" in callRecord ? callRecord.result : undefined,

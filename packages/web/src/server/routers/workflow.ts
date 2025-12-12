@@ -18,6 +18,9 @@ import {
   type WorkflowMessage,
   loadTemplate,
 } from "@choragen/core";
+import { spawnAgentSession } from "@/lib/agent-subprocess";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
 
 const workflowStatusEnum = z.enum(
   WORKFLOW_STATUSES as [WorkflowStatus, ...WorkflowStatus[]]
@@ -81,7 +84,13 @@ const onMessageInputSchema = z.object({
   workflowId: z.string().min(1, "Workflow ID is required"),
 });
 
+const invokeAgentInputSchema = z.object({
+  workflowId: z.string().min(1, "Workflow ID is required"),
+  message: z.string().optional(),
+});
+
 const POLL_INTERVAL_MS = 500;
+const DEFAULT_STAGE_INDEX = 0;
 
 function createDelay(ms: number): { promise: Promise<void>; cancel: () => void } {
   let timer: NodeJS.Timeout | undefined;
@@ -108,6 +117,27 @@ function createDelay(ms: number): { promise: Promise<void>; cancel: () => void }
  */
 function getWorkflowManager(projectRoot: string): WorkflowManager {
   return new WorkflowManager(projectRoot);
+}
+
+async function resolveAnthropicApiKey(projectRoot: string): Promise<string | undefined> {
+  if (process.env.ANTHROPIC_API_KEY) {
+    return process.env.ANTHROPIC_API_KEY;
+  }
+
+  const configPath = path.join(projectRoot, ".choragen", "config.json");
+  try {
+    const raw = await fs.readFile(configPath, "utf-8");
+    const parsed = JSON.parse(raw) as {
+      providers?: { anthropic?: { apiKey?: string } };
+    };
+    const key = parsed.providers?.anthropic?.apiKey;
+    return typeof key === "string" && key.trim().length > 0 ? key : undefined;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return undefined;
+    }
+    return undefined;
+  }
 }
 
 /**
@@ -181,6 +211,62 @@ export const workflowRouter = router({
           message: error instanceof Error ? error.message : "Failed to add message",
         });
       }
+    }),
+
+  /**
+   * Invoke an agent for the current workflow stage.
+   * Returns a session placeholder; actual spawning handled in later tasks.
+   */
+  invokeAgent: publicProcedure
+    .input(invokeAgentInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const manager = getWorkflowManager(ctx.projectRoot);
+      const workflow = await manager.get(input.workflowId);
+
+      if (!workflow) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Workflow not found: ${input.workflowId}`,
+        });
+      }
+
+      if (workflow.status !== "active") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Workflow is ${workflow.status}, cannot invoke agent`,
+        });
+      }
+
+      const sessionId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const stageIndex =
+        typeof workflow.currentStage === "number"
+          ? Math.max(DEFAULT_STAGE_INDEX, workflow.currentStage)
+          : DEFAULT_STAGE_INDEX;
+
+      try {
+        const apiKey = await resolveAnthropicApiKey(ctx.projectRoot);
+
+        spawnAgentSession(sessionId, {
+          workflowId: input.workflowId,
+          stageIndex,
+          projectRoot: ctx.projectRoot,
+          apiKey,
+          message: input.message,
+        });
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to start agent session",
+          cause: error,
+        });
+      }
+
+      return {
+        sessionId,
+        workflowId: input.workflowId,
+        stageIndex,
+        status: "running",
+      };
     }),
 
   /**

@@ -51,6 +51,13 @@ vi.mock("@/lib/trpc/client", () => ({
           };
         },
       },
+      invokeAgent: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          mutateAsync: vi.fn(),
+          isPending: false,
+        }),
+      },
       cancel: {
         useMutation: () => ({
           mutate: vi.fn(),
@@ -71,6 +78,10 @@ vi.mock("@/lib/trpc/client", () => ({
       },
     },
   },
+}));
+
+vi.mock("@/lib/agent-stream", () => ({
+  subscribeToAgentStream: () => () => {},
 }));
 
 describe("Responsive chat layout", () => {

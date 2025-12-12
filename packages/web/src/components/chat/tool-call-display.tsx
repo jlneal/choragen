@@ -9,10 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 export interface ToolCall {
+  id?: string;
   name: string;
   args?: unknown;
   result?: unknown;
-  status?: "success" | "error";
+  status?: "pending" | "success" | "error";
 }
 
 interface ToolCallDisplayProps {
@@ -26,6 +27,22 @@ function formatJson(value: unknown): string {
   } catch {
     return String(value);
   }
+}
+
+function StatusBadge({ status }: { status: ToolCall["status"] }) {
+  const label = status ?? "pending";
+  const className =
+    label === "success"
+      ? "text-green-700 bg-green-50 border-green-200"
+      : label === "error"
+        ? "text-destructive bg-destructive/10 border-destructive/30"
+        : "text-amber-700 bg-amber-50 border-amber-200";
+
+  return (
+    <span className={cn("rounded-full border px-2 py-0.5 text-[11px] font-semibold", className)}>
+      {label}
+    </span>
+  );
 }
 
 export function ToolCallDisplay({ toolCalls, defaultExpanded = false }: ToolCallDisplayProps) {
@@ -65,23 +82,16 @@ export function ToolCallDisplay({ toolCalls, defaultExpanded = false }: ToolCall
             const isSuccess = call.status !== "error";
             return (
               <div
-                key={`${call.name}-${index}`}
+                key={call.id ?? `${call.name}-${index}`}
                 className={cn(
                   "rounded-md border bg-background p-3 text-sm",
                   isSuccess ? "border-muted" : "border-destructive/50"
                 )}
               >
                 <div className="mb-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <span className="font-mono text-xs">{call.name}</span>
-                    <span
-                      className={cn(
-                        "text-xs font-medium",
-                        isSuccess ? "text-muted-foreground" : "text-destructive"
-                      )}
-                    >
-                      {isSuccess ? "success" : "error"}
-                    </span>
+                    <StatusBadge status={call.status} />
                   </div>
                 </div>
                 {typeof call.args !== "undefined" ? (
