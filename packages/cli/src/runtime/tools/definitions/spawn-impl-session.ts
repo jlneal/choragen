@@ -30,7 +30,8 @@ export const spawnImplSessionTool: ToolDefinition = {
     },
     required: ["chainId", "taskId"],
   },
-  allowedRoles: ["control"],
+  category: "session",
+  mutates: true,
 };
 
 /**

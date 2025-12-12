@@ -64,6 +64,7 @@ import {
   formatWorkflowStatus,
   formatWorkflowList,
 } from "./commands/workflow.js";
+import { syncTools } from "./commands/tools/index.js";
 import { runMenuLoop } from "./menu/index.js";
 import * as readline from "node:readline";
 import { spawn } from "node:child_process";
@@ -604,6 +605,37 @@ const commands: Record<string, CommandDef> = {
         const typeStr = chain.type ? `[${chain.type}]` : "";
         const typeCol = typeStr.padEnd(16);
         console.log(`${chain.id} ${typeCol} [${status}] - ${chain.title}`);
+      }
+    },
+  },
+
+  // Tools metadata
+  "tools:sync": {
+    description: "Generate .choragen/tools index and categories",
+    usage: "tools:sync [--json]",
+    handler: async (args) => {
+      const json = args.includes("--json");
+      try {
+        const result = await syncTools(projectRoot, { json });
+        if (json) {
+          console.log(JSON.stringify(result, null, 2));
+        }
+      } catch (error) {
+        if (json) {
+          console.log(
+            JSON.stringify(
+              {
+                success: false,
+                error: (error as Error).message,
+              },
+              null,
+              2
+            )
+          );
+        } else {
+          console.error(`Error syncing tools: ${(error as Error).message}`);
+        }
+        process.exit(1);
       }
     },
   },

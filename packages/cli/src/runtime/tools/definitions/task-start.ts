@@ -25,7 +25,8 @@ export const taskStartTool: ToolDefinition = {
     },
     required: ["chainId", "taskId"],
   },
-  allowedRoles: ["control"],
+  category: "task",
+  mutates: true,
 };
 
 /**

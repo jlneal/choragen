@@ -30,7 +30,8 @@ export const taskCompleteTool: ToolDefinition = {
     },
     required: ["chainId", "taskId"],
   },
-  allowedRoles: ["impl"],
+  category: "task",
+  mutates: true,
 };
 
 /**

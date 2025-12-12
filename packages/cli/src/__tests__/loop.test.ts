@@ -4,7 +4,7 @@
  * @test-type unit
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   runAgentSession,
   type AgentSessionConfig,
@@ -15,6 +15,9 @@ import { ToolExecutor } from "../runtime/tools/executor.js";
 import { GovernanceGate } from "../runtime/governance-gate.js";
 import { PromptLoader } from "../runtime/prompt-loader.js";
 import type { ToolDefinition } from "../runtime/tools/types.js";
+import type { RoleManager } from "@choragen/core";
+import { join } from "node:path";
+import { mkdir, rm } from "node:fs/promises";
 
 /**
  * Create a mock LLM provider for testing.
@@ -50,21 +53,40 @@ const testTools: ToolDefinition[] = [
     name: "test:allowed",
     description: "A test tool allowed for both roles",
     parameters: { type: "object", properties: {} },
-    allowedRoles: ["control", "impl"],
+    category: "task",
+    mutates: false,
   },
   {
     name: "test:control-only",
     description: "A test tool only for control",
     parameters: { type: "object", properties: {} },
-    allowedRoles: ["control"],
+    category: "task",
+    mutates: false,
   },
   {
     name: "test:impl-only",
     description: "A test tool only for impl",
     parameters: { type: "object", properties: {} },
-    allowedRoles: ["impl"],
+    category: "task",
+    mutates: false,
   },
 ];
+
+const ALL_TEST_TOOL_IDS = testTools.map((tool) => tool.name);
+
+const createTestRoleManager = (toolIds: string[] = ALL_TEST_TOOL_IDS): RoleManager => {
+  return {
+    get: vi.fn(async (roleId: string) => {
+      return {
+        id: roleId,
+        name: roleId,
+        toolIds,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    }),
+  } as unknown as RoleManager;
+};
 
 describe("runAgentSession", () => {
   let baseConfig: AgentSessionConfig;
@@ -72,11 +94,25 @@ describe("runAgentSession", () => {
   let mockRegistry: ToolRegistry;
   let mockGovernanceGate: GovernanceGate;
   let mockPromptLoader: PromptLoader;
+  let testWorkspace: string;
 
-  beforeEach(() => {
+  const deps = (overrides: Record<string, unknown> = {}) => ({
+    registry: mockRegistry,
+    executor: mockExecutor,
+    governanceGate: mockGovernanceGate,
+    promptLoader: mockPromptLoader,
+    roleManager: createTestRoleManager(),
+    ...overrides,
+  });
+
+  beforeEach(async () => {
     // Suppress console output during tests
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
+
+    testWorkspace = join(process.cwd(), ".tmp-cli-loop-tests");
+    await rm(testWorkspace, { recursive: true, force: true });
+    await mkdir(testWorkspace, { recursive: true });
 
     // Create test dependencies
     mockRegistry = new ToolRegistry(testTools);
@@ -90,9 +126,14 @@ describe("runAgentSession", () => {
 
     baseConfig = {
       role: "impl",
+      roleId: "implementer",
       provider: createMockProvider([]),
-      workspaceRoot: "/test/workspace",
+      workspaceRoot: testWorkspace,
     };
+  });
+
+  afterEach(async () => {
+    await rm(testWorkspace, { recursive: true, force: true });
   });
 
   describe("basic loop execution", () => {
@@ -108,7 +149,7 @@ describe("runAgentSession", () => {
 
       const result = await runAgentSession(
         { ...baseConfig, provider },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps()
       );
 
       expect(result.success).toBe(true);
@@ -129,7 +170,7 @@ describe("runAgentSession", () => {
 
       const result = await runAgentSession(
         { ...baseConfig, provider, maxIterations: MAX_ITERATIONS },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps()
       );
 
       expect(result.success).toBe(false);
@@ -152,7 +193,7 @@ describe("runAgentSession", () => {
 
       const result = await runAgentSession(
         { ...baseConfig, provider },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps()
       );
 
       expect(result.iterations).toBe(DEFAULT_MAX);
@@ -181,7 +222,7 @@ describe("runAgentSession", () => {
 
       const result = await runAgentSession(
         { ...baseConfig, provider },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps()
       );
 
       expect(result.success).toBe(true);
@@ -211,7 +252,7 @@ describe("runAgentSession", () => {
 
       const result = await runAgentSession(
         { ...baseConfig, provider },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps()
       );
 
       expect(result.toolCalls[0].arguments).toEqual({ key: "value", num: 42 });
@@ -238,7 +279,7 @@ describe("runAgentSession", () => {
 
       const result = await runAgentSession(
         { ...baseConfig, provider },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps()
       );
 
       expect(result.toolCalls).toHaveLength(2);
@@ -269,13 +310,13 @@ describe("runAgentSession", () => {
 
       const result = await runAgentSession(
         { ...baseConfig, role: "impl", provider },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps({ roleManager: createTestRoleManager(["test:allowed", "test:impl-only"]) })
       );
 
       expect(result.success).toBe(true);
       expect(result.toolCalls).toHaveLength(1);
       expect(result.toolCalls[0].allowed).toBe(false);
-      expect(result.toolCalls[0].denialReason).toContain("not available to impl role");
+      expect(result.toolCalls[0].denialReason).toContain("Tool not allowed for role");
     });
 
     it("denies unknown tools", async () => {
@@ -298,7 +339,7 @@ describe("runAgentSession", () => {
 
       const result = await runAgentSession(
         { ...baseConfig, provider },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps()
       );
 
       expect(result.toolCalls[0].allowed).toBe(false);
@@ -333,7 +374,7 @@ describe("runAgentSession", () => {
 
       const result = await runAgentSession(
         { ...baseConfig, role: "impl", provider },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps({ roleManager: createTestRoleManager(["test:allowed", "test:impl-only"]) })
       );
 
       expect(result.success).toBe(true);
@@ -369,7 +410,7 @@ describe("runAgentSession", () => {
 
       const result = await runAgentSession(
         { ...baseConfig, provider },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps()
       );
 
       expect(result.tokensUsed.input).toBe(450); // 100 + 150 + 200
@@ -403,7 +444,7 @@ describe("runAgentSession", () => {
 
       const result = await runAgentSession(
         { ...baseConfig, provider, dryRun: true },
-        { registry: mockRegistry, executor: dryRunExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps({ executor: dryRunExecutor })
       );
 
       expect(result.success).toBe(true);
@@ -426,7 +467,7 @@ describe("runAgentSession", () => {
       // Disable retry to avoid timeout waiting for backoff delays
       const result = await runAgentSession(
         { ...baseConfig, provider, retryConfig: { enabled: false } },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps()
       );
 
       expect(result.success).toBe(false);
@@ -460,7 +501,7 @@ describe("runAgentSession", () => {
 
       const result = await runAgentSession(
         { ...baseConfig, provider },
-        { registry: mockRegistry, executor: failingExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps({ executor: failingExecutor })
       );
 
       // Loop should continue despite tool error
@@ -485,7 +526,7 @@ describe("runAgentSession", () => {
 
       await runAgentSession(
         { ...baseConfig, provider, chainId: "CHAIN-001", taskId: "001" },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps()
       );
 
       expect(promptLoaderSpy).toHaveBeenCalledWith(
@@ -493,7 +534,7 @@ describe("runAgentSession", () => {
         expect.objectContaining({
           chainId: "CHAIN-001",
           taskId: "001",
-          workspaceRoot: "/test/workspace",
+          workspaceRoot: testWorkspace,
         })
       );
     });
@@ -516,11 +557,11 @@ describe("runAgentSession", () => {
 
       await runAgentSession(
         { ...baseConfig, provider: provider1 },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps()
       );
       await runAgentSession(
         { ...baseConfig, provider: provider2 },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps()
       );
 
       expect(sessionIds).toHaveLength(2);
@@ -550,8 +591,14 @@ describe("runAgentSession", () => {
       ]);
 
       const result = await runAgentSession(
-        { ...baseConfig, role: "control", provider },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        {
+          ...baseConfig,
+          role: "control",
+          roleId: "controller",
+          roleManager: createTestRoleManager(),
+          provider,
+        },
+        deps()
       );
 
       expect(result.toolCalls[0].allowed).toBe(true);
@@ -577,7 +624,7 @@ describe("runAgentSession", () => {
 
       const result = await runAgentSession(
         { ...baseConfig, role: "impl", provider },
-        { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+        deps()
       );
 
       expect(result.toolCalls[0].allowed).toBe(true);
@@ -593,6 +640,9 @@ describe("SessionResult interface", () => {
     const mockRegistry = new ToolRegistry(testTools);
     const mockGovernanceGate = new GovernanceGate(mockRegistry);
     const mockExecutor = new ToolExecutor(new Map());
+    const workspaceRoot = join(process.cwd(), ".tmp-cli-loop-success");
+    await rm(workspaceRoot, { recursive: true, force: true });
+    await mkdir(workspaceRoot, { recursive: true });
 
     const provider = createMockProvider([
       {
@@ -604,8 +654,14 @@ describe("SessionResult interface", () => {
     ]);
 
     const result = await runAgentSession(
-      { role: "impl", provider, workspaceRoot: "/test" },
-      { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+      { role: "impl", provider, workspaceRoot },
+      {
+        registry: mockRegistry,
+        executor: mockExecutor,
+        governanceGate: mockGovernanceGate,
+        promptLoader: mockPromptLoader,
+        roleManager: createTestRoleManager(),
+      }
     );
 
     expect(result).toHaveProperty("success");
@@ -625,6 +681,9 @@ describe("SessionResult interface", () => {
     const mockRegistry = new ToolRegistry(testTools);
     const mockGovernanceGate = new GovernanceGate(mockRegistry);
     const mockExecutor = new ToolExecutor(new Map());
+    const workspaceRoot = join(process.cwd(), ".tmp-cli-loop-error");
+    await rm(workspaceRoot, { recursive: true, force: true });
+    await mkdir(workspaceRoot, { recursive: true });
 
     const provider: LLMProvider = {
       name: "anthropic",
@@ -635,8 +694,14 @@ describe("SessionResult interface", () => {
     };
 
     const result = await runAgentSession(
-      { role: "impl", provider, workspaceRoot: "/test" },
-      { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+      { role: "impl", provider, workspaceRoot },
+      {
+        registry: mockRegistry,
+        executor: mockExecutor,
+        governanceGate: mockGovernanceGate,
+        promptLoader: mockPromptLoader,
+        roleManager: createTestRoleManager(),
+      }
     );
 
     expect(result.success).toBe(false);
@@ -655,6 +720,9 @@ describe("ToolCallRecord interface", () => {
     const mockExecutor = new ToolExecutor(new Map([
       ["test:allowed", vi.fn(async () => ({ success: true, data: {} }))],
     ]));
+    const workspaceRoot = join(process.cwd(), ".tmp-cli-loop-toolcall");
+    await rm(workspaceRoot, { recursive: true, force: true });
+    await mkdir(workspaceRoot, { recursive: true });
 
     const provider = createMockProvider([
       {
@@ -674,8 +742,14 @@ describe("ToolCallRecord interface", () => {
     ]);
 
     const result = await runAgentSession(
-      { role: "impl", provider, workspaceRoot: "/test" },
-      { registry: mockRegistry, executor: mockExecutor, governanceGate: mockGovernanceGate, promptLoader: mockPromptLoader }
+      { role: "impl", provider, workspaceRoot },
+      {
+        registry: mockRegistry,
+        executor: mockExecutor,
+        governanceGate: mockGovernanceGate,
+        promptLoader: mockPromptLoader,
+        roleManager: createTestRoleManager(),
+      }
     );
 
     expect(result.toolCalls[0].timestamp).toBeDefined();

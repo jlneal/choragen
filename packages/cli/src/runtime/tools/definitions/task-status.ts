@@ -26,7 +26,8 @@ export const taskStatusTool: ToolDefinition = {
     },
     required: ["chainId", "taskId"],
   },
-  allowedRoles: ["impl"],
+  category: "task",
+  mutates: false,
 };
 
 /**

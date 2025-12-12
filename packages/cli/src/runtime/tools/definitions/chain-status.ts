@@ -22,7 +22,8 @@ export const chainStatusTool: ToolDefinition = {
     },
     required: ["chainId"],
   },
-  allowedRoles: ["control", "impl"],
+  category: "chain",
+  mutates: false,
 };
 
 /**

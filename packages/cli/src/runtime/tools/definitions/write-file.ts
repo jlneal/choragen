@@ -31,7 +31,8 @@ export const writeFileTool: ToolDefinition = {
     },
     required: ["path", "content"],
   },
-  allowedRoles: ["impl"], // Control cannot write files
+  category: "filesystem",
+  mutates: true,
 };
 
 /**

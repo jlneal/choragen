@@ -20,6 +20,8 @@ import { gitRouter } from "./git";
 import { projectRouter } from "./project";
 import { workflowRouter } from "./workflow";
 import { settingsRouter } from "./settings";
+import { roleRouter } from "./role";
+import { toolRouter } from "./tool";
 
 /**
  * Root application router.
@@ -114,6 +116,18 @@ export const appRouter = router({
    * Provider configuration and connection testing.
    */
   settings: settingsRouter,
+
+  /**
+   * Role router.
+   * Role CRUD operations for role-based tool access.
+   */
+  roles: roleRouter,
+
+  /**
+   * Tool router.
+   * Tool metadata and sync from code definitions.
+   */
+  tools: toolRouter,
 });
 
 /**
@@ -121,3 +135,6 @@ export const appRouter = router({
  * Export this for use in the tRPC client.
  */
 export type AppRouter = typeof appRouter;
+
+export { roleRouter } from "./role";
+export { toolRouter } from "./tool";

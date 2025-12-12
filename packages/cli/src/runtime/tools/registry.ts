@@ -5,10 +5,10 @@
  * Provides tools to agents based on their role (control or impl).
  */
 
-import type { AgentRole, ToolDefinition } from "./types.js";
+import type { ToolDefinition } from "./types.js";
 import { toProviderTool } from "./types.js";
 import type { Tool } from "../providers/types.js";
-import type { StageType } from "@choragen/core";
+import type { RoleManager, StageType } from "@choragen/core";
 import { isToolAllowedForStage } from "@choragen/core";
 
 // Import all tool definitions
@@ -63,41 +63,62 @@ export class ToolRegistry {
   }
 
   /**
-   * Get tools available for a specific role.
-   * @param role - Agent role ("control" or "impl")
-   * @returns Tools that the role is allowed to use
+   * Get tools available for a dynamic role ID using RoleManager.
+   * @param roleId - Role identifier managed by RoleManager
+   * @param roleManager - Role manager instance for lookups
+   * @returns Tools that the resolved role is allowed to use
    */
-  getToolsForRole(role: AgentRole): ToolDefinition[] {
-    return this.tools.filter((tool) => tool.allowedRoles.includes(role));
+  async getToolsForRoleId(
+    roleId: string,
+    roleManager: RoleManager
+  ): Promise<ToolDefinition[]> {
+    const role = await roleManager.get(roleId);
+    if (!role) return [];
+
+    const allowedToolNames = new Set(role.toolIds);
+    return this.tools.filter((tool) => allowedToolNames.has(tool.name));
   }
 
   /**
-   * Get tools available for a specific role and stage.
+   * Get tools in provider format for a dynamic role ID.
+   * @param roleId - Role identifier managed by RoleManager
+   * @param roleManager - Role manager instance for lookups
+   * @returns Tools in provider format that the resolved role is allowed to use
+   */
+  async getProviderToolsForRoleId(
+    roleId: string,
+    roleManager: RoleManager
+  ): Promise<Tool[]> {
+    const tools = await this.getToolsForRoleId(roleId, roleManager);
+    return tools.map(toProviderTool);
+  }
+
+  /**
+   * Get tools available for a dynamic role ID and workflow stage.
    * Stage filtering is additive to role-based filtering. If stageType is null/undefined,
    * only role-based filtering is applied.
    */
-  getToolsForStage(role: AgentRole, stageType?: StageType | null): ToolDefinition[] {
-    const roleTools = this.getToolsForRole(role);
+  async getToolsForStageWithRoleId(
+    roleId: string,
+    roleManager: RoleManager,
+    stageType?: StageType | null
+  ): Promise<ToolDefinition[]> {
+    const roleTools = await this.getToolsForRoleId(roleId, roleManager);
     if (!stageType) return roleTools;
     return roleTools.filter((tool) => isToolAllowedForStage(stageType, tool.name));
   }
 
   /**
-   * Get tools in provider format for a specific role.
-   * Strips role information for LLM consumption.
-   * @param role - Agent role ("control" or "impl")
-   * @returns Tools in the format expected by LLM providers
-   */
-  getProviderToolsForRole(role: AgentRole): Tool[] {
-    return this.getToolsForRole(role).map(toProviderTool);
-  }
-
-  /**
-   * Get tools in provider format for a specific role and stage.
+   * Get tools in provider format for a dynamic role ID and workflow stage.
    * If stageType is null/undefined, only role filtering is applied.
    */
-  getProviderToolsForStage(role: AgentRole, stageType?: StageType | null): Tool[] {
-    return this.getToolsForStage(role, stageType).map(toProviderTool);
+  async getProviderToolsForStageWithRoleId(
+    roleId: string,
+    roleManager: RoleManager,
+    stageType?: StageType | null
+  ): Promise<Tool[]> {
+    const tools = await this.getToolsForStageWithRoleId(roleId, roleManager, stageType);
+    return tools.map(toProviderTool);
   }
 
   /**
@@ -107,17 +128,6 @@ export class ToolRegistry {
    */
   getTool(name: string): ToolDefinition | undefined {
     return this.tools.find((tool) => tool.name === name);
-  }
-
-  /**
-   * Check if a role can use a specific tool.
-   * @param role - Agent role
-   * @param toolName - Tool name
-   * @returns True if the role can use the tool
-   */
-  canRoleUseTool(role: AgentRole, toolName: string): boolean {
-    const tool = this.getTool(toolName);
-    return tool !== undefined && tool.allowedRoles.includes(role);
   }
 
   /**

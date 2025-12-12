@@ -22,6 +22,7 @@ import {
   type ToolDefinition,
   type ToolExecutorFn,
 } from "../index.js";
+import type { RoleManager } from "@choragen/core";
 
 /**
  * Mock LLM provider that returns pre-configured responses.
@@ -78,7 +79,8 @@ const integrationTestTools: ToolDefinition[] = [
       },
       required: ["chainId"],
     },
-    allowedRoles: ["control", "impl"],
+    category: "chain",
+    mutates: false,
   },
   {
     name: "task:approve",
@@ -91,7 +93,8 @@ const integrationTestTools: ToolDefinition[] = [
       },
       required: ["chainId", "taskId"],
     },
-    allowedRoles: ["control"],
+    category: "task",
+    mutates: true,
   },
   {
     name: "task:complete",
@@ -105,7 +108,8 @@ const integrationTestTools: ToolDefinition[] = [
       },
       required: ["chainId", "taskId"],
     },
-    allowedRoles: ["impl"],
+    category: "task",
+    mutates: true,
   },
   {
     name: "spawn_impl_session",
@@ -118,7 +122,8 @@ const integrationTestTools: ToolDefinition[] = [
       },
       required: ["chainId", "taskId"],
     },
-    allowedRoles: ["control"],
+    category: "session",
+    mutates: true,
   },
 ];
 
@@ -129,6 +134,29 @@ function createTestDependencies() {
   const registry = new ToolRegistry(integrationTestTools);
   const governanceGate = new GovernanceGate(registry);
   const promptLoader = createMockPromptLoader();
+  const roleManager = {
+    get: vi.fn(async (roleId: string) => {
+      if (roleId === "controller" || roleId === "control") {
+        return {
+          id: roleId,
+          name: "Controller",
+          toolIds: ["chain:status", "task:approve", "spawn_impl_session"],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      }
+      if (roleId === "implementer" || roleId === "impl") {
+        return {
+          id: roleId,
+          name: "Implementer",
+          toolIds: ["chain:status", "task:complete"],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      }
+      return null;
+    }),
+  } as unknown as RoleManager;
 
   // Create mock executors for each tool
   const chainStatusExecutor = vi.fn(async () => ({
@@ -157,7 +185,7 @@ function createTestDependencies() {
 
   const executor = new ToolExecutor(executorMap);
 
-  return { registry, governanceGate, executor, promptLoader, chainStatusExecutor };
+  return { registry, governanceGate, executor, promptLoader, chainStatusExecutor, roleManager };
 }
 
 describe("Agent Runtime Integration Tests", () => {
@@ -267,7 +295,7 @@ describe("Agent Runtime Integration Tests", () => {
       expect(result.toolCalls).toHaveLength(1);
       expect(result.toolCalls[0].name).toBe("task:complete");
       expect(result.toolCalls[0].allowed).toBe(false);
-      expect(result.toolCalls[0].denialReason).toContain("not available to control role");
+      expect(result.toolCalls[0].denialReason).toContain("Tool not allowed for role");
     });
   });
 
@@ -362,7 +390,7 @@ describe("Agent Runtime Integration Tests", () => {
       expect(result.toolCalls).toHaveLength(1);
       expect(result.toolCalls[0].name).toBe("task:approve");
       expect(result.toolCalls[0].allowed).toBe(false);
-      expect(result.toolCalls[0].denialReason).toContain("not available to impl role");
+      expect(result.toolCalls[0].denialReason).toContain("Tool not allowed for role");
     });
 
     it("impl agent is denied spawn_impl_session (control-only)", async () => {
@@ -398,7 +426,7 @@ describe("Agent Runtime Integration Tests", () => {
       );
 
       expect(result.toolCalls[0].allowed).toBe(false);
-      expect(result.toolCalls[0].denialReason).toContain("not available to impl role");
+      expect(result.toolCalls[0].denialReason).toContain("Tool not allowed for role");
     });
   });
 
@@ -487,7 +515,7 @@ describe("Agent Runtime Integration Tests", () => {
 
       const resultContent = JSON.parse(toolMessage!.content);
       expect(resultContent.error).toContain("DENIED");
-      expect(resultContent.error).toContain("not available to impl role");
+      expect(resultContent.error).toContain("Tool not allowed for role");
     });
   });
 
@@ -527,8 +555,7 @@ describe("Agent Runtime Integration Tests", () => {
       const deniedCall = result.toolCalls[0];
       expect(deniedCall.allowed).toBe(false);
       expect(deniedCall.denialReason).toBeDefined();
-      expect(deniedCall.denialReason).toContain("task:approve");
-      expect(deniedCall.denialReason).toContain("impl");
+      expect(deniedCall.denialReason).toBe("Tool not allowed for role");
     });
 
     it("unknown tools return clear error messages", async () => {
@@ -835,7 +862,7 @@ describe("Agent Runtime Integration Tests", () => {
       );
 
       expect(result.toolCalls[0].allowed).toBe(false);
-      expect(result.toolCalls[0].denialReason).toContain("not available to impl role");
+      expect(result.toolCalls[0].denialReason).toContain("Tool not allowed for role");
     });
   });
 
@@ -1044,7 +1071,7 @@ describe("Agent Runtime Integration Tests", () => {
       expect(result.success).toBe(true);
       expect(result.toolCalls).toHaveLength(2);
       expect(result.toolCalls[0].allowed).toBe(false);
-      expect(result.toolCalls[0].denialReason).toContain("not available to impl role");
+      expect(result.toolCalls[0].denialReason).toContain("Tool not allowed for role");
       expect(result.toolCalls[1].allowed).toBe(true);
       expect(result.toolCalls[1].result?.success).toBe(true);
     });

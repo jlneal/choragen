@@ -11,6 +11,7 @@ import { LockManager } from "@choragen/core";
 
 import type { AgentRole } from "./tools/types.js";
 import { ToolRegistry, defaultRegistry } from "./tools/registry.js";
+import type { RoleManager } from "@choragen/core";
 
 /**
  * Represents a tool call to be validated.
@@ -64,13 +65,17 @@ export class GovernanceGate {
   }
 
   /**
-   * Validate a tool call for a given role (synchronous, no lock checking).
-   * Use validateAsync for full validation including lock checking.
+   * Validate a tool call using a dynamic role ID resolved via RoleManager (synchronous, no lock checking).
    * @param toolCall - The tool call to validate
-   * @param role - The agent role attempting the call
+   * @param roleId - The dynamic role identifier
+   * @param roleManager - Role manager for role resolution
    * @returns Validation result indicating if the call is allowed
    */
-  validate(toolCall: ToolCall, role: AgentRole): ValidationResult {
+  async validateWithRoleId(
+    toolCall: ToolCall,
+    roleId: string,
+    roleManager: RoleManager
+  ): Promise<ValidationResult> {
     const { name } = toolCall;
 
     // Check if tool exists
@@ -82,19 +87,23 @@ export class GovernanceGate {
       };
     }
 
-    // Check if role can use this tool
-    if (!this.registry.canRoleUseTool(role, name)) {
-      return {
-        allowed: false,
-        reason: `Tool ${name} is not available to ${role} role`,
-      };
+    // Resolve role via RoleManager
+    const role = await roleManager.get(roleId);
+    if (!role) {
+      return { allowed: false, reason: "Role not found" };
+    }
+
+    // Check tool permissions via role.toolIds
+    if (!role.toolIds.includes(name)) {
+      return { allowed: false, reason: "Tool not allowed for role" };
     }
 
     // Phase 3: File path validation for write_file
     if (toolCall.name === "write_file") {
       const filePath = toolCall.params.path as string | undefined;
       if (filePath) {
-        const fileValidation = this.validateFilePath(filePath, role, "modify");
+        // Dynamic roles map to impl-like governance for write_file
+        const fileValidation = this.validateFilePath(filePath, "impl", "modify");
         if (!fileValidation.allowed) {
           return fileValidation;
         }
@@ -105,19 +114,20 @@ export class GovernanceGate {
   }
 
   /**
-   * Validate a tool call for a given role with full async validation including lock checking.
+   * Validate a tool call using a dynamic role ID with full async validation including lock checking.
    * @param toolCall - The tool call to validate
-   * @param role - The agent role attempting the call
+   * @param roleId - The dynamic role identifier
+   * @param roleManager - Role manager for role resolution
    * @param chainId - The current chain ID (optional, used for lock checking)
    * @returns Validation result indicating if the call is allowed
    */
-  async validateAsync(
+  async validateAsyncWithRoleId(
     toolCall: ToolCall,
-    role: AgentRole,
+    roleId: string,
+    roleManager: RoleManager,
     chainId?: string
   ): Promise<ValidationResult> {
-    // First, run synchronous validation
-    const syncResult = this.validate(toolCall, role);
+    const syncResult = await this.validateWithRoleId(toolCall, roleId, roleManager);
     if (!syncResult.allowed) {
       return syncResult;
     }
@@ -137,6 +147,31 @@ export class GovernanceGate {
     }
 
     return { allowed: true };
+  }
+
+  /**
+   * Validate multiple tool calls for a dynamic role ID.
+   */
+  async validateBatchWithRoleId(
+    toolCalls: ToolCall[],
+    roleId: string,
+    roleManager: RoleManager
+  ): Promise<ValidationResult[]> {
+    return Promise.all(
+      toolCalls.map((call) => this.validateWithRoleId(call, roleId, roleManager))
+    );
+  }
+
+  /**
+   * Check if all tool calls are allowed for a dynamic role ID.
+   */
+  async allAllowedWithRoleId(
+    toolCalls: ToolCall[],
+    roleId: string,
+    roleManager: RoleManager
+  ): Promise<boolean> {
+    const results = await this.validateBatchWithRoleId(toolCalls, roleId, roleManager);
+    return results.every((result) => result.allowed);
   }
 
   /**
@@ -160,26 +195,6 @@ export class GovernanceGate {
     }
 
     return { available: true };
-  }
-
-  /**
-   * Validate multiple tool calls at once.
-   * @param toolCalls - Array of tool calls to validate
-   * @param role - The agent role attempting the calls
-   * @returns Array of validation results in the same order
-   */
-  validateBatch(toolCalls: ToolCall[], role: AgentRole): ValidationResult[] {
-    return toolCalls.map((call) => this.validate(call, role));
-  }
-
-  /**
-   * Check if all tool calls in a batch are allowed.
-   * @param toolCalls - Array of tool calls to validate
-   * @param role - The agent role attempting the calls
-   * @returns True if all calls are allowed, false otherwise
-   */
-  allAllowed(toolCalls: ToolCall[], role: AgentRole): boolean {
-    return toolCalls.every((call) => this.validate(call, role).allowed);
   }
 
   /**

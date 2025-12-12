@@ -31,7 +31,8 @@ export const readFileTool: ToolDefinition = {
     },
     required: ["path"],
   },
-  allowedRoles: ["control", "impl"],
+  category: "filesystem",
+  mutates: false,
 };
 
 /**

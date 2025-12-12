@@ -1,0 +1,291 @@
+generatedAt: 2025-12-12T00:48:32.079Z
+tools:
+  - id: chain:status
+    name: Chain Status
+    description: Get the status of a task chain including its tasks and current progress
+    category: chain
+    mutates: false
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "chainId": {
+            "type": "string",
+            "description": "Chain ID (e.g., CHAIN-037-agent-runtime-core)"
+          }
+        },
+        "required": [
+          "chainId"
+        ]
+      }
+
+  - id: task:status
+    name: Task Status
+    description: Get the status and details of the current task being worked on
+    category: task
+    mutates: false
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "chainId": {
+            "type": "string",
+            "description": "Chain ID (e.g., CHAIN-037-agent-runtime-core)"
+          },
+          "taskId": {
+            "type": "string",
+            "description": "Task ID (e.g., 002-tool-registry)"
+          }
+        },
+        "required": [
+          "chainId",
+          "taskId"
+        ]
+      }
+
+  - id: task:list
+    name: Task List
+    description: List all tasks in a chain with their current status
+    category: task
+    mutates: false
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "chainId": {
+            "type": "string",
+            "description": "Chain ID (e.g., CHAIN-037-agent-runtime-core)"
+          },
+          "status": {
+            "type": "string",
+            "description": "Filter by task status",
+            "enum": [
+              "todo",
+              "in-progress",
+              "in-review",
+              "done",
+              "blocked"
+            ]
+          }
+        },
+        "required": [
+          "chainId"
+        ]
+      }
+
+  - id: task:start
+    name: Task Start
+    description: Start working on a task, moving it from todo to in-progress
+    category: task
+    mutates: true
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "chainId": {
+            "type": "string",
+            "description": "Chain ID (e.g., CHAIN-037-agent-runtime-core)"
+          },
+          "taskId": {
+            "type": "string",
+            "description": "Task ID (e.g., 002-tool-registry)"
+          }
+        },
+        "required": [
+          "chainId",
+          "taskId"
+        ]
+      }
+
+  - id: task:complete
+    name: Task Complete
+    description: Mark a task as complete, moving it from in-progress to in-review
+    category: task
+    mutates: true
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "chainId": {
+            "type": "string",
+            "description": "Chain ID (e.g., CHAIN-037-agent-runtime-core)"
+          },
+          "taskId": {
+            "type": "string",
+            "description": "Task ID (e.g., 002-tool-registry)"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Brief summary of what was accomplished"
+          }
+        },
+        "required": [
+          "chainId",
+          "taskId"
+        ]
+      }
+
+  - id: task:approve
+    name: Task Approve
+    description: Approve a completed task, moving it from in-review to done
+    category: task
+    mutates: true
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "chainId": {
+            "type": "string",
+            "description": "Chain ID (e.g., CHAIN-037-agent-runtime-core)"
+          },
+          "taskId": {
+            "type": "string",
+            "description": "Task ID (e.g., 002-tool-registry)"
+          }
+        },
+        "required": [
+          "chainId",
+          "taskId"
+        ]
+      }
+
+  - id: spawn_impl_session
+    name: Spawn Impl Session
+    description: Spawn a nested implementation agent session to work on a specific task. The impl agent will execute with its own isolated context and return results when complete.
+    category: session
+    mutates: true
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "chainId": {
+            "type": "string",
+            "description": "Chain ID (e.g., CHAIN-037-agent-runtime-core)"
+          },
+          "taskId": {
+            "type": "string",
+            "description": "Task ID to assign to the impl agent"
+          },
+          "context": {
+            "type": "string",
+            "description": "Additional context or instructions for the impl agent"
+          }
+        },
+        "required": [
+          "chainId",
+          "taskId"
+        ]
+      }
+
+  - id: read_file
+    name: Read File
+    description: Read the contents of a file. Returns file contents with line numbers (1-indexed, like cat -n). Use offset and limit for large files.
+    category: filesystem
+    mutates: false
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path to file (relative to project root)"
+          },
+          "offset": {
+            "type": "number",
+            "description": "Line number to start from (1-indexed, default: 1)"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of lines to return"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+
+  - id: write_file
+    name: Write File
+    description: Write content to a file. Creates parent directories if needed. Use createOnly to fail if file already exists.
+    category: filesystem
+    mutates: true
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path to file (relative to project root)"
+          },
+          "content": {
+            "type": "string",
+            "description": "Content to write to the file"
+          },
+          "createOnly": {
+            "type": "boolean",
+            "description": "If true, fail if file already exists (default: false)"
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ]
+      }
+
+  - id: list_files
+    name: List Files
+    description: List files and directories at a path. Supports glob pattern filtering and recursive listing.
+    category: filesystem
+    mutates: false
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Directory path (relative to project root)"
+          },
+          "pattern": {
+            "type": "string",
+            "description": "Glob pattern to filter results (e.g., '*.ts', '*.md')"
+          },
+          "recursive": {
+            "type": "boolean",
+            "description": "Include subdirectories recursively (default: false)"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+
+  - id: search_files
+    name: Search Files
+    description: Search for text in files. Supports regex patterns. Returns matching lines with file paths and line numbers.
+    category: search
+    mutates: false
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query (regex supported)"
+          },
+          "path": {
+            "type": "string",
+            "description": "Directory to search in (default: project root)"
+          },
+          "include": {
+            "type": "string",
+            "description": "Glob pattern for files to include (e.g., '*.ts')"
+          },
+          "exclude": {
+            "type": "string",
+            "description": "Glob pattern for files to exclude (e.g., 'node_modules/*')"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }

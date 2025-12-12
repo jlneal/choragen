@@ -9,12 +9,12 @@ import type { ToolParameterSchema } from "../providers/types.js";
 
 /**
  * Agent role determines which tools are available.
+ * @deprecated Use dynamic role IDs via RoleManager instead of hardcoded roles.
  */
 export type AgentRole = "control" | "impl";
 
 /**
  * Tool definition with role-based access control.
- * Extends the base Tool type with allowed roles.
  */
 export interface ToolDefinition {
   /**
@@ -33,14 +33,18 @@ export interface ToolDefinition {
   parameters: ToolParameterSchema;
 
   /**
-   * Roles that are allowed to use this tool.
+   * Category for UI grouping (e.g., filesystem, task).
    */
-  allowedRoles: AgentRole[];
+  category: string;
+
+  /**
+   * Whether the tool can modify state.
+   */
+  mutates: boolean;
 }
 
 /**
  * Convert a ToolDefinition to the provider Tool format.
- * Strips the allowedRoles field for LLM consumption.
  */
 export function toProviderTool(
   definition: ToolDefinition

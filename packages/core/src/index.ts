@@ -16,4 +16,6 @@ export * from "./validation/index.js";
 export * from "./metrics/index.js";
 export * from "./config/index.js";
 export * from "./trace/index.js";
+export * from "./roles/index.js";
+export * from "./tools/index.js";
 export * from "./workflow/index.js";

@@ -16,7 +16,7 @@ import { withRetry, DEFAULT_RETRY_CONFIG, type RetryConfig } from "./retry.js";
 import { CostTracker, type CostSnapshot } from "./cost-tracker.js";
 import { CheckpointHandler, type CheckpointConfig } from "./checkpoint.js";
 import { loadWorkflowSessionContext } from "./context.js";
-import type { MessageRole, StageType, WorkflowMessageMetadata } from "@choragen/core";
+import { RoleManager, type MessageRole, type StageType, type WorkflowMessageMetadata } from "@choragen/core";
 
 /**
  * Default maximum iterations for safety limit.
@@ -34,6 +34,10 @@ const DEFAULT_MAX_NESTING_DEPTH = 2;
 export interface AgentSessionConfig {
   /** Agent role (control or impl) */
   role: AgentRole;
+  /** Dynamic role identifier (overrides AgentRole mapping when provided) */
+  roleId?: string;
+  /** Optional role manager to resolve dynamic roles */
+  roleManager?: RoleManager;
   /** LLM provider instance */
   provider: LLMProvider;
   /** Active chain ID (optional) */
@@ -123,6 +127,7 @@ export interface LoopDependencies {
   governanceGate?: GovernanceGate;
   promptLoader?: PromptLoader;
   checkpointHandler?: CheckpointHandler;
+  roleManager?: RoleManager;
 }
 
 /**
@@ -160,6 +165,11 @@ export interface ExtendedExecutionContext {
   spawnChildSession: (config: ChildSessionConfig) => Promise<ChildSessionResult>;
 }
 
+const DEFAULT_ROLE_ID_MAP: Record<AgentRole, string> = {
+  control: "controller",
+  impl: "implementer",
+};
+
 /**
  * Run an agent session with the agentic loop.
  *
@@ -183,6 +193,7 @@ export async function runAgentSession(
 ): Promise<SessionResult> {
   const {
     role,
+    roleManager: configRoleManager,
     provider,
     chainId,
     taskId,
@@ -212,6 +223,9 @@ export async function runAgentSession(
   const executor = deps.executor ?? defaultExecutor;
   const governanceGate = deps.governanceGate ?? defaultGovernanceGate;
   const promptLoader = deps.promptLoader ?? new PromptLoader(workspaceRoot);
+  const roleManager =
+    configRoleManager ?? deps.roleManager ?? new RoleManager(workspaceRoot);
+  const resolvedRoleId = config.roleId ?? DEFAULT_ROLE_ID_MAP[role] ?? role;
 
   // Check nesting depth limit
   if (nestingDepth > maxNestingDepth) {
@@ -289,14 +303,18 @@ export async function runAgentSession(
     }
   };
 
-  // Get tools for role
+  // Get tools for resolved role ID
   const stageType = workflowContext?.stageType;
-  const toolDefinitions = stageType
-    ? registry.getToolsForStage(role, stageType)
-    : registry.getToolsForRole(role);
-  const tools: Tool[] = stageType
-    ? registry.getProviderToolsForStage(role, stageType)
-    : registry.getProviderToolsForRole(role);
+  const toolDefinitions = await registry.getToolsForStageWithRoleId(
+    resolvedRoleId,
+    roleManager,
+    stageType
+  );
+  const tools: Tool[] = await registry.getProviderToolsForStageWithRoleId(
+    resolvedRoleId,
+    roleManager,
+    stageType
+  );
 
   // Build system prompt
   const systemPrompt = await promptLoader.load(role, {
@@ -439,12 +457,15 @@ export async function runAgentSession(
       for (const toolCall of response.toolCalls) {
         const record = await processToolCall(
           toolCall,
+          resolvedRoleId,
           role,
           governanceGate,
           executor,
           executionContext,
           dryRun,
-          checkpointHandler
+          checkpointHandler,
+          roleManager,
+          chainId
         );
         toolCallRecords.push(record);
 
@@ -524,21 +545,26 @@ export async function runAgentSession(
  */
 async function processToolCall(
   toolCall: ToolCall,
+  roleId: string,
   role: AgentRole,
   governanceGate: GovernanceGate,
   executor: ToolExecutor,
   context: { role: AgentRole; chainId?: string; taskId?: string; workspaceRoot: string },
   dryRun: boolean,
-  checkpointHandler: CheckpointHandler
+  checkpointHandler: CheckpointHandler,
+  roleManager: RoleManager,
+  chainId?: string
 ): Promise<ToolCallRecord> {
   const timestamp = new Date().toISOString();
 
   console.log(`[Loop] Tool call: ${toolCall.name}`);
 
   // Validate against governance
-  const validation = governanceGate.validate(
+  const validation = await governanceGate.validateAsyncWithRoleId(
     { name: toolCall.name, params: toolCall.arguments },
-    role
+    roleId,
+    roleManager,
+    chainId
   );
 
   if (!validation.allowed) {

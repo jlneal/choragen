@@ -1,10 +1,10 @@
 /**
- * @design-doc docs/design/core/features/agent-runtime.md
- * @user-intent "Verify tool registry correctly filters tools by agent role (control vs impl)"
+ * @design-doc docs/design/core/features/role-based-tool-access.md
+ * @user-intent "Verify tool registry resolves tools via dynamic roles"
  * @test-type unit
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   ToolRegistry,
   defaultRegistry,
@@ -22,89 +22,110 @@ import {
   toProviderTool,
 } from "../runtime/tools/index.js";
 import type { ToolDefinition } from "../runtime/tools/index.js";
+import type { RoleManager } from "@choragen/core";
+
+function createRoleManager(roleMap: Record<string, string[]>): RoleManager {
+  return {
+    get: vi.fn(async (roleId: string) => {
+      const toolIds = roleMap[roleId];
+      if (!toolIds) return null;
+      return {
+        id: roleId,
+        name: roleId,
+        toolIds,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    }),
+  } as unknown as RoleManager;
+}
 
 describe("ToolRegistry", () => {
-  describe("getToolsForRole", () => {
-    it("returns correct tools for control role", () => {
+  describe("getToolsForRoleId", () => {
+    it("returns tools that match the role's toolIds", async () => {
       const registry = new ToolRegistry();
-      const controlTools = registry.getToolsForRole("control");
-      const toolNames = controlTools.map((t) => t.name);
+      const roleManager = createRoleManager({
+        implementer: ["read_file", "write_file", "task:complete"],
+      });
 
-      // Control role should have these tools
-      expect(toolNames).toContain("chain:status");
-      expect(toolNames).toContain("task:list");
-      expect(toolNames).toContain("task:start");
-      expect(toolNames).toContain("task:approve");
-      expect(toolNames).toContain("spawn_impl_session");
-      expect(toolNames).toContain("read_file");
-      expect(toolNames).toContain("list_files");
-      expect(toolNames).toContain("search_files");
+      const tools = await registry.getToolsForRoleId("implementer", roleManager);
+      const toolNames = tools.map((tool) => tool.name);
 
-      // Control role should NOT have these tools
-      expect(toolNames).not.toContain("task:status");
-      expect(toolNames).not.toContain("task:complete");
-      expect(toolNames).not.toContain("write_file");
-    });
-
-    it("returns correct tools for impl role", () => {
-      const registry = new ToolRegistry();
-      const implTools = registry.getToolsForRole("impl");
-      const toolNames = implTools.map((t) => t.name);
-
-      // Impl role should have these tools
-      expect(toolNames).toContain("chain:status");
-      expect(toolNames).toContain("task:status");
-      expect(toolNames).toContain("task:complete");
-      expect(toolNames).toContain("read_file");
-      expect(toolNames).toContain("write_file");
-      expect(toolNames).toContain("list_files");
-      expect(toolNames).toContain("search_files");
-
-      // Impl role should NOT have these tools
-      expect(toolNames).not.toContain("task:list");
-      expect(toolNames).not.toContain("task:start");
-      expect(toolNames).not.toContain("task:approve");
-      expect(toolNames).not.toContain("spawn_impl_session");
-    });
-
-    it("control role has 8 tools", () => {
-      const registry = new ToolRegistry();
-      const controlTools = registry.getToolsForRole("control");
-      const EXPECTED_CONTROL_TOOL_COUNT = 8;
-      expect(controlTools).toHaveLength(EXPECTED_CONTROL_TOOL_COUNT);
-    });
-
-    it("impl role has 7 tools", () => {
-      const registry = new ToolRegistry();
-      const implTools = registry.getToolsForRole("impl");
-      const EXPECTED_IMPL_TOOL_COUNT = 7;
-      expect(implTools).toHaveLength(EXPECTED_IMPL_TOOL_COUNT);
-    });
-  });
-
-  describe("spawn_impl_session is control-only", () => {
-    it("spawn_impl_session is available to control", () => {
-      const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("control", "spawn_impl_session")).toBe(
-        true
+      expect(toolNames).toHaveLength(3);
+      expect(toolNames).toEqual(
+        expect.arrayContaining(["read_file", "write_file", "task:complete"])
       );
     });
 
-    it("spawn_impl_session is NOT available to impl", () => {
+    it("returns empty array when role is not found", async () => {
       const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("impl", "spawn_impl_session")).toBe(false);
+      const roleManager = createRoleManager({});
+
+      const tools = await registry.getToolsForRoleId("unknown", roleManager);
+      expect(tools).toEqual([]);
     });
   });
 
-  describe("chain:status is shared", () => {
-    it("chain:status is available to control", () => {
+  describe("getToolsForStageWithRoleId", () => {
+    it("filters by stage after role filtering", async () => {
       const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("control", "chain:status")).toBe(true);
-    });
+      const roleManager = createRoleManager({
+        reviewer: ["read_file", "task:approve", "task:list", "task:status"],
+      });
 
-    it("chain:status is available to impl", () => {
+      const tools = await registry.getToolsForStageWithRoleId(
+        "reviewer",
+        roleManager,
+        "review"
+      );
+
+      expect(tools.map((t) => t.name)).toEqual(
+        expect.arrayContaining(["read_file", "task:approve"])
+      );
+      expect(tools.map((t) => t.name)).toContain("task:status");
+    });
+  });
+
+  describe("getProviderToolsForRoleId", () => {
+    it("returns provider tools for role IDs without extra fields", async () => {
       const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("impl", "chain:status")).toBe(true);
+      const roleManager = createRoleManager({
+        researcher: ["read_file", "list_files"],
+      });
+
+      const providerTools = await registry.getProviderToolsForRoleId(
+        "researcher",
+        roleManager
+      );
+
+      expect(providerTools).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: "read_file" }),
+          expect.objectContaining({ name: "list_files" }),
+        ])
+      );
+
+      for (const tool of providerTools) {
+        expect(tool).not.toHaveProperty("allowedRoles");
+      }
+    });
+  });
+
+  describe("getProviderToolsForStageWithRoleId", () => {
+    it("applies stage filtering for provider tools", async () => {
+      const registry = new ToolRegistry();
+      const roleManager = createRoleManager({
+        controller: ["task:approve", "task:start", "chain:status"],
+      });
+
+      const providerTools = await registry.getProviderToolsForStageWithRoleId(
+        "controller",
+        roleManager,
+        "review"
+      );
+
+      expect(providerTools.map((t) => t.name)).toContain("task:approve");
+      expect(providerTools.map((t) => t.name)).not.toContain("task:start");
     });
   });
 
@@ -123,37 +144,6 @@ describe("ToolRegistry", () => {
     });
   });
 
-  describe("canRoleUseTool", () => {
-    it("returns true for allowed tool", () => {
-      const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("impl", "task:complete")).toBe(true);
-    });
-
-    it("returns false for disallowed tool", () => {
-      const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("impl", "task:start")).toBe(false);
-    });
-
-    it("returns false for unknown tool", () => {
-      const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("control", "unknown:tool")).toBe(false);
-    });
-  });
-
-  describe("getProviderToolsForRole", () => {
-    it("returns tools without allowedRoles field", () => {
-      const registry = new ToolRegistry();
-      const providerTools = registry.getProviderToolsForRole("control");
-
-      for (const tool of providerTools) {
-        expect(tool).toHaveProperty("name");
-        expect(tool).toHaveProperty("description");
-        expect(tool).toHaveProperty("parameters");
-        expect(tool).not.toHaveProperty("allowedRoles");
-      }
-    });
-  });
-
   describe("registerTool", () => {
     it("adds a new tool", () => {
       const registry = new ToolRegistry([]);
@@ -164,7 +154,8 @@ describe("ToolRegistry", () => {
           type: "object",
           properties: {},
         },
-        allowedRoles: ["control"],
+        category: "task",
+        mutates: false,
       };
 
       registry.registerTool(customTool);
@@ -193,82 +184,24 @@ describe("ToolRegistry", () => {
       expect(allTools).toHaveLength(EXPECTED_TOTAL_TOOL_COUNT);
     });
   });
-
-  describe("read_file is shared", () => {
-    it("read_file is available to control", () => {
-      const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("control", "read_file")).toBe(true);
-    });
-
-    it("read_file is available to impl", () => {
-      const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("impl", "read_file")).toBe(true);
-    });
-  });
-
-  describe("write_file is impl-only", () => {
-    it("write_file is available to impl", () => {
-      const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("impl", "write_file")).toBe(true);
-    });
-
-    it("write_file is NOT available to control", () => {
-      const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("control", "write_file")).toBe(false);
-    });
-  });
-
-  describe("list_files is shared", () => {
-    it("list_files is available to control", () => {
-      const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("control", "list_files")).toBe(true);
-    });
-
-    it("list_files is available to impl", () => {
-      const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("impl", "list_files")).toBe(true);
-    });
-  });
-
-  describe("search_files is shared", () => {
-    it("search_files is available to control", () => {
-      const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("control", "search_files")).toBe(true);
-    });
-
-    it("search_files is available to impl", () => {
-      const registry = new ToolRegistry();
-      expect(registry.canRoleUseTool("impl", "search_files")).toBe(true);
-    });
-  });
 });
 
 describe("Tool definitions", () => {
   describe("chainStatusTool", () => {
     it("has correct structure", () => {
       expect(chainStatusTool.name).toBe("chain:status");
-      expect(chainStatusTool.allowedRoles).toContain("control");
-      expect(chainStatusTool.allowedRoles).toContain("impl");
       expect(chainStatusTool.parameters.required).toContain("chainId");
     });
   });
 
   describe("taskStatusTool", () => {
-    it("is impl-only", () => {
-      expect(taskStatusTool.allowedRoles).toEqual(["impl"]);
-    });
-
-    it("requires chainId and taskId", () => {
+    it("has required parameters", () => {
       expect(taskStatusTool.parameters.required).toContain("chainId");
       expect(taskStatusTool.parameters.required).toContain("taskId");
     });
   });
 
   describe("taskListTool", () => {
-    it("is control-only", () => {
-      expect(taskListTool.allowedRoles).toEqual(["control"]);
-    });
-
     it("has optional status filter", () => {
       expect(taskListTool.parameters.properties.status).toBeDefined();
       expect(taskListTool.parameters.required).not.toContain("status");
@@ -276,16 +209,14 @@ describe("Tool definitions", () => {
   });
 
   describe("taskStartTool", () => {
-    it("is control-only", () => {
-      expect(taskStartTool.allowedRoles).toEqual(["control"]);
+    it("defines required ids", () => {
+      expect(taskStartTool.parameters.required).toEqual(
+        expect.arrayContaining(["chainId", "taskId"])
+      );
     });
   });
 
   describe("taskCompleteTool", () => {
-    it("is impl-only", () => {
-      expect(taskCompleteTool.allowedRoles).toEqual(["impl"]);
-    });
-
     it("has optional summary parameter", () => {
       expect(taskCompleteTool.parameters.properties.summary).toBeDefined();
       expect(taskCompleteTool.parameters.required).not.toContain("summary");
@@ -293,16 +224,14 @@ describe("Tool definitions", () => {
   });
 
   describe("taskApproveTool", () => {
-    it("is control-only", () => {
-      expect(taskApproveTool.allowedRoles).toEqual(["control"]);
+    it("requires chainId and taskId", () => {
+      expect(taskApproveTool.parameters.required).toEqual(
+        expect.arrayContaining(["chainId", "taskId"])
+      );
     });
   });
 
   describe("spawnImplSessionTool", () => {
-    it("is control-only", () => {
-      expect(spawnImplSessionTool.allowedRoles).toEqual(["control"]);
-    });
-
     it("has optional context parameter", () => {
       expect(spawnImplSessionTool.parameters.properties.context).toBeDefined();
       expect(spawnImplSessionTool.parameters.required).not.toContain("context");
@@ -310,11 +239,6 @@ describe("Tool definitions", () => {
   });
 
   describe("readFileTool", () => {
-    it("is available to both roles", () => {
-      expect(readFileTool.allowedRoles).toContain("control");
-      expect(readFileTool.allowedRoles).toContain("impl");
-    });
-
     it("requires path parameter", () => {
       expect(readFileTool.parameters.required).toContain("path");
     });
@@ -328,10 +252,6 @@ describe("Tool definitions", () => {
   });
 
   describe("writeFileTool", () => {
-    it("is impl-only", () => {
-      expect(writeFileTool.allowedRoles).toEqual(["impl"]);
-    });
-
     it("requires path and content parameters", () => {
       expect(writeFileTool.parameters.required).toContain("path");
       expect(writeFileTool.parameters.required).toContain("content");
@@ -344,11 +264,6 @@ describe("Tool definitions", () => {
   });
 
   describe("listFilesTool", () => {
-    it("is available to both roles", () => {
-      expect(listFilesTool.allowedRoles).toContain("control");
-      expect(listFilesTool.allowedRoles).toContain("impl");
-    });
-
     it("requires path parameter", () => {
       expect(listFilesTool.parameters.required).toContain("path");
     });
@@ -362,11 +277,6 @@ describe("Tool definitions", () => {
   });
 
   describe("searchFilesTool", () => {
-    it("is available to both roles", () => {
-      expect(searchFilesTool.allowedRoles).toContain("control");
-      expect(searchFilesTool.allowedRoles).toContain("impl");
-    });
-
     it("requires query parameter", () => {
       expect(searchFilesTool.parameters.required).toContain("query");
     });
@@ -383,7 +293,7 @@ describe("Tool definitions", () => {
 });
 
 describe("toProviderTool", () => {
-  it("strips allowedRoles from tool definition", () => {
+  it("returns provider shape without governance metadata", () => {
     const providerTool = toProviderTool(chainStatusTool);
 
     expect(providerTool.name).toBe(chainStatusTool.name);

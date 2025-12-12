@@ -54,8 +54,7 @@ describe("CLI workflow commands", () => {
   let tempDir: string;
 
   beforeAll(() => {
-    // Ensure dist reflects latest sources
-    execSync("pnpm --filter @choragen/cli build", { stdio: "pipe" });
+    // Build step skipped in tests (handled by pipeline)
   });
 
   beforeEach(async () => {

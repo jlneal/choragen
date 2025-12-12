@@ -19,15 +19,40 @@ import { executeReadFile } from "../runtime/tools/definitions/read-file.js";
 import { executeWriteFile } from "../runtime/tools/definitions/write-file.js";
 import type { AuditLogEntry } from "../runtime/session.js";
 import { LockManager } from "@choragen/core";
+import type { RoleManager } from "@choragen/core";
 
 describe("File Operations Integration", () => {
   let testWorkspace: string;
   let gate: GovernanceGate;
+  let roleManager: RoleManager;
 
   beforeEach(async () => {
     testWorkspace = join(tmpdir(), `choragen-file-ops-test-${Date.now()}`);
     await mkdir(testWorkspace, { recursive: true });
     gate = new GovernanceGate();
+    roleManager = {
+      get: vi.fn(async (roleId: string) => {
+        if (roleId === "implementer") {
+          return {
+            id: roleId,
+            name: "Implementer",
+            toolIds: ["write_file", "read_file", "list_files", "search_files"],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+        }
+        if (roleId === "controller") {
+          return {
+            id: roleId,
+            name: "Controller",
+            toolIds: ["read_file", "list_files", "search_files"],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+        }
+        return null;
+      }),
+    } as unknown as RoleManager;
   });
 
   afterEach(async () => {
@@ -160,7 +185,11 @@ describe("File Operations Integration", () => {
           content: "export const bar = 2;",
         },
       };
-      const validation = gate.validate(toolCall, "impl");
+      const validation = await gate.validateWithRoleId(
+        toolCall,
+        "implementer",
+        roleManager
+      );
       expect(validation.allowed).toBe(true);
 
       // Then execute the write
@@ -198,7 +227,11 @@ describe("File Operations Integration", () => {
           content: "describe('test', () => {});",
         },
       };
-      const validation = gate.validate(toolCall, "impl");
+      const validation = await gate.validateWithRoleId(
+        toolCall,
+        "implementer",
+        roleManager
+      );
       expect(validation.allowed).toBe(true);
 
       const testDir = join(testWorkspace, "packages/cli/src/__tests__");
@@ -220,7 +253,7 @@ describe("File Operations Integration", () => {
       expect(result.success).toBe(true);
     });
 
-    it("impl is denied writing to docs/adr/**", () => {
+    it("impl is denied writing to docs/adr/**", async () => {
       const toolCall: ToolCall = {
         name: "write_file",
         params: {
@@ -229,14 +262,18 @@ describe("File Operations Integration", () => {
         },
       };
 
-      const result = gate.validate(toolCall, "impl");
+      const result = await gate.validateWithRoleId(
+        toolCall,
+        "implementer",
+        roleManager
+      );
 
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain("denied pattern");
       expect(result.reason).toContain("docs/adr/**");
     });
 
-    it("impl is denied writing to docs/requests/**", () => {
+    it("impl is denied writing to docs/requests/**", async () => {
       const toolCall: ToolCall = {
         name: "write_file",
         params: {
@@ -245,14 +282,18 @@ describe("File Operations Integration", () => {
         },
       };
 
-      const result = gate.validate(toolCall, "impl");
+      const result = await gate.validateWithRoleId(
+        toolCall,
+        "implementer",
+        roleManager
+      );
 
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain("denied pattern");
       expect(result.reason).toContain("docs/requests/**");
     });
 
-    it("control cannot use write_file", () => {
+    it("control cannot use write_file", async () => {
       const toolCall: ToolCall = {
         name: "write_file",
         params: {
@@ -261,10 +302,14 @@ describe("File Operations Integration", () => {
         },
       };
 
-      const result = gate.validate(toolCall, "control");
+      const result = await gate.validateWithRoleId(
+        toolCall,
+        "controller",
+        roleManager
+      );
 
       expect(result.allowed).toBe(false);
-      expect(result.reason).toContain("not available to control role");
+      expect(result.reason).toBe("Tool not allowed for role");
     });
 
     it("createOnly fails if file exists", async () => {
@@ -404,9 +449,10 @@ describe("File Operations Integration", () => {
         },
       };
 
-      const result = await gateWithLocks.validateAsync(
+      const result = await gateWithLocks.validateAsyncWithRoleId(
         toolCall,
-        "impl",
+        "implementer",
+        roleManager,
         "CHAIN-039"
       );
 
@@ -428,9 +474,10 @@ describe("File Operations Integration", () => {
         },
       };
 
-      const result = await gateWithLocks.validateAsync(
+      const result = await gateWithLocks.validateAsyncWithRoleId(
         toolCall,
-        "impl",
+        "implementer",
+        roleManager,
         "CHAIN-039"
       );
 
@@ -452,9 +499,10 @@ describe("File Operations Integration", () => {
         },
       };
 
-      const result = await gateWithLocks.validateAsync(
+      const result = await gateWithLocks.validateAsyncWithRoleId(
         toolCall,
-        "impl",
+        "implementer",
+        roleManager,
         "CHAIN-039"
       );
 

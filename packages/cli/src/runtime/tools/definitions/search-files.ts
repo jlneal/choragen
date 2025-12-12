@@ -35,7 +35,8 @@ export const searchFilesTool: ToolDefinition = {
     },
     required: ["query"],
   },
-  allowedRoles: ["control", "impl"],
+  category: "search",
+  mutates: false,
 };
 
 /** Maximum number of matches to return */

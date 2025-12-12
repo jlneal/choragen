@@ -31,7 +31,8 @@ export const listFilesTool: ToolDefinition = {
     },
     required: ["path"],
   },
-  allowedRoles: ["control", "impl"],
+  category: "filesystem",
+  mutates: false,
 };
 
 /**

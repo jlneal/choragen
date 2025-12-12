@@ -1,0 +1,30 @@
+categories:
+  - id: filesystem
+    name: Filesystem
+    description: File operations
+    order: 1
+
+  - id: search
+    name: Search
+    description: Search operations
+    order: 2
+
+  - id: chain
+    name: Chain
+    description: Chain management
+    order: 3
+
+  - id: task
+    name: Task
+    description: Task management
+    order: 4
+
+  - id: session
+    name: Session
+    description: Session management
+    order: 5
+
+  - id: command
+    name: Command
+    description: Shell commands
+    order: 6

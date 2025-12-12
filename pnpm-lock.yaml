@@ -118,6 +118,9 @@ importers:
 
   packages/web:
     dependencies:
+      '@choragen/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@choragen/core':
         specifier: workspace:*
         version: link:../core

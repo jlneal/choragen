@@ -26,7 +26,8 @@ export const taskListTool: ToolDefinition = {
     },
     required: ["chainId"],
   },
-  allowedRoles: ["control"],
+  category: "task",
+  mutates: false,
 };
 
 /**

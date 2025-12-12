@@ -20,6 +20,7 @@ import { Session } from "../runtime/session.js";
 import { ShutdownHandler } from "../runtime/shutdown.js";
 import type { ToolDefinition } from "../runtime/tools/types.js";
 import type { RetryableError } from "../runtime/retry.js";
+import type { RoleManager } from "@choragen/core";
 
 // Test constants for token counts and timeouts (not HTTP status codes)
 const TEST_INPUT_TOKENS_500 = 500;
@@ -100,6 +101,34 @@ function createMockPromptLoader(): PromptLoader {
   return loader;
 }
 
+function createRoleManager(): RoleManager {
+  return {
+    get: vi.fn(async (roleId: string) => {
+      if (roleId === "controller" || roleId === "control") {
+        return {
+          id: roleId,
+          name: "Controller",
+          toolIds: ["test:allowed", "task_complete", "write_file"],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      }
+
+      if (roleId === "implementer" || roleId === "impl") {
+        return {
+          id: roleId,
+          name: "Implementer",
+          toolIds: ["test:allowed", "task_complete", "write_file"],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      }
+
+      return null;
+    }),
+  } as unknown as RoleManager;
+}
+
 /**
  * Test tool definitions for integration tests.
  */
@@ -108,13 +137,15 @@ const integrationTestTools: ToolDefinition[] = [
     name: "test:allowed",
     description: "A test tool allowed for both roles",
     parameters: { type: "object", properties: {} },
-    allowedRoles: ["control", "impl"],
+    category: "task",
+    mutates: false,
   },
   {
     name: "task_complete",
     description: "Mark a task as complete (requires approval)",
     parameters: { type: "object", properties: { taskId: { type: "string" } } },
-    allowedRoles: ["control", "impl"],
+    category: "task",
+    mutates: true,
   },
   {
     name: "write_file",
@@ -126,7 +157,8 @@ const integrationTestTools: ToolDefinition[] = [
         content: { type: "string" },
       },
     },
-    allowedRoles: ["impl"],
+    category: "filesystem",
+    mutates: true,
   },
 ];
 
@@ -136,6 +168,18 @@ describe("Production Hardening Integration", () => {
   let mockExecutor: ToolExecutor;
   let mockGovernanceGate: GovernanceGate;
   let mockPromptLoader: PromptLoader;
+  let mockRoleManager: RoleManager;
+
+  function deps(overrides: Record<string, unknown> = {}) {
+    return {
+      registry: mockRegistry,
+      executor: mockExecutor,
+      governanceGate: mockGovernanceGate,
+      promptLoader: mockPromptLoader,
+      roleManager: mockRoleManager,
+      ...overrides,
+    };
+  }
 
   beforeEach(async () => {
     // Suppress console output during tests
@@ -159,6 +203,7 @@ describe("Production Hardening Integration", () => {
     );
     mockExecutor = new ToolExecutor(handlerMap);
     mockPromptLoader = createMockPromptLoader();
+    mockRoleManager = createRoleManager();
   });
 
   afterEach(async () => {
@@ -258,12 +303,7 @@ describe("Production Hardening Integration", () => {
           workspaceRoot: testWorkspace,
           maxTokens: MAX_TOKENS,
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-        }
+        deps()
       );
 
       expect(result.success).toBe(true);
@@ -296,12 +336,7 @@ describe("Production Hardening Integration", () => {
           workspaceRoot: testWorkspace,
           maxTokens: MAX_TOKENS,
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-        }
+        deps()
       );
 
       expect(result.success).toBe(false);
@@ -337,12 +372,7 @@ describe("Production Hardening Integration", () => {
           provider,
           workspaceRoot: testWorkspace,
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-        }
+        deps()
       );
 
       expect(result.success).toBe(true);
@@ -394,13 +424,7 @@ describe("Production Hardening Integration", () => {
             autoApprove: true,
           },
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-          checkpointHandler: mockCheckpointHandler,
-        }
+        deps({ checkpointHandler: mockCheckpointHandler })
       );
 
       expect(result.success).toBe(true);
@@ -439,13 +463,7 @@ describe("Production Hardening Integration", () => {
           provider,
           workspaceRoot: testWorkspace,
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-          checkpointHandler: mockCheckpointHandler,
-        }
+        deps({ checkpointHandler: mockCheckpointHandler })
       );
 
       expect(result.success).toBe(true);
@@ -490,13 +508,7 @@ describe("Production Hardening Integration", () => {
           provider,
           workspaceRoot: testWorkspace,
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-          checkpointHandler: mockCheckpointHandler,
-        }
+        deps({ checkpointHandler: mockCheckpointHandler })
       );
 
       expect(result.success).toBe(true);
@@ -542,13 +554,7 @@ describe("Production Hardening Integration", () => {
           provider,
           workspaceRoot: testWorkspace,
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-          checkpointHandler: mockCheckpointHandler,
-        }
+        deps({ checkpointHandler: mockCheckpointHandler })
       );
 
       expect(result.success).toBe(false);
@@ -579,12 +585,7 @@ describe("Production Hardening Integration", () => {
             maxDelayMs: 50,
           },
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-        }
+        deps()
       );
 
       expect(result.success).toBe(true);
@@ -616,12 +617,7 @@ describe("Production Hardening Integration", () => {
             maxDelayMs: 50,
           },
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-        }
+        deps()
       );
 
       expect(result.success).toBe(false);
@@ -655,12 +651,7 @@ describe("Production Hardening Integration", () => {
             maxDelayMs: 50,
           },
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-        }
+        deps()
       );
 
       expect(result.success).toBe(false);
@@ -689,12 +680,7 @@ describe("Production Hardening Integration", () => {
           provider: provider1,
           workspaceRoot: testWorkspace,
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-        }
+        deps()
       );
 
       expect(result1.success).toBe(true);
@@ -717,12 +703,7 @@ describe("Production Hardening Integration", () => {
           provider: provider2,
           workspaceRoot: testWorkspace,
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-        }
+        deps()
       );
 
       expect(result2.success).toBe(true);
@@ -747,12 +728,7 @@ describe("Production Hardening Integration", () => {
           workspaceRoot: testWorkspace,
           retryConfig: { enabled: false },
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-        }
+        deps()
       );
 
       expect(result.success).toBe(false);
@@ -837,12 +813,7 @@ describe("Production Hardening Integration", () => {
           chainId: "CHAIN-E2E",
           taskId: "001",
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-        }
+        deps()
       );
 
       expect(result.success).toBe(true);
@@ -862,13 +833,15 @@ describe("Production Hardening Integration", () => {
           name: "control:only",
           description: "Control-only tool",
           parameters: { type: "object", properties: {} },
-          allowedRoles: ["control"],
+          category: "task",
+          mutates: false,
         },
         {
           name: "test:allowed",
           description: "Allowed tool",
           parameters: { type: "object", properties: {} },
-          allowedRoles: ["control", "impl"],
+          category: "task",
+          mutates: false,
         },
       ];
       const restrictedRegistry = new ToolRegistry(restrictedTools);
@@ -905,18 +878,13 @@ describe("Production Hardening Integration", () => {
           provider,
           workspaceRoot: testWorkspace,
         },
-        {
-          registry: restrictedRegistry,
-          executor: mockExecutor,
-          governanceGate: restrictedGate,
-          promptLoader: mockPromptLoader,
-        }
+        deps({ registry: restrictedRegistry, governanceGate: restrictedGate })
       );
 
       expect(result.success).toBe(true);
       expect(result.toolCalls).toHaveLength(2);
       expect(result.toolCalls[0].allowed).toBe(false);
-      expect(result.toolCalls[0].denialReason).toContain("not available");
+      expect(result.toolCalls[0].denialReason).toContain("Tool not allowed for role");
       expect(result.toolCalls[1].allowed).toBe(true);
     });
 
@@ -942,12 +910,7 @@ describe("Production Hardening Integration", () => {
             maxDelayMs: 50,
           },
         },
-        {
-          registry: mockRegistry,
-          executor: mockExecutor,
-          governanceGate: mockGovernanceGate,
-          promptLoader: mockPromptLoader,
-        }
+        deps()
       );
 
       expect(result.success).toBe(true);
