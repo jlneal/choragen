@@ -1,6 +1,6 @@
 # Change Request: Secure Credential Storage
 
-**ID**: CR-20251211-003  
+**ID**: CR-20251211-034  
 **Domain**: core  
 **Status**: todo  
 **Created**: 2025-12-11  
