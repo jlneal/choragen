@@ -77,6 +77,7 @@ export const STAGE_TOOL_MATRIX: Record<StageType, readonly string[]> = {
   ],
   ideation: [
     "request:create",
+    "request_approval",
     "task:status",
     "task:list",
     "feedback:create",

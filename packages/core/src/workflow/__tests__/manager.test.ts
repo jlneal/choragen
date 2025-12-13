@@ -286,4 +286,56 @@ describe("WorkflowManager", () => {
     expect(messages[0].stageIndex).toBe(1);
     expect(messages[0].metadata?.prompt).toBe("Approve design");
   });
+
+  it("defers gate prompt until agent-triggered gates are requested", async () => {
+    const template: WorkflowTemplate = {
+      ...templateMeta(),
+      name: "agent-triggered",
+      stages: [
+        {
+          name: "Exploration",
+          type: "ideation",
+          gate: {
+            type: "human_approval",
+            prompt: "Ready to continue?",
+            agentTriggered: true,
+          },
+        },
+      ],
+    };
+    const manager = createManager();
+
+    const workflow = await manager.create({ requestId: "FR-1", template });
+    expect(workflow.messages).toHaveLength(0);
+
+    const updated = await manager.triggerGatePrompt(workflow.id);
+    const prompts = updated.messages.filter((msg) => msg.metadata?.type === "gate_prompt");
+
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0].metadata?.prompt).toBe("Ready to continue?");
+    expect(prompts[0].stageIndex).toBe(0);
+  });
+
+  it("rejects triggering gate prompts for non agent-triggered stages", async () => {
+    const template: WorkflowTemplate = {
+      ...templateMeta(),
+      name: "non-agent-triggered",
+      stages: [
+        {
+          name: "Approval",
+          type: "request",
+          gate: {
+            type: "human_approval",
+            prompt: "Approve?",
+          },
+        },
+      ],
+    };
+    const manager = createManager();
+    const workflow = await manager.create({ requestId: "CR-16", template });
+
+    await expect(manager.triggerGatePrompt(workflow.id)).rejects.toThrow(
+      "agent-triggered human approval gate"
+    );
+  });
 });

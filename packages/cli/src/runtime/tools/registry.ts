@@ -39,6 +39,7 @@ import { readFileTool } from "./definitions/read-file.js";
 import { writeFileTool } from "./definitions/write-file.js";
 import { listFilesTool } from "./definitions/list-files.js";
 import { searchFilesTool } from "./definitions/search-files.js";
+import { requestApprovalTool } from "./definitions/request-approval.js";
 
 /**
  * All registered tools for Phase 1.
@@ -69,6 +70,7 @@ const ALL_TOOLS: ToolDefinition[] = [
   writeFileTool,
   listFilesTool,
   searchFilesTool,
+  requestApprovalTool,
 ];
 
 /**

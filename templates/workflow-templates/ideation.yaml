@@ -7,6 +7,7 @@ stages:
     roleId: ideation
     gate:
       type: human_approval
+      agentTriggered: true
       prompt: "Continue to request creation, or discard this idea?"
       options:
         - label: Continue

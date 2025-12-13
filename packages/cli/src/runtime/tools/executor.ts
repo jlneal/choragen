@@ -129,6 +129,7 @@ import {
   executeRequestChanges,
 } from "./request-tools.js";
 import { executeFeedbackCreate } from "./feedback-tools.js";
+import { executeRequestApproval } from "./definitions/request-approval.js";
 import { executeSpawnAgent } from "./session-tools.js";
 import { executeSpawnImplSession } from "./definitions/spawn-impl-session.js";
 import {
@@ -153,6 +154,7 @@ const TOOL_EXECUTORS: Map<string, ToolExecutorFn> = new Map([
   ["request:create", executeRequestCreate],
   ["request:approve", executeRequestApprove],
   ["request:request_changes", executeRequestChanges],
+  ["request_approval", executeRequestApproval],
   ["feedback:create", executeFeedbackCreate],
   ["spawn_agent", executeSpawnAgent],
   ["git:status", executeGitStatus],

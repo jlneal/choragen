@@ -222,6 +222,9 @@ export interface StageGate {
   /** Gate type */
   type: GateType;
 
+  /** Whether the gate prompt should only appear after an agent trigger */
+  agentTriggered?: boolean;
+
   /** For human_approval: prompt to show */
   prompt?: string;
 

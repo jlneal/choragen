@@ -60,6 +60,7 @@ export { readFileTool, executeReadFile } from "./definitions/read-file.js";
 export { writeFileTool, executeWriteFile } from "./definitions/write-file.js";
 export { listFilesTool, executeListFiles } from "./definitions/list-files.js";
 export { searchFilesTool, executeSearchFiles } from "./definitions/search-files.js";
+export { requestApprovalTool, executeRequestApproval } from "./definitions/request-approval.js";
 
 // Governance gate
 export type { ToolCall, ValidationResult } from "../governance-gate.js";

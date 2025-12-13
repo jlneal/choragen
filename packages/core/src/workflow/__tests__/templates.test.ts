@@ -134,6 +134,7 @@ stages:
     type: ideation
     gate:
       type: human_approval
+      agentTriggered: true
       prompt: "Continue or discard?"
       options:
         - label: Continue
@@ -146,6 +147,7 @@ stages:
     const template = await loadTemplate(tempDir, "ideation-local");
 
     expect(template.stages[0].type).toBe("ideation");
+    expect(template.stages[0].gate.agentTriggered).toBe(true);
     expect(template.stages[0].gate.options).toEqual([
       { label: "Continue", action: "advance" },
       { label: "Discard", action: "discard" },

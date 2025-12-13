@@ -182,6 +182,7 @@ const BUILTIN_TEMPLATES: Record<string, WorkflowTemplate> = {
         gate: {
           type: "human_approval",
           prompt: "Continue to request creation, or discard this idea?",
+          agentTriggered: true,
           options: [
             { label: "Continue", action: "advance" },
             { label: "Discard", action: "discard" },
@@ -286,6 +287,9 @@ export function validateTemplate(template: WorkflowTemplate): WorkflowTemplate {
           throw new Error(`Stage ${stage.name} gate option ${optionIndex} requires action`);
         }
       });
+    }
+    if (stage.gate.agentTriggered !== undefined && typeof stage.gate.agentTriggered !== "boolean") {
+      throw new Error(`Stage ${stage.name} gate agentTriggered must be a boolean when provided`);
     }
   });
 
@@ -616,6 +620,10 @@ function assignGateProp(gate: Partial<StageGate>, key: string, rawValue: string)
   if (key === "prompt") gate.prompt = value as string;
   if (key === "options") gate.options = Array.isArray(gate.options) ? gate.options : [];
   if (key === "chainId") gate.chainId = value as string;
+  if (key === "agentTriggered") {
+    const parsed = parseBoolean(value);
+    gate.agentTriggered = parsed ?? value === "true";
+  }
   if (key === "satisfied") {
     const parsed = parseBoolean(value);
     gate.satisfied = parsed ?? value === "true";

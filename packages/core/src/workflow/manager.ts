@@ -234,6 +234,27 @@ export class WorkflowManager {
   }
 
   /**
+   * Trigger the prompt for an agent-triggered human approval gate on the current stage.
+   */
+  async triggerGatePrompt(workflowId: string): Promise<Workflow> {
+    const workflow = await this.requireWorkflow(workflowId);
+    const stage = workflow.stages[workflow.currentStage];
+
+    if (!stage) {
+      throw new Error(`Stage ${workflow.currentStage} not found for workflow ${workflowId}`);
+    }
+
+    if (stage.gate.type !== "human_approval" || !stage.gate.agentTriggered) {
+      throw new Error("Current stage does not have an agent-triggered human approval gate");
+    }
+
+    this.addGatePromptIfNeeded(workflow, workflow.currentStage, { force: true });
+    workflow.updatedAt = new Date();
+    await this.persistWorkflow(workflow);
+    return workflow;
+  }
+
+  /**
    * Append a message to the workflow history
    */
   async addMessage(workflowId: string, options: AddMessageOptions): Promise<Workflow> {
@@ -506,9 +527,15 @@ export class WorkflowManager {
     }
   }
 
-  private addGatePromptIfNeeded(workflow: Workflow, stageIndex: number): void {
+  private addGatePromptIfNeeded(
+    workflow: Workflow,
+    stageIndex: number,
+    options: { force?: boolean } = {}
+  ): void {
     const stage = workflow.stages[stageIndex];
     if (!stage || stage.gate.type !== "human_approval") return;
+    if (stage.gate.agentTriggered && !options.force) return;
+    if (stage.gate.satisfied) return;
 
     const prompt = stage.gate.prompt ?? "Approval required to proceed.";
     const message: WorkflowMessage = {

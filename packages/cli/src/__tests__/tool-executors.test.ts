@@ -150,7 +150,7 @@ describe("defaultExecutor", () => {
 
   it("has all Phase 1 executors", () => {
     const tools = defaultExecutor.getRegisteredTools();
-    const EXPECTED_EXECUTOR_COUNT = 25;
+    const EXPECTED_EXECUTOR_COUNT = 26;
     expect(tools).toHaveLength(EXPECTED_EXECUTOR_COUNT);
   });
 });
