@@ -4,7 +4,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { AlertCircle, ArrowRight, MessageSquare, Plus } from "lucide-react";
+import { AlertCircle, ArrowRight, MessageSquare } from "lucide-react";
 
 import { ChatPageWrapper } from "@/components/chat/chat-page-wrapper";
 import { NewWorkflowView } from "@/components/chat/new-workflow-view";
@@ -42,7 +42,7 @@ export default function ChatPage() {
   return (
     <ChatPageWrapper>
       <div className="space-y-6">
-        {showEmptyState ? <NewWorkflowView /> : <QuickStartCard />}
+        <NewWorkflowView />
 
         {error ? (
           <Card>
@@ -93,15 +93,9 @@ export default function ChatPage() {
             <CardHeader>
               <CardTitle>No active workflows</CardTitle>
               <CardDescription>
-                Start a new chat to guide a workflow from a request template.
+                Use the form above to start a new workflow.
               </CardDescription>
             </CardHeader>
-            <CardFooter>
-              <Button size="sm" variant="secondary" disabled>
-                <Plus className="h-4 w-4" />
-                Start new chat (coming soon)
-              </Button>
-            </CardFooter>
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
@@ -116,33 +110,8 @@ export default function ChatPage() {
         )}
       </div>
 
-        <ChatPreviewPanel primaryWorkflowId={primaryWorkflow?.id} />
       </div>
     </ChatPageWrapper>
-  );
-}
-
-function QuickStartCard() {
-  return (
-    <Card>
-      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <CardTitle>Start a workflow chat</CardTitle>
-          <CardDescription>
-            Link a request, create a workflow, and keep the conversation in one place.
-          </CardDescription>
-        </div>
-        <Button size="sm" variant="secondary" disabled>
-          <Plus className="h-4 w-4" />
-          Create workflow (coming soon)
-        </Button>
-      </CardHeader>
-      <CardContent className="text-sm text-muted-foreground">
-        The chat interface routes messages to the right workflow, shows gate prompts,
-        and surfaces artifacts as they are produced. Use this area to jump into an
-        existing conversation or stage a new one.
-      </CardContent>
-    </Card>
   );
 }
 
@@ -237,46 +206,3 @@ function ActiveWorkflowsSkeleton() {
   );
 }
 
-function ChatPreviewPanel({ primaryWorkflowId }: { primaryWorkflowId?: string }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Chat workspace preview</CardTitle>
-        <CardDescription>
-          Message list, input area, and sidebar placeholders for the chat experience.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
-          <div className="space-y-2 rounded-lg border bg-muted/50 p-3">
-            <p className="text-xs font-semibold text-muted-foreground">Sidebar</p>
-            <Skeleton className="h-3 w-full" />
-            <Skeleton className="h-3 w-4/5" />
-            <Skeleton className="h-3 w-3/5" />
-          </div>
-          <div className="space-y-3 rounded-lg border p-3">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground">Message list</p>
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-10 w-5/6" />
-              <Skeleton className="h-10 w-4/6" />
-            </div>
-            <div className="space-y-2 rounded-md border bg-muted/30 p-3">
-              <p className="text-xs font-semibold text-muted-foreground">Input area</p>
-              <Skeleton className="h-10 w-full" />
-            </div>
-          </div>
-        </div>
-      </CardContent>
-      <CardFooter className="text-sm text-muted-foreground">
-        {primaryWorkflowId ? (
-          <span>
-            Continuing conversation with <span className="font-mono">{primaryWorkflowId}</span>.
-          </span>
-        ) : (
-          <span>Select or create a workflow to begin chatting.</span>
-        )}
-      </CardFooter>
-    </Card>
-  );
-}

@@ -79,8 +79,21 @@ export function useWorkflowMessages(
     },
     onError: (subscriptionError) => {
       setIsReady(true);
-      setError(subscriptionError instanceof Error ? subscriptionError : new Error(String(subscriptionError)));
+      const err = subscriptionError instanceof Error ? subscriptionError : new Error(String(subscriptionError));
+      setError(err);
       setShouldSubscribe(false);
+
+      const isNotFound =
+        err.message.includes("not found") ||
+        err.message.includes("NOT_FOUND") ||
+        (subscriptionError &&
+          typeof subscriptionError === "object" &&
+          "data" in subscriptionError &&
+          (subscriptionError as { data?: { code?: string } }).data?.code === "NOT_FOUND");
+
+      if (isNotFound) {
+        return;
+      }
 
       if (retryTimerRef.current) {
         clearTimeout(retryTimerRef.current);
