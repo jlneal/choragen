@@ -38,9 +38,9 @@ The governance isn't friction. It's what lets you take your hands off the wheel.
 - **Governance** — Define boundaries that are *enforced*, not suggested
 - **Traceability** — Every change links back to intent (Request → Design → ADR → Code)
 
-### Agent Runtime (Coming Soon)
+### Agent Runtime
 
-The CLI will spawn and orchestrate agent sessions directly:
+The CLI spawns and orchestrates agent sessions directly:
 
 ```bash
 # Start a control agent session
@@ -82,7 +82,7 @@ npx choragen chain:new CR-20251207-001 auth-feature
 npx choragen task:add CHAIN-001-auth-feature setup "Set up auth infrastructure"
 npx choragen task:add CHAIN-001-auth-feature implement "Implement auth flow"
 
-# Start the agent runtime (coming soon)
+# Start the agent runtime
 npx choragen agent:start --role=control
 ```
 
@@ -123,9 +123,9 @@ Current focus:
 - [x] Task chains and governance
 - [x] CLI commands for chain/task management
 - [x] Traceability validation
-- [ ] Agent Runtime (Phase 1-4)
-- [ ] Multi-provider LLM support (Anthropic, OpenAI, Gemini)
-- [ ] Web dashboard for monitoring and control
+- [x] Agent Runtime with role-gated tools and governance enforcement
+- [x] Multi-provider LLM support (Anthropic, OpenAI, Gemini, Ollama)
+- [x] Web dashboard with workflow chat interface
 
 See [docs/design/core/features/agent-runtime.md](docs/design/core/features/agent-runtime.md) for the full roadmap.
 
