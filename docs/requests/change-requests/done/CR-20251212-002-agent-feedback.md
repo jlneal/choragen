@@ -2,8 +2,9 @@
 
 **ID**: CR-20251212-002  
 **Domain**: core  
-**Status**: doing  
+**Status**: done  
 **Created**: 2025-12-12  
+**Completed**: 2025-12-13
 **Owner**: agent  
 **Chain**: CHAIN-070-agent-feedback  
 
@@ -68,9 +69,7 @@ Structured feedback enables asynchronous human-agent collaboration without block
 
 ## Commits
 
-No commits yet.
-
----
+- d001cdb feat(core): implement agent feedback system [CR-20251212-002]
 
 ## Implementation Notes
 
@@ -88,4 +87,20 @@ Key implementation areas:
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented full agent feedback system via CHAIN-070-agent-feedback (9 tasks):
+
+**Core (`@choragen/core`)**:
+- `FeedbackManager` with CRUD, lifecycle transitions, file-based persistence
+- Domain types (`FeedbackItem`, `FeedbackType`, `FeedbackStatus`, `FeedbackPriority`)
+- Zod schemas with validation and coercion
+- `feedback:create` agent tool registered in runtime
+- Blocker feedback integration with `WorkflowManager.advance()` gating
+
+**Web (`@choragen/web`)**:
+- tRPC router: `list`, `get`, `respond`, `dismiss`, `acknowledge`
+- `FeedbackMessage` chat component with type badges, priority indicators, actions
+- `FeedbackPanel` with filtering (status/type/priority), sorting, expand/collapse
+- `FeedbackBadge` in workflow sidebar with priority-based colors and 5s polling
+- Chat message rendering extended to detect and display feedback metadata
+
+**Tests**: Unit and integration coverage for all components.
