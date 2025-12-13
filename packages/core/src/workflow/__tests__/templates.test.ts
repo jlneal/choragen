@@ -184,7 +184,7 @@ stages:
           type: "request",
           gate: { type: "auto" },
           hooks: {
-            onEnter: [{ type: "noop" as unknown as TransitionAction["type"] }],
+            onEnter: [{ type: "noop" } as unknown as TransitionAction],
           },
         },
       ],

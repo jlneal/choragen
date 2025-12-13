@@ -292,15 +292,19 @@ export class WorkflowManager {
       .map((actionResult) => `${actionResult.action.type}:${actionResult.success ? "ok" : "fail"}`)
       .join(", ");
 
+    const stageLabel = result.stageName ?? result.chainId ?? result.taskId ?? "unknown";
+    const stageIndex = result.stageIndex ?? 0;
     const message: WorkflowMessage = {
       id: randomUUID(),
       role: "system",
-      content: `Hook ${result.hook} for stage ${result.stageName}: ${summary}`,
-      stageIndex: result.stageIndex,
+      content: `Hook ${result.hook} for ${stageLabel}: ${summary}`,
+      stageIndex,
       metadata: {
         type: "hook_results",
         hook: result.hook,
         stageName: result.stageName,
+        chainId: result.chainId,
+        taskId: result.taskId,
         results: result.results,
       },
       timestamp: new Date(),

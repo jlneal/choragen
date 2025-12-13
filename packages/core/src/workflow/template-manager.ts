@@ -378,14 +378,27 @@ function templateToYaml(template: WorkflowTemplate): string {
 function formatAction(action: TransitionAction): string[] {
   const lines: string[] = [];
   lines.push(`        - type: ${formatScalar(action.type)}`);
-  if (action.command) lines.push(`          command: ${formatScalar(action.command)}`);
-  if (action.taskTransition) lines.push(`          taskTransition: ${formatScalar(action.taskTransition)}`);
-  if (action.handler) lines.push(`          handler: ${formatScalar(action.handler)}`);
   if (action.blocking !== undefined) lines.push(`          blocking: ${action.blocking ? "true" : "false"}`);
-  if (action.fileMove) {
+  if (action.type === "command") lines.push(`          command: ${formatScalar(action.command)}`);
+  if (action.type === "task_transition") lines.push(`          taskTransition: ${formatScalar(action.taskTransition)}`);
+  if (action.type === "custom") lines.push(`          handler: ${formatScalar(action.handler)}`);
+  if (action.type === "file_move" && action.fileMove) {
     lines.push("          fileMove:");
     if (action.fileMove.from) lines.push(`            from: ${formatScalar(action.fileMove.from)}`);
     if (action.fileMove.to) lines.push(`            to: ${formatScalar(action.fileMove.to)}`);
+  }
+  if (action.type === "spawn_agent") {
+    if (action.role) lines.push(`          role: ${formatScalar(action.role)}`);
+    if (action.context) lines.push(`          context: ${JSON.stringify(action.context)}`);
+  }
+  if (action.type === "post_message") {
+    if (action.target) lines.push(`          target: ${formatScalar(action.target)}`);
+    if (action.content) lines.push(`          content: ${formatScalar(action.content)}`);
+    if (action.metadata) lines.push(`          metadata: ${JSON.stringify(action.metadata)}`);
+  }
+  if (action.type === "emit_event") {
+    if (action.eventType) lines.push(`          eventType: ${formatScalar(action.eventType)}`);
+    if (action.payload) lines.push(`          payload: ${JSON.stringify(action.payload)}`);
   }
   return lines;
 }

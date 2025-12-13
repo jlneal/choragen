@@ -84,6 +84,8 @@ export interface Task {
   reworkCount?: number;
   /** Task type - determines which agent handles the task (default: impl) */
   type?: TaskType;
+  /** Optional hooks for task lifecycle */
+  hooks?: import("../workflow/types.js").TaskHooks;
 }
 
 export interface Chain {
@@ -113,6 +115,8 @@ export interface Chain {
   createdAt: Date;
   /** Last updated timestamp */
   updatedAt: Date;
+  /** Optional hooks for chain lifecycle */
+  hooks?: import("../workflow/types.js").ChainHooks;
 }
 
 /** Options for creating a new chain */

@@ -8,10 +8,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import { TransitionHookRunner, HookExecutionError } from "../hook-runner.js";
+import { TransitionHookRunner, HookExecutionError, interpolateTemplate, type HookRunResult } from "../hook-runner.js";
 import type { StageTransitionHooks, TransitionAction, WorkflowStage } from "../types.js";
 import { WorkflowManager, type WorkflowTemplate, type CommandResult } from "../manager.js";
 import { TaskManager } from "../../tasks/task-manager.js";
+import type { Task, Chain } from "../../tasks/types.js";
 
 const SUCCESS_RESULT: CommandResult = { exitCode: 0, stdout: "ok", stderr: "" };
 
@@ -115,6 +116,41 @@ describe("TransitionHookRunner", () => {
     await expect(fs.access(source)).rejects.toBeDefined();
   });
 
+  it("posts messages via injected messagePoster", async () => {
+    const posted: unknown[] = [];
+    const messagePoster = vi.fn().mockImplementation(async (message, context) => {
+      posted.push({ message, context });
+      return { id: "msg-1" };
+    });
+    const hooks: StageTransitionHooks = {
+      onEnter: [{ type: "post_message", target: "orchestrator", content: "hello", metadata: { foo: "bar" } }],
+    };
+    const stage = stageWithHooks(hooks);
+    const runner = new TransitionHookRunner(tempDir, { messagePoster });
+
+    const context = { workflowId: "WF-8", stageIndex: 0 };
+    const result = await runner.runOnEnter(stage, context);
+
+    expect(messagePoster).toHaveBeenCalledWith(
+      { target: "orchestrator", content: "hello", metadata: { foo: "bar" } },
+      context
+    );
+    expect(result.results[0].success).toBe(true);
+    expect(result.results[0].details?.postMessage?.target).toBe("orchestrator");
+    expect(result.results[0].details?.postMessage?.content).toBe("hello");
+    expect(result.results[0].details?.postMessage?.metadata).toEqual({ foo: "bar" });
+    expect(result.results[0].details?.postMessage?.result).toEqual({ id: "msg-1" });
+    expect(posted).toHaveLength(1);
+  });
+
+  it("fails when messagePoster is not configured", async () => {
+    const hooks: StageTransitionHooks = { onEnter: [{ type: "post_message", target: "control", content: "ping" }] };
+    const stage = stageWithHooks(hooks);
+    const runner = new TransitionHookRunner(tempDir);
+
+    await expect(runner.runOnEnter(stage, { workflowId: "WF-9", stageIndex: 0 })).rejects.toBeInstanceOf(HookExecutionError);
+  });
+
   it("executes custom actions from the registry", async () => {
     const handler = vi.fn().mockResolvedValue({ ok: true });
     const hooks: StageTransitionHooks = { onEnter: [{ type: "custom", handler: "demo" }] };
@@ -125,6 +161,151 @@ describe("TransitionHookRunner", () => {
 
     expect(handler).toHaveBeenCalled();
     expect(result.results[0].details?.custom).toEqual({ ok: true });
+  });
+
+  it("interpolates variables in action strings", async () => {
+    const recorded: string[] = [];
+    const runner = new TransitionHookRunner(tempDir, {
+      commandRunner: async (command) => {
+        recorded.push(command);
+        return SUCCESS_RESULT;
+      },
+    });
+
+    const hooks: StageTransitionHooks = { onEnter: [{ type: "command", command: "echo {{workflowId}} {{stageIndex}} {{taskId}} {{chainId}}" }] };
+    const stage = stageWithHooks(hooks, { chainId: "CHAIN-77" });
+
+    await runner.runOnEnter(stage, { workflowId: "WF-77", stageIndex: 2, taskId: "TASK-9", chainId: "CHAIN-77" });
+
+    expect(recorded[0]).toBe("echo WF-77 2 TASK-9 CHAIN-77");
+  });
+
+  it("leaves unknown variables unchanged", () => {
+    const result = interpolateTemplate("hello {{unknown}}", { workflowId: "WF-1", stageIndex: 0 });
+    expect(result).toBe("hello {{unknown}}");
+  });
+
+  it("runs task hooks with interpolation", async () => {
+    const commands: string[] = [];
+    const runner = new TransitionHookRunner(tempDir, {
+      commandRunner: async (command) => {
+        commands.push(command);
+        return SUCCESS_RESULT;
+      },
+    });
+    const task: Task = {
+      id: "TASK-123",
+      sequence: 1,
+      slug: "demo",
+      status: "todo",
+      chainId: "CHAIN-1",
+      title: "Demo task",
+      description: "Test task hook",
+      expectedFiles: [],
+      acceptance: [],
+      constraints: [],
+      notes: "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      hooks: { onStart: [{ type: "command", command: "echo {{taskId}} {{chainId}}" }] },
+    };
+
+    const result = await runner.runTaskHook("onStart", task, { workflowId: "WF-TA", stageIndex: 0 });
+
+    expect(commands).toEqual(["echo TASK-123 CHAIN-1"]);
+    expect(result.results[0].success).toBe(true);
+    expect(result.taskId).toBe("TASK-123");
+    expect(result.chainId).toBe("CHAIN-1");
+  });
+
+  it("runs chain hooks", async () => {
+    const handler = vi.fn().mockResolvedValue({ ok: true });
+    const chain: Chain = {
+      id: "CHAIN-55",
+      sequence: 1,
+      slug: "chain-demo",
+      requestId: "CR-1",
+      title: "Demo chain",
+      description: "Test chain hooks",
+      tasks: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      hooks: { onComplete: [{ type: "custom", handler: "record" }] },
+    };
+    const runner = new TransitionHookRunner(tempDir, { customHandlers: { record: handler } });
+
+    const result = await runner.runChainHook("onComplete", chain, { workflowId: "WF-CH", stageIndex: 1 });
+
+    expect(handler).toHaveBeenCalled();
+    expect(result.results[0].success).toBe(true);
+    expect(result.chainId).toBe("CHAIN-55");
+  });
+
+  it("logs hook executions for task and chain hooks", async () => {
+    const logger = vi.fn();
+    const runner = new TransitionHookRunner(tempDir, {
+      logger,
+      commandRunner: async () => SUCCESS_RESULT,
+      customHandlers: { noop: () => ({ ok: true }) },
+    });
+
+    const task: Task = {
+      id: "TASK-LOG",
+      sequence: 1,
+      slug: "log",
+      status: "todo",
+      chainId: "CHAIN-LOG",
+      title: "Log task hook",
+      description: "",
+      expectedFiles: [],
+      acceptance: [],
+      constraints: [],
+      notes: "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      hooks: { onStart: [{ type: "command", command: "echo hi" }] },
+    };
+    const chain: Chain = {
+      id: "CHAIN-LOG",
+      sequence: 1,
+      slug: "log-chain",
+      requestId: "CR-LOG",
+      title: "Log chain hook",
+      description: "",
+      tasks: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      hooks: { onComplete: [{ type: "custom", handler: "noop" }] },
+    };
+
+    await runner.runTaskHook("onStart", task, { workflowId: "WF-LOG", stageIndex: 0 });
+    await runner.runChainHook("onComplete", chain, { workflowId: "WF-LOG", stageIndex: 0 });
+
+    expect(logger).toHaveBeenCalledTimes(2);
+    const [taskCall, chainCall] = logger.mock.calls as [[HookRunResult], [HookRunResult]];
+    expect(taskCall[0].hook).toBe("onStart");
+    expect(taskCall[0].taskId).toBe("TASK-LOG");
+    expect(taskCall[0].results[0].action.type).toBe("command");
+    expect(chainCall[0].hook).toBe("onComplete");
+    expect(chainCall[0].chainId).toBe("CHAIN-LOG");
+    expect(chainCall[0].results[0].action.type).toBe("custom");
+  });
+
+  it("logs and throws on blocking failures", async () => {
+    const logger = vi.fn();
+    const runner = new TransitionHookRunner(tempDir, {
+      logger,
+      commandRunner: async () => ({ exitCode: 1, stdout: "", stderr: "fail" }),
+    });
+    const hooks: StageTransitionHooks = { onEnter: [{ type: "command", command: "fail" }] };
+    const stage = stageWithHooks(hooks);
+
+    await expect(runner.runOnEnter(stage, { workflowId: "WF-FAIL", stageIndex: 0 })).rejects.toBeInstanceOf(HookExecutionError);
+    expect(logger).toHaveBeenCalledTimes(1);
+    const [result] = logger.mock.calls[0] as [HookRunResult];
+    expect(result.hook).toBe("onEnter");
+    expect(result.stageName).toBe(stage.name);
+    expect(result.results[0].success).toBe(false);
   });
 
   it("continues when blocking is false but stops when true", async () => {
@@ -147,6 +328,69 @@ describe("TransitionHookRunner", () => {
     const hardStage = stageWithHooks(hardHooks);
 
     await expect(runner.runOnExit(hardStage, { workflowId: "WF-7", stageIndex: 0 })).rejects.toBeInstanceOf(HookExecutionError);
+  });
+
+  it("emits events via injected eventEmitter", async () => {
+    const emitted: unknown[] = [];
+    const eventEmitter = vi.fn().mockImplementation(async (event, context) => {
+      emitted.push({ event, context });
+      return { delivered: true };
+    });
+    const hooks: StageTransitionHooks = {
+      onExit: [{ type: "emit_event", eventType: "task:completed", payload: { taskId: "T-1" } }],
+    };
+    const stage = stageWithHooks(hooks);
+    const context = { workflowId: "WF-10", stageIndex: 1 };
+    const runner = new TransitionHookRunner(tempDir, { eventEmitter });
+
+    const result = await runner.runOnExit(stage, context);
+
+    expect(eventEmitter).toHaveBeenCalledWith({ eventType: "task:completed", payload: { taskId: "T-1" } }, context);
+    expect(result.results[0].success).toBe(true);
+    expect(result.results[0].details?.emitEvent?.eventType).toBe("task:completed");
+    expect(result.results[0].details?.emitEvent?.payload).toEqual({ taskId: "T-1" });
+    expect(result.results[0].details?.emitEvent?.result).toEqual({ delivered: true });
+    expect(emitted).toHaveLength(1);
+  });
+
+  it("fails when eventEmitter is not configured", async () => {
+    const hooks: StageTransitionHooks = { onExit: [{ type: "emit_event", eventType: "chain:approved" }] };
+    const stage = stageWithHooks(hooks);
+    const runner = new TransitionHookRunner(tempDir);
+
+    await expect(runner.runOnExit(stage, { workflowId: "WF-11", stageIndex: 2 })).rejects.toBeInstanceOf(HookExecutionError);
+  });
+
+  it("spawns agents via injected agentSpawner", async () => {
+    const spawnCalls: unknown[] = [];
+    const agentSpawner = vi.fn().mockImplementation(async (action, context) => {
+      spawnCalls.push({ action, context });
+      return { sessionId: "S-123" };
+    });
+    const hooks: StageTransitionHooks = {
+      onEnter: [{ type: "spawn_agent", role: "implementation", context: { taskId: "T-99", chainId: "C-1" } }],
+    };
+    const stage = stageWithHooks(hooks);
+    const context = { workflowId: "WF-12", stageIndex: 0 };
+    const runner = new TransitionHookRunner(tempDir, { agentSpawner });
+
+    const result = await runner.runOnEnter(stage, context);
+
+    expect(agentSpawner).toHaveBeenCalledWith({ role: "implementation", context: { taskId: "T-99", chainId: "C-1" } }, context);
+    expect(result.results[0].success).toBe(true);
+    expect(result.results[0].details?.spawnAgent?.role).toBe("implementation");
+    expect(result.results[0].details?.spawnAgent?.context).toEqual({ taskId: "T-99", chainId: "C-1" });
+    expect(result.results[0].details?.spawnAgent?.sessionId).toBe("S-123");
+    expect(result.results[0].details?.spawnAgent?.result).toEqual({ sessionId: "S-123" });
+    expect(spawnCalls).toHaveLength(1);
+  });
+
+  it("fails when agentSpawner is not configured", async () => {
+    const hooks: StageTransitionHooks = { onEnter: [{ type: "spawn_agent", role: "review" }] };
+    const stage = stageWithHooks(hooks);
+    const runner = new TransitionHookRunner(tempDir);
+
+    await expect(runner.runOnEnter(stage, { workflowId: "WF-13", stageIndex: 0 })).rejects.toBeInstanceOf(HookExecutionError);
   });
 });
 

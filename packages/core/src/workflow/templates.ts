@@ -16,6 +16,13 @@ import {
   type StageGate,
   type StageTransitionHooks,
   type StageType,
+  type CommandAction,
+  type CustomAction,
+  type EmitEventAction,
+  type FileMoveAction,
+  type PostMessageAction,
+  type SpawnAgentAction,
+  type TaskTransitionAction,
   type TransitionAction,
 } from "./types.js";
 
@@ -44,8 +51,24 @@ export const BUILTIN_TEMPLATE_NAMES = ["standard", "hotfix", "documentation"] as
 const WORKFLOW_TEMPLATE_DIR = ".choragen/workflow-templates";
 const BUILTIN_TEMPLATE_VERSION = 1;
 const BUILTIN_TEMPLATE_TIMESTAMP = new Date("2024-01-01T00:00:00Z");
-const TRANSITION_ACTION_TYPES: TransitionAction["type"][] = ["command", "task_transition", "file_move", "custom"];
-const TASK_TRANSITIONS: NonNullable<TransitionAction["taskTransition"]>[] = ["start", "complete", "approve"];
+const TRANSITION_ACTION_TYPES: TransitionAction["type"][] = [
+  "command",
+  "task_transition",
+  "file_move",
+  "custom",
+  "spawn_agent",
+  "post_message",
+  "emit_event",
+];
+const TASK_TRANSITIONS: TaskTransitionAction["taskTransition"][] = ["start", "complete", "approve"];
+
+type MutableTransitionAction = { type?: TransitionAction["type"] } & Partial<Omit<CommandAction, "type">> &
+  Partial<Omit<TaskTransitionAction, "type">> &
+  Partial<Omit<FileMoveAction, "type">> &
+  Partial<Omit<CustomAction, "type">> &
+  Partial<Omit<SpawnAgentAction, "type">> &
+  Partial<Omit<PostMessageAction, "type">> &
+  Partial<Omit<EmitEventAction, "type">>;
 
 const BUILTIN_TEMPLATES: Record<string, WorkflowTemplate> = {
   standard: {
@@ -241,7 +264,7 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
   let currentGate: Partial<StageGate> | null = null;
   let currentHooks: StageTransitionHooks | null = null;
   let currentHookSection: keyof StageTransitionHooks | null = null;
-  let currentAction: Partial<TransitionAction> | null = null;
+  let currentAction: MutableTransitionAction | null = null;
   let inCommands = false;
   let inFileMove = false;
 
@@ -326,7 +349,7 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
 
         const maybeInline = trimmed.replace("onEnter:", "").trim();
         if (maybeInline) {
-          const action: Partial<TransitionAction> = {};
+          const action: MutableTransitionAction = {};
           const [key, value] = splitKeyValue(maybeInline);
           assignActionProp(action, key, value);
           currentHooks.onEnter.push(action as TransitionAction);
@@ -343,7 +366,7 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
 
         const maybeInline = trimmed.replace("onExit:", "").trim();
         if (maybeInline) {
-          const action: Partial<TransitionAction> = {};
+          const action: MutableTransitionAction = {};
           const [key, value] = splitKeyValue(maybeInline);
           assignActionProp(action, key, value);
           currentHooks.onExit.push(action as TransitionAction);
@@ -373,7 +396,7 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
     if (indent >= 8 && currentHookSection && currentHooks) {
       const actions = currentHookSection === "onEnter" ? currentHooks.onEnter! : currentHooks.onExit!;
       if (trimmed.startsWith("- ")) {
-        const action: Partial<TransitionAction> = {};
+        const action: MutableTransitionAction = {};
         const rest = trimmed.slice(2);
         if (rest) {
           const [key, value] = splitKeyValue(rest);
@@ -498,11 +521,11 @@ function assignGateProp(gate: Partial<StageGate>, key: string, rawValue: string)
   }
 }
 
-function assignActionProp(action: Partial<TransitionAction>, key: string, rawValue: string): void {
+function assignActionProp(action: MutableTransitionAction, key: string, rawValue: string): void {
   const value = parseScalar(rawValue);
   if (key === "type") action.type = value as TransitionAction["type"];
   if (key === "command") action.command = value as string;
-  if (key === "taskTransition") action.taskTransition = value as TransitionAction["taskTransition"];
+  if (key === "taskTransition") action.taskTransition = value as TaskTransitionAction["taskTransition"];
   if (key === "handler") action.handler = value as string;
   if (key === "blocking") {
     const parsed = parseBoolean(value);
@@ -510,7 +533,7 @@ function assignActionProp(action: Partial<TransitionAction>, key: string, rawVal
   }
 }
 
-function assignFileMoveProp(action: Partial<TransitionAction>, key: string, rawValue: string): void {
+function assignFileMoveProp(action: MutableTransitionAction, key: string, rawValue: string): void {
   const value = parseScalar(rawValue);
   if (!action.fileMove) action.fileMove = { from: "", to: "" };
   if (key === "from") action.fileMove.from = value as string;
@@ -634,10 +657,17 @@ function normalizeAction(action: TransitionAction): TransitionAction {
   const blocking =
     typeof action.blocking === "boolean" ? action.blocking : action.blocking === undefined ? undefined : parseBoolean(String(action.blocking));
 
+  if (action.type === "file_move") {
+    return {
+      ...action,
+      blocking: blocking ?? true,
+      fileMove: action.fileMove ? { ...action.fileMove } : action.fileMove,
+    };
+  }
+
   return {
     ...action,
     blocking: blocking ?? true,
-    fileMove: action.fileMove ? { ...action.fileMove } : undefined,
   };
 }
 

@@ -2,9 +2,10 @@
 
 **ID**: CR-20251212-007  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-12  
 **Owner**: agent  
+**Chain**: CHAIN-067-hook-system-design
 
 ---
 
@@ -130,4 +131,25 @@ Key implementation areas:
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+**Completed 2025-12-12** via CHAIN-067-hook-system-design (7 tasks)
+
+Implemented:
+- Extended `TransitionAction` union with `SpawnAgentAction`, `PostMessageAction`, `EmitEventAction`
+- Added `post_message` action handler with injected `messagePoster`
+- Added `emit_event` action handler with injected `eventEmitter`
+- Added `spawn_agent` action handler with injected `agentSpawner`
+- Template variable interpolation (`{{workflowId}}`, `{{stageIndex}}`, `{{chainId}}`, `{{taskId}}`)
+- Task hooks (`onStart`, `onSubmit`, `onApprove`, `onReject`) via `runTaskHook()`
+- Chain hooks (`onStart`, `onComplete`, `onApprove`, `onReject`) via `runChainHook()`
+- Hook execution logging for all hook types
+
+Files modified:
+- `packages/core/src/workflow/types.ts`
+- `packages/core/src/workflow/hook-runner.ts`
+- `packages/core/src/workflow/templates.ts`
+- `packages/core/src/workflow/template-manager.ts`
+- `packages/core/src/tasks/types.ts`
+- `packages/core/src/workflow/__tests__/hook-runner.test.ts`
+- `packages/core/src/workflow/__tests__/templates.test.ts`
+
+Tests: 497 passing (+12 new tests for hook system)

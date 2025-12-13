@@ -74,24 +74,93 @@ export const GATE_TYPES: readonly GateType[] = [
 /**
  * An action executed during stage transitions
  */
-export interface TransitionAction {
-  /** Action type */
-  type: "command" | "task_transition" | "file_move" | "custom";
+export type TransitionAction =
+  | CommandAction
+  | TaskTransitionAction
+  | FileMoveAction
+  | CustomAction
+  | SpawnAgentAction
+  | PostMessageAction
+  | EmitEventAction;
 
-  /** For command: shell command to run */
-  command?: string;
-
-  /** For task_transition: the transition to apply */
-  taskTransition?: "start" | "complete" | "approve";
-
-  /** For file_move: source and destination patterns */
-  fileMove?: { from: string; to: string };
-
-  /** For custom: handler name registered in runtime */
-  handler?: string;
-
+interface BaseTransitionAction {
   /** Whether failure blocks the transition (default: true) */
   blocking?: boolean;
+}
+
+/** Run a shell command */
+export interface CommandAction extends BaseTransitionAction {
+  /** Action type */
+  type: "command";
+
+  /** Shell command to run */
+  command: string;
+}
+
+/** Transition a task to a new status */
+export interface TaskTransitionAction extends BaseTransitionAction {
+  /** Action type */
+  type: "task_transition";
+
+  /** The transition to apply */
+  taskTransition: "start" | "complete" | "approve";
+}
+
+/** Move a file from one location to another */
+export interface FileMoveAction extends BaseTransitionAction {
+  /** Action type */
+  type: "file_move";
+
+  /** Source and destination patterns */
+  fileMove: { from: string; to: string };
+}
+
+/** Invoke a registered custom handler */
+export interface CustomAction extends BaseTransitionAction {
+  /** Action type */
+  type: "custom";
+
+  /** Handler name registered in runtime */
+  handler: string;
+}
+
+/** Spawn a new agent session with a specific role and context */
+export interface SpawnAgentAction extends BaseTransitionAction {
+  /** Action type */
+  type: "spawn_agent";
+
+  /** Role identifier for the new agent */
+  role: string;
+
+  /** Context injected into the agent session */
+  context?: Record<string, unknown>;
+}
+
+/** Post a message into a target session */
+export interface PostMessageAction extends BaseTransitionAction {
+  /** Action type */
+  type: "post_message";
+
+  /** Target session ID or logical target (e.g., orchestrator) */
+  target: string;
+
+  /** Message content */
+  content: string;
+
+  /** Optional metadata payload */
+  metadata?: Record<string, unknown>;
+}
+
+/** Emit a named event with an attached payload */
+export interface EmitEventAction extends BaseTransitionAction {
+  /** Action type */
+  type: "emit_event";
+
+  /** Event type identifier */
+  eventType: string;
+
+  /** Arbitrary event payload */
+  payload?: Record<string, unknown>;
 }
 
 /**
@@ -103,6 +172,24 @@ export interface StageTransitionHooks {
 
   /** Actions to run when exiting this stage */
   onExit?: TransitionAction[];
+}
+
+export type TaskHookName = "onStart" | "onSubmit" | "onApprove" | "onReject";
+
+export interface TaskHooks {
+  onStart?: TransitionAction[];
+  onSubmit?: TransitionAction[];
+  onApprove?: TransitionAction[];
+  onReject?: TransitionAction[];
+}
+
+export type ChainHookName = "onStart" | "onComplete" | "onApprove" | "onReject";
+
+export interface ChainHooks {
+  onStart?: TransitionAction[];
+  onComplete?: TransitionAction[];
+  onApprove?: TransitionAction[];
+  onReject?: TransitionAction[];
 }
 
 /** Message role identifies who sent the message */

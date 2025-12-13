@@ -29,7 +29,15 @@ const gateTypeEnum = z.enum(
 
 const transitionActionSchema = z
   .object({
-    type: z.enum(["command", "task_transition", "file_move", "custom"]),
+    type: z.enum([
+      "command",
+      "task_transition",
+      "file_move",
+      "custom",
+      "spawn_agent",
+      "post_message",
+      "emit_event",
+    ]),
     command: z.string().optional(),
     taskTransition: z.enum(["start", "complete", "approve"]).optional(),
     fileMove: z
@@ -40,6 +48,13 @@ const transitionActionSchema = z
       .optional(),
     handler: z.string().optional(),
     blocking: z.boolean().optional(),
+    role: z.string().optional(),
+    context: z.record(z.unknown()).optional(),
+    target: z.string().optional(),
+    content: z.string().optional(),
+    metadata: z.record(z.unknown()).optional(),
+    eventType: z.string().optional(),
+    payload: z.record(z.unknown()).optional(),
   })
   .superRefine((action, ctx) => {
     if (action.type === "command" && !action.command) {
@@ -61,6 +76,34 @@ const transitionActionSchema = z
         code: z.ZodIssueCode.custom,
         message: "fileMove is required when type is file_move",
         path: ["fileMove"],
+      });
+    }
+    if (action.type === "spawn_agent" && !action.role) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "role is required when type is spawn_agent",
+        path: ["role"],
+      });
+    }
+    if (action.type === "post_message" && !action.target) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "target is required when type is post_message",
+        path: ["target"],
+      });
+    }
+    if (action.type === "post_message" && !action.content) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "content is required when type is post_message",
+        path: ["content"],
+      });
+    }
+    if (action.type === "emit_event" && !action.eventType) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "eventType is required when type is emit_event",
+        path: ["eventType"],
       });
     }
   });
@@ -197,6 +240,7 @@ function toWorkflowTemplateStage(stage: TemplateStageInput): WorkflowTemplateSta
         ? new Date(stage.gate.satisfiedAt)
         : undefined,
     },
+    hooks: stage.hooks as WorkflowTemplateStage["hooks"],
   };
 }
 
