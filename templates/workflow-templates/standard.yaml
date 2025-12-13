@@ -4,7 +4,7 @@ description: Execute a committed request through design, implementation, and com
 stages:
   - name: planning
     type: design
-    role: orchestration
+    roleId: orchestration
     gate:
       type: human_approval
       prompt: "Design chains ready. Proceed?"
@@ -15,7 +15,7 @@ stages:
 
   - name: design
     type: implementation
-    role: design
+    roleId: design
     gate:
       type: chain_complete
     onEnter:
@@ -24,14 +24,14 @@ stages:
 
   - name: impl-planning
     type: design
-    role: orchestration
+    roleId: orchestration
     gate:
       type: human_approval
       prompt: "Implementation chains ready. Proceed?"
 
   - name: implementation
     type: implementation
-    role: implementation
+    roleId: implementation
     gate:
       type: chain_complete
     onEnter:
@@ -40,7 +40,7 @@ stages:
 
   - name: verification
     type: verification
-    role: system
+    roleId: system
     gate:
       type: verification_pass
       commands:
@@ -50,21 +50,21 @@ stages:
 
   - name: commit
     type: implementation
-    role: commit
+    roleId: commit
     gate:
       type: human_approval
       prompt: "Commits ready. Push?"
 
   - name: request-review
     type: review
-    role: review
+    roleId: review
     gate:
       type: human_approval
       prompt: "Request complete. Approve and push?"
 
   - name: completion
     type: review
-    role: control
+    roleId: control
     gate:
       type: human_approval
       prompt: "Final approval. Close request?"

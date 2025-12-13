@@ -2,8 +2,9 @@
 
 **ID**: CR-20251212-004  
 **Domain**: core  
-**Status**: doing  
+**Status**: done  
 **Created**: 2025-12-12  
+**Completed**: 2025-12-13
 **Owner**: agent  
 
 ---
@@ -69,9 +70,7 @@ The revised workflow treats agents as workers on an assembly line, with the syst
 
 ## Commits
 
-No commits yet.
-
----
+- b029a67 feat(core): implement standard workflow with three-tier review
 
 ## Implementation Notes
 
@@ -90,4 +89,12 @@ Key implementation areas:
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+**Completed 2025-12-13** via CHAIN-072-standard-workflow
+
+Implemented:
+- Updated `templates/workflow-templates/standard.yaml` with 8 stages and roleId assignments
+- Three-tier review flow: task → chain → request
+- Event-driven orchestration via hooks (spawn_agent, post_message, emit_event)
+- File scope support on tasks and chains for parallel execution
+- Task lifecycle with in-review state
+- All review tools (task:approve, task:request_changes, chain:approve, chain:request_changes, request:approve, request:request_changes)

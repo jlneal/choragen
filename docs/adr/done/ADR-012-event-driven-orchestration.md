@@ -1,6 +1,6 @@
 # ADR-012: Event-Driven Orchestration
 
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-12  
 **Linked CR/FR**: CR-20251212-004, CR-20251212-007  
 **Linked Design Docs**: 
