@@ -146,14 +146,13 @@ async function resolveAnthropicApiKey(projectRoot: string): Promise<string | und
 export const workflowRouter = router({
   /**
    * Create a workflow from a template.
-   * Currently always loads the built-in "standard" template regardless of input,
-   * accepting the template name for future template selection support.
+   * Loads the specified template by name (e.g., "standard", "hotfix", "ideation").
    */
   create: publicProcedure
     .input(createWorkflowInputSchema)
     .mutation(async ({ ctx, input }) => {
       const manager = getWorkflowManager(ctx.projectRoot);
-      const template = await loadTemplate(ctx.projectRoot, "standard");
+      const template = await loadTemplate(ctx.projectRoot, input.template);
 
       return manager.create({
         requestId: input.requestId,
