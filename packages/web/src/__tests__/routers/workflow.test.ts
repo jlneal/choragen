@@ -9,8 +9,6 @@ import { createCallerFactory } from "@/server/trpc";
 import { appRouter } from "@/server/routers";
 import { TRPCError } from "@trpc/server";
 import { loadTemplate, type WorkflowMessage, type WorkflowTemplate } from "@choragen/core";
-import { spawnAgentSession } from "@/lib/agent-subprocess";
-import type { ChildProcess } from "node:child_process";
 
 const mockWorkflow = {
   id: "WF-20251211-001",
@@ -53,12 +51,7 @@ vi.mock("@choragen/core", async () => {
   };
 });
 
-vi.mock("@/lib/agent-subprocess", () => ({
-  spawnAgentSession: vi.fn(),
-}));
-
 const mockedLoadTemplate = vi.mocked(loadTemplate);
-const mockedSpawnAgentSession = vi.mocked(spawnAgentSession);
 
 describe("workflow router", () => {
   const createCaller = createCallerFactory(appRouter);
@@ -74,16 +67,6 @@ describe("workflow router", () => {
     mockWorkflowManager.updateStatus.mockResolvedValue(mockWorkflow);
     mockWorkflowManager.discard.mockResolvedValue(mockWorkflow);
     mockedLoadTemplate.mockResolvedValue(mockTemplate);
-    mockedSpawnAgentSession.mockReturnValue({
-      sessionId: "session-test",
-      workflowId: mockWorkflow.id,
-      stageIndex: mockWorkflow.currentStage,
-      projectRoot: "/tmp/test",
-      process: {} as ChildProcess,
-      stdout: {} as NodeJS.ReadableStream,
-      stderr: {} as NodeJS.ReadableStream,
-      kill: vi.fn(),
-    });
   });
 
   function createMessage(id: string, content: string, timestamp: string): WorkflowMessage {
@@ -186,63 +169,6 @@ describe("workflow router", () => {
           stageIndex: 99,
         })
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    });
-  });
-
-  describe("invokeAgent", () => {
-    it("returns session info for active workflow", async () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date("2025-12-12T00:00:00Z"));
-      const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.123456789);
-
-      try {
-        const result = await caller.workflow.invokeAgent({
-          workflowId: mockWorkflow.id,
-          message: "Start work",
-        });
-
-        expect(mockWorkflowManager.get).toHaveBeenCalledWith(mockWorkflow.id);
-        expect(mockedSpawnAgentSession).toHaveBeenCalledWith(result.sessionId, {
-          workflowId: mockWorkflow.id,
-          stageIndex: mockWorkflow.currentStage,
-          projectRoot: "/tmp/test",
-          apiKey: undefined,
-          message: "Start work",
-        });
-        expect(result).toMatchObject({
-          workflowId: mockWorkflow.id,
-          stageIndex: mockWorkflow.currentStage,
-          status: "running",
-        });
-        expect(result.sessionId).toMatch(/^session-\d+-[a-z0-9]{7}$/);
-      } finally {
-        randomSpy.mockRestore();
-        vi.useRealTimers();
-      }
-    });
-
-    it("throws NOT_FOUND when workflow does not exist", async () => {
-      mockWorkflowManager.get.mockResolvedValueOnce(null);
-
-      await expect(
-        caller.workflow.invokeAgent({ workflowId: "missing-workflow" })
-      ).rejects.toMatchObject({ code: "NOT_FOUND" });
-      expect(mockedSpawnAgentSession).not.toHaveBeenCalled();
-    });
-
-    it("throws BAD_REQUEST when workflow is not active", async () => {
-      mockWorkflowManager.get.mockResolvedValueOnce({
-        ...mockWorkflow,
-        status: "paused",
-      });
-
-      await expect(
-        caller.workflow.invokeAgent({ workflowId: mockWorkflow.id })
-      ).rejects.toMatchObject({
-        code: "BAD_REQUEST",
-        message: "Workflow is paused, cannot invoke agent",
-      });
-      expect(mockedSpawnAgentSession).not.toHaveBeenCalled();
     });
   });
 

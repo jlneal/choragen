@@ -22,9 +22,6 @@ export interface AgentSession {
   kill: () => void;
 }
 
-// Track active sessions for lookup and lifecycle management.
-const activeSessions = new Map<string, AgentSession>();
-
 export function spawnAgentSession(sessionId: string, options: AgentSessionOptions): AgentSession {
   const proc = spawn(
     "npx",
@@ -57,23 +54,8 @@ export function spawnAgentSession(sessionId: string, options: AgentSessionOption
     stderr: proc.stderr!,
     kill: () => {
       proc.kill();
-      activeSessions.delete(sessionId);
     },
   };
 
-  activeSessions.set(sessionId, session);
-
-  const cleanup = () => {
-    activeSessions.delete(sessionId);
-  };
-
-  proc.on("exit", cleanup);
-  proc.on("error", cleanup);
-  proc.on("close", cleanup);
-
   return session;
-}
-
-export function getSession(sessionId: string): AgentSession | undefined {
-  return activeSessions.get(sessionId);
 }

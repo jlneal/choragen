@@ -74,6 +74,6 @@ describe("Provider status guardrails", () => {
 
     expect(html).toContain("Provider required");
     expect(html).toContain("/settings");
-    expect(html).toContain("Start workflow");
+    expect(html).toContain("Start ideation");
   });
 });

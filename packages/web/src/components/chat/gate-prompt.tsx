@@ -40,22 +40,6 @@ export function GatePrompt({ workflowId, stageIndex, prompt, gateType }: GatePro
     },
   });
 
-  const invokeAgent = trpc.workflow.invokeAgent.useMutation({
-    onSuccess: (session) => {
-      setStatusMessage("Agent starting...");
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("agent-session-started", {
-            detail: { sessionId: session.sessionId },
-          })
-        );
-      }
-    },
-    onError: (error) => {
-      setStatusMessage(error.message || "Failed to start agent");
-    },
-  });
-
   const discardMutation = trpc.workflow.discard.useMutation({
     onSuccess: () => {
       setStatusMessage("Idea discarded");
@@ -70,7 +54,7 @@ export function GatePrompt({ workflowId, stageIndex, prompt, gateType }: GatePro
     },
   });
 
-  const isSubmitting = satisfyGate.isPending || invokeAgent.isPending;
+  const isSubmitting = satisfyGate.isPending || discardMutation.isPending;
 
   const handleApprove = async () => {
     setStatusMessage(null);
@@ -80,7 +64,14 @@ export function GatePrompt({ workflowId, stageIndex, prompt, gateType }: GatePro
         stageIndex,
         satisfiedBy: "user",
       });
-      await invokeAgent.mutateAsync({ workflowId });
+      setStatusMessage("Agent starting...");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("agent-session-started", {
+            detail: { workflowId, stageIndex },
+          })
+        );
+      }
       utils.workflow.get.invalidate(workflowId);
       utils.workflow.list.invalidate();
     } catch (error) {

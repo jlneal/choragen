@@ -54,13 +54,6 @@ vi.mock("@/lib/trpc/client", () => ({
           };
         },
       },
-      invokeAgent: {
-        useMutation: () => ({
-          mutate: vi.fn(),
-          mutateAsync: vi.fn(),
-          isPending: false,
-        }),
-      },
       cancel: {
         useMutation: () => ({
           mutate: vi.fn(),

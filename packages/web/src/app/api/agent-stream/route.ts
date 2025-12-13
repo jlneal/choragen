@@ -1,11 +1,13 @@
 // ADR: ADR-010-agent-runtime-architecture
 // Design doc: docs/design/core/features/agent-runtime.md
 
-import { getSession } from "@/lib/agent-subprocess";
+import { spawnAgentSession, type AgentSession } from "@/lib/agent-subprocess";
 import { WorkflowManager } from "@choragen/core";
 import { HttpStatus } from "@choragen/contracts";
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
+
+const DEFAULT_STAGE_INDEX = 0;
 
 interface AgentEventPayload {
   type?: string;
@@ -32,23 +34,79 @@ function parseLine(line: string): { event: string; payload: AgentEventPayload | 
   }
 }
 
-export async function GET(request: Request): Promise<Response> {
-  const { searchParams } = new URL(request.url);
-  const sessionId = searchParams.get("sessionId");
-
-  if (!sessionId) {
-    return new Response("Missing sessionId", { status: HttpStatus.BAD_REQUEST });
+async function resolveAnthropicApiKey(projectRoot: string): Promise<string | undefined> {
+  if (process.env.ANTHROPIC_API_KEY) {
+    return process.env.ANTHROPIC_API_KEY;
   }
 
-  const session = getSession(sessionId);
-  if (!session) {
-    return new Response("Session not found", { status: HttpStatus.NOT_FOUND });
+  const configPath = path.join(projectRoot, ".choragen", "config.json");
+  try {
+    const raw = await fs.readFile(configPath, "utf-8");
+    const parsed = JSON.parse(raw) as {
+      providers?: { anthropic?: { apiKey?: string } };
+    };
+    const key = parsed.providers?.anthropic?.apiKey;
+    return typeof key === "string" && key.trim().length > 0 ? key : undefined;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return undefined;
+    }
+    return undefined;
+  }
+}
+
+export async function GET(request: Request): Promise<Response> {
+  const { searchParams } = new URL(request.url);
+  const workflowId = searchParams.get("workflowId");
+  const stageIndexParam = searchParams.get("stageIndex");
+  const message = searchParams.get("message") ?? undefined;
+
+  if (!workflowId) {
+    return new Response("Missing workflowId", { status: HttpStatus.BAD_REQUEST });
+  }
+
+  const parsedStageIndex =
+    stageIndexParam === null || stageIndexParam === undefined ? null : Number(stageIndexParam);
+  if (parsedStageIndex !== null && (!Number.isInteger(parsedStageIndex) || parsedStageIndex < 0)) {
+    return new Response("Invalid stageIndex", { status: HttpStatus.BAD_REQUEST });
   }
 
   const projectRoot =
     process.env.CHORAGEN_PROJECT_ROOT ||
     (await fs.realpath(path.join(process.cwd(), "..", "..")).catch(() => process.cwd()));
   const workflowManager = new WorkflowManager(projectRoot);
+
+  const workflow = await workflowManager.get(workflowId);
+  if (!workflow) {
+    return new Response("Workflow not found", { status: HttpStatus.NOT_FOUND });
+  }
+
+  if (workflow.status !== "active") {
+    return new Response("Workflow is not active", { status: HttpStatus.BAD_REQUEST });
+  }
+
+  const sessionId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  const stageIndex =
+    parsedStageIndex !== null
+      ? parsedStageIndex
+      : typeof workflow.currentStage === "number" && workflow.currentStage >= 0
+        ? workflow.currentStage
+        : DEFAULT_STAGE_INDEX;
+
+  let session: AgentSession;
+  try {
+    session = spawnAgentSession(sessionId, {
+      workflowId,
+      stageIndex,
+      projectRoot,
+      apiKey: await resolveAnthropicApiKey(projectRoot),
+      message: message ?? undefined,
+    });
+  } catch (error) {
+    const messageContent =
+      error instanceof Error && error.message ? error.message : "Failed to start agent session";
+    return new Response(messageContent, { status: HttpStatus.INTERNAL_SERVER_ERROR });
+  }
 
   const stream = new ReadableStream({
     start(controller) {

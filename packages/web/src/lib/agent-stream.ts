@@ -9,6 +9,14 @@ export interface AgentStreamHandlers {
   onDone: (exitCode: number | null) => void;
 }
 
+export interface AgentStreamParams {
+  workflowId: string;
+  stageIndex?: number;
+  message?: string;
+}
+
+const DEFAULT_STAGE_INDEX = 0;
+
 function safeParse(data: string): unknown {
   try {
     return JSON.parse(data);
@@ -21,11 +29,22 @@ function asString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+function buildAgentStreamUrl(params: AgentStreamParams): string {
+  const query = new URLSearchParams();
+  query.set("workflowId", params.workflowId);
+  const resolvedStage = Math.max(DEFAULT_STAGE_INDEX, params.stageIndex ?? DEFAULT_STAGE_INDEX);
+  query.set("stageIndex", String(resolvedStage));
+  if (typeof params.message === "string") {
+    query.set("message", params.message);
+  }
+  return `/api/agent-stream?${query.toString()}`;
+}
+
 export function subscribeToAgentStream(
-  sessionId: string,
+  params: AgentStreamParams,
   handlers: AgentStreamHandlers
 ): () => void {
-  const eventSource = new EventSource(`/api/agent-stream?sessionId=${encodeURIComponent(sessionId)}`);
+  const eventSource = new EventSource(buildAgentStreamUrl(params));
 
   const handleMessage = (event: MessageEvent) => {
     const parsed = safeParse(event.data);

@@ -2,7 +2,7 @@
 // Design doc: docs/design/core/features/web-chat-interface.md
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { MessageRole, WorkflowMessage } from "@choragen/core";
 import { cn } from "@/lib/utils";
@@ -59,28 +59,18 @@ export function ChatContainer({
   const [isDismissed, setIsDismissed] = useState(false);
   const [isAwaitingResponse, setIsAwaitingResponse] = useState(false);
   const [isAgentTyping, setIsAgentTyping] = useState(false);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [agentError, setAgentError] = useState<{ type: AgentErrorType; message: string } | null>(null);
   const [isAgentRetrying, setIsAgentRetrying] = useState(false);
   const [toolCallMessages, setToolCallMessages] = useState<WorkflowMessage[]>([]);
   const hasInitializedMessages = useRef(false);
   const lastInvokedMessageRef = useRef<string | null>(null);
   const lastHumanMessageRef = useRef<string | null>(null);
+  const activeStreamCleanupRef = useRef<(() => void) | null>(null);
   const sortedMessages = useMemo(
     () => sortMessagesByTimestamp([...(liveMessages ?? []), ...toolCallMessages]),
     [liveMessages, toolCallMessages]
   );
-  const invokeAgent = trpc.workflow.invokeAgent.useMutation({
-    onSuccess: (session) => {
-      setActiveSessionId(session.sessionId);
-      setIsAgentTyping(true);
-      setAgentError(null);
-    },
-    onError: (mutationError) => {
-      setIsAgentTyping(false);
-      setAgentError(parseAgentError(mutationError));
-    },
-  });
 
   const errorDetails = useMemo(
     () => mapErrorToDetails(error),
@@ -100,6 +90,149 @@ export function ChatContainer({
     setIsRetrying(true);
     reconnect();
   };
+
+  const startAgentStream = useCallback(
+    (params?: { message?: string; stageIndex?: number }) => {
+      if (activeStreamCleanupRef.current) {
+        activeStreamCleanupRef.current();
+        activeStreamCleanupRef.current = null;
+        setIsStreaming(false);
+      }
+
+      const targetStageIndex =
+        typeof params?.stageIndex === "number" ? params.stageIndex : stageIndex;
+      const resolvedStageIndex = Math.max(DEFAULT_STAGE_INDEX, targetStageIndex);
+      const messagePayload = params?.message ?? lastHumanMessageRef.current ?? undefined;
+
+      setToolCallMessages([]);
+      setIsAgentTyping(true);
+      setAgentError(null);
+      setIsStreaming(true);
+
+      const unsubscribe = subscribeToAgentStream(
+        {
+          workflowId,
+          stageIndex: resolvedStageIndex,
+          message: messagePayload,
+        },
+        {
+          onMessage: () => setIsAgentTyping(false),
+          onToolCall: (call) => {
+            setIsAgentTyping(true);
+            const callId = call.id ?? `tool-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+            const callRecord: ToolCall = {
+              id: callId,
+              name: call.name ?? "tool",
+              args: typeof call.args === "undefined" ? {} : call.args,
+              status: call.status === "error" ? "error" : "pending",
+            };
+            const toolCallEntry: ToolCallMetadata = {
+              ...callRecord,
+              args: callRecord.args ?? {},
+            };
+
+            setToolCallMessages((current) => {
+              const existingIndex = current.findIndex(
+                (message) =>
+                  message.metadata?.type === "tool_call" &&
+                  (message.metadata.toolCalls?.[0] as ToolCall | undefined)?.id === callId
+              );
+
+              const message: WorkflowMessage = {
+                id: `stream-${workflowId}-tool-${callId}`,
+                role: agentRole,
+                content: callRecord.name,
+                stageIndex: resolvedStageIndex,
+                timestamp: new Date(),
+                metadata: {
+                  type: "tool_call",
+                  toolCalls: [toolCallEntry],
+                },
+              };
+
+              if (existingIndex >= 0) {
+                const updated = [...current];
+                updated[existingIndex] = message;
+                return updated;
+              }
+
+              return [...current, message];
+            });
+          },
+          onToolResult: (result) => {
+            setIsAgentTyping(true);
+            setToolCallMessages((current) =>
+              current.map((message) => {
+                if (message.metadata?.type !== "tool_call") {
+                  return message;
+                }
+                const toolCall = message.metadata.toolCalls?.[0] as ToolCallMetadata | undefined;
+                if (!toolCall) {
+                  return message;
+                }
+
+                const callId = result.id ?? toolCall.id;
+                if (callId && toolCall.id !== callId) {
+                  return message;
+                }
+
+                const nextStatus =
+                  result.status === "error" || (typeof result.error === "string" && result.error.length > 0)
+                    ? "error"
+                    : "success";
+
+                const updatedCall: ToolCallMetadata = {
+                  ...toolCall,
+                  id: callId ?? toolCall.id,
+                  status: nextStatus,
+                  args: toolCall.args ?? {},
+                  result: "result" in result ? result.result : result,
+                };
+
+                return {
+                  ...message,
+                  metadata: {
+                    ...message.metadata,
+                    toolCalls: [updatedCall],
+                  },
+                };
+              })
+            );
+          },
+          onError: (streamError) => {
+            unsubscribe();
+            activeStreamCleanupRef.current = null;
+            setIsStreaming(false);
+            setIsAgentTyping(false);
+            setToolCallMessages([]);
+            setAgentError(parseAgentError(streamError));
+          },
+          onDone: () => {
+            unsubscribe();
+            activeStreamCleanupRef.current = null;
+            setIsStreaming(false);
+            setIsAgentTyping(false);
+            setToolCallMessages([]);
+            setAgentError(null);
+            utils.workflow.get.invalidate(workflowId);
+            utils.workflow.list.invalidate();
+          },
+        }
+      );
+
+      activeStreamCleanupRef.current = unsubscribe;
+    },
+    [agentRole, stageIndex, utils.workflow, workflowId]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (activeStreamCleanupRef.current) {
+        activeStreamCleanupRef.current();
+        activeStreamCleanupRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!sortedMessages.length) {
@@ -138,131 +271,16 @@ export function ChatContainer({
       return;
     }
 
-    if (activeSessionId || invokeAgent.isPending) {
-      lastInvokedMessageRef.current = latestId;
+    lastInvokedMessageRef.current = latestId;
+    if (isStreaming) {
       return;
     }
 
-    lastInvokedMessageRef.current = latestId;
-    setIsAgentTyping(true);
-    invokeAgent.mutate({
-      workflowId,
+    startAgentStream({
       message: latest.content,
+      stageIndex,
     });
-  }, [activeSessionId, invokeAgent, sortedMessages, workflowId]);
-
-  useEffect(() => {
-    if (!activeSessionId) {
-      return undefined;
-    }
-
-    setToolCallMessages([]);
-    setIsAgentTyping(true);
-
-    const unsubscribe = subscribeToAgentStream(activeSessionId, {
-      onMessage: () => setIsAgentTyping(false),
-      onToolCall: (call) => {
-        setIsAgentTyping(true);
-        const callId = call.id ?? `tool-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-        const callRecord: ToolCall = {
-          id: callId,
-          name: call.name ?? "tool",
-          args: typeof call.args === "undefined" ? {} : call.args,
-          status: call.status === "error" ? "error" : "pending",
-        };
-        const toolCallEntry: ToolCallMetadata = {
-          ...callRecord,
-          args: callRecord.args ?? {},
-        };
-
-        setToolCallMessages((current) => {
-          const existingIndex = current.findIndex(
-            (message) =>
-              message.metadata?.type === "tool_call" &&
-              (message.metadata.toolCalls?.[0] as ToolCall | undefined)?.id === callId
-          );
-
-          const message: WorkflowMessage = {
-            id: `${activeSessionId}-tool-${callId}`,
-            role: agentRole,
-            content: callRecord.name,
-            stageIndex,
-            timestamp: new Date(),
-            metadata: {
-              type: "tool_call",
-              toolCalls: [toolCallEntry],
-            },
-          };
-
-          if (existingIndex >= 0) {
-            const updated = [...current];
-            updated[existingIndex] = message;
-            return updated;
-          }
-
-          return [...current, message];
-        });
-      },
-      onToolResult: (result) => {
-        setIsAgentTyping(true);
-        setToolCallMessages((current) =>
-          current.map((message) => {
-            if (message.metadata?.type !== "tool_call") {
-              return message;
-            }
-            const toolCall = message.metadata.toolCalls?.[0] as ToolCallMetadata | undefined;
-            if (!toolCall) {
-              return message;
-            }
-
-            const callId = result.id ?? toolCall.id;
-            if (callId && toolCall.id !== callId) {
-              return message;
-            }
-
-            const nextStatus =
-              result.status === "error" || (typeof result.error === "string" && result.error.length > 0)
-                ? "error"
-                : "success";
-
-            const updatedCall: ToolCallMetadata = {
-              ...toolCall,
-              id: callId ?? toolCall.id,
-              status: nextStatus,
-              args: toolCall.args ?? {},
-              result: "result" in result ? result.result : result,
-            };
-
-            return {
-              ...message,
-              metadata: {
-                ...message.metadata,
-                toolCalls: [updatedCall],
-              },
-            };
-          })
-        );
-      },
-      onError: (streamError) => {
-        setIsAgentTyping(false);
-        setActiveSessionId(null);
-        setToolCallMessages([]);
-        setAgentError(parseAgentError(streamError));
-      },
-      onDone: () => {
-        setIsAgentTyping(false);
-        setActiveSessionId(null);
-        setToolCallMessages([]);
-        setAgentError(null);
-        utils.workflow.get.invalidate(workflowId);
-        utils.workflow.list.invalidate();
-      },
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [activeSessionId]);
+  }, [isStreaming, sortedMessages, stageIndex, startAgentStream]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -270,18 +288,29 @@ export function ChatContainer({
     }
 
     const handler = (event: Event) => {
-      const custom = event as CustomEvent<{ sessionId?: string }>;
-      const sessionId = custom.detail?.sessionId;
-      if (!sessionId) return;
-      setActiveSessionId(sessionId);
+      const custom = event as CustomEvent<{
+        workflowId?: string;
+        stageIndex?: number;
+        message?: string;
+      }>;
+
+      if (custom.detail?.workflowId && custom.detail.workflowId !== workflowId) {
+        return;
+      }
+
+      setAgentError(null);
       setIsAgentTyping(true);
+      startAgentStream({
+        stageIndex: custom.detail?.stageIndex ?? stageIndex,
+        message: custom.detail?.message ?? lastHumanMessageRef.current ?? undefined,
+      });
     };
 
     window.addEventListener("agent-session-started", handler as EventListener);
     return () => {
       window.removeEventListener("agent-session-started", handler as EventListener);
     };
-  }, []);
+  }, [stageIndex, startAgentStream, workflowId]);
 
   const awaitingFromMessages =
     sortedMessages.length > 0 && sortedMessages[sortedMessages.length - 1].role === "human";
@@ -292,21 +321,15 @@ export function ChatContainer({
 
   const latestHumanMessage = lastHumanMessageRef.current ?? undefined;
 
-  const handleAgentRetry = async () => {
+  const handleAgentRetry = () => {
     setAgentError(null);
     setIsAgentRetrying(true);
     setIsAgentTyping(true);
-    try {
-      await invokeAgent.mutateAsync({
-        workflowId,
-        message: latestHumanMessage,
-      });
-    } catch (retryError) {
-      setAgentError(parseAgentError(retryError));
-      setIsAgentTyping(false);
-    } finally {
-      setIsAgentRetrying(false);
-    }
+    startAgentStream({
+      stageIndex,
+      message: latestHumanMessage,
+    });
+    setIsAgentRetrying(false);
   };
 
   return (

@@ -14,7 +14,6 @@ import { WorkflowCardSkeleton } from "@/components/chat/workflow-card-skeleton";
 import type { WorkflowMessage } from "@choragen/core";
 
 const useWorkflowMessagesMock = vi.fn();
-const invokeAgentMock = vi.fn();
 
 vi.mock("@/hooks/use-workflow-messages", () => ({
   useWorkflowMessages: (workflowId: string, initial?: WorkflowMessage[]) =>
@@ -30,15 +29,6 @@ vi.mock("@/lib/trpc/client", () => ({
         list: { invalidate: vi.fn() },
       },
     }),
-    workflow: {
-      invokeAgent: {
-        useMutation: () => ({
-          mutate: invokeAgentMock,
-          mutateAsync: invokeAgentMock,
-          isPending: false,
-        }),
-      },
-    },
   },
 }));
 
