@@ -93,7 +93,7 @@ Hooks are the deterministic scaffolding that makes the assembly line work.
 
 ## Linked ADRs
 
-- ADR-TBD: Event-Driven Orchestration
+- ADR-012: Event-Driven Orchestration
 
 ---
 
