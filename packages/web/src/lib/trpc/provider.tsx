@@ -10,7 +10,11 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchLink } from "@trpc/client";
+import {
+  httpBatchLink,
+  splitLink,
+  unstable_httpSubscriptionLink,
+} from "@trpc/client";
 import { useProject } from "@/hooks";
 import { trpc } from "./client";
 
@@ -76,24 +80,32 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
     queryClient.clear();
   }, [projectPath, queryClient]);
 
-  const trpcClient = useMemo(
-    () =>
-      trpc.createClient({
-        links: [
-          httpBatchLink({
+  const trpcClient = useMemo(() => {
+    const headers = () =>
+      projectPath
+        ? {
+            [PROJECT_HEADER]: projectPath,
+          }
+        : {};
+
+    return trpc.createClient({
+      links: [
+        splitLink({
+          condition: (op) => op.type === "subscription",
+          true: unstable_httpSubscriptionLink({
             url: `${getBaseUrl()}/api/trpc`,
-            headers() {
-              return projectPath
-                ? {
-                    [PROJECT_HEADER]: projectPath,
-                  }
-                : {};
-            },
+            eventSourceOptions: () => ({
+              headers: headers(),
+            }),
           }),
-        ],
-      }),
-    [projectPath]
-  );
+          false: httpBatchLink({
+            url: `${getBaseUrl()}/api/trpc`,
+            headers,
+          }),
+        }),
+      ],
+    });
+  }, [projectPath]);
 
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
