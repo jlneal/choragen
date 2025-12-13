@@ -17,44 +17,61 @@ import type {
 import { DEFAULT_LOCK_CONFIG, EMPTY_LOCK_FILE } from "./types.js";
 import { matchGlob } from "../utils/index.js";
 
+function materializePattern(pattern: string): string {
+  return pattern
+    .split("/")
+    .map((segment) => {
+      if (segment === "**") {
+        return "deep";
+      }
+      return segment.replace(/\*/g, "x").replace(/\?/g, "a");
+    })
+    .join("/");
+}
+
+function matchesPattern(pattern: string, candidate: string): boolean {
+  if (!pattern || !candidate) {
+    return false;
+  }
+
+  if (matchGlob(pattern, candidate)) {
+    return true;
+  }
+
+  if (pattern.endsWith("/**") && candidate.startsWith(pattern.slice(0, -3))) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * Check if two glob patterns could match the same file
  */
 function patternsOverlap(pattern1: string, pattern2: string): boolean {
-  // Simple heuristic: check if one pattern is a prefix of the other
-  // or if they share a common directory prefix
-  const parts1 = pattern1.split("/");
-  const parts2 = pattern2.split("/");
-
-  // Find common prefix length
-  let commonPrefix = 0;
-  for (let i = 0; i < Math.min(parts1.length, parts2.length); i++) {
-    if (parts1[i] === parts2[i]) {
-      commonPrefix++;
-    } else if (parts1[i].includes("*") || parts2[i].includes("*")) {
-      // Wildcards could match
-      return true;
-    } else {
-      break;
-    }
-  }
-
-  // If one is a prefix of the other with wildcards, they overlap
-  if (commonPrefix === parts1.length || commonPrefix === parts2.length) {
+  if (matchesPattern(pattern1, pattern2) || matchesPattern(pattern2, pattern1)) {
     return true;
   }
 
-  // Check for ** which matches anything
-  if (pattern1.includes("**") || pattern2.includes("**")) {
-    // Check if the non-** parts could match
-    const base1 = pattern1.split("**")[0];
-    const base2 = pattern2.split("**")[0];
-    if (base1.startsWith(base2) || base2.startsWith(base1)) {
-      return true;
+  const concrete1 = materializePattern(pattern1);
+  const concrete2 = materializePattern(pattern2);
+
+  return matchesPattern(pattern1, concrete2) || matchesPattern(pattern2, concrete1);
+}
+
+function getOverlappingPatterns(scopeA: string[], scopeB: string[]): string[] {
+  const overlaps = new Set<string>();
+
+  for (const patternA of scopeA) {
+    for (const patternB of scopeB) {
+      if (patternsOverlap(patternA, patternB)) {
+        overlaps.add(patternA);
+        overlaps.add(patternB);
+      }
     }
   }
 
-  return false;
+  return Array.from(overlaps);
 }
 
 export class LockManager {
@@ -177,6 +194,71 @@ export class LockManager {
       success: true,
       lock,
     };
+  }
+
+  /**
+   * Acquire locks for a chain's file scope
+   */
+  async acquireForScope(
+    chainId: string,
+    fileScope: string[],
+    agent = chainId
+  ): Promise<LockAcquisitionResult> {
+    const lockFile = this.cleanExpiredLocks(await this.readLockFile());
+    const conflicts = await this.checkScopeConflicts(fileScope, lockFile);
+
+    if (conflicts.length > 0) {
+      const conflict = conflicts[0];
+      return {
+        success: false,
+        conflictingChain: conflict.chainId,
+        conflictingPatterns: conflict.overlappingPatterns,
+        error: `Lock conflict: ${conflict.overlappingPatterns.join(", ")} (held by ${conflict.chainId})`,
+      };
+    }
+
+    return this.acquire(chainId, fileScope, agent);
+  }
+
+  /**
+   * Check for lock conflicts against the current lock file
+   */
+  async checkScopeConflicts(
+    fileScope: string[],
+    existingLockFile?: LockFile
+  ): Promise<
+    { chainId: string; overlappingPatterns: string[]; lock: FileLock }[]
+  > {
+    const lockFile = this.cleanExpiredLocks(
+      existingLockFile || (await this.readLockFile())
+    );
+
+    if (fileScope.length === 0) {
+      return [];
+    }
+
+    const conflicts: {
+      chainId: string;
+      overlappingPatterns: string[];
+      lock: FileLock;
+    }[] = [];
+
+    for (const [existingChainId, lock] of Object.entries(lockFile.chains)) {
+      const overlappingPatterns = getOverlappingPatterns(
+        fileScope,
+        lock.files
+      );
+
+      if (overlappingPatterns.length > 0) {
+        conflicts.push({
+          chainId: existingChainId,
+          overlappingPatterns,
+          lock,
+        });
+      }
+    }
+
+    return conflicts;
   }
 
   /**

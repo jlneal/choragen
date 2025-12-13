@@ -10,6 +10,7 @@ import {
   CHAIN_TYPES,
   WORKFLOW_STATUSES,
   type ChainType,
+  findConflictingChains,
   MetricsCollector,
   type TokenUsage,
   type WorkflowStatus,
@@ -606,6 +607,78 @@ const commands: Record<string, CommandDef> = {
         const typeStr = chain.type ? `[${chain.type}]` : "";
         const typeCol = typeStr.padEnd(16);
         console.log(`${chain.id} ${typeCol} [${status}] - ${chain.title}`);
+      }
+    },
+  },
+
+  "chain:scope": {
+    description: "Show a chain's aggregated file scope",
+    usage: "chain:scope <chain-id>",
+    handler: async (args) => {
+      const [chainId] = args;
+      if (!chainId) {
+        console.error("Usage: choragen chain:scope <chain-id>");
+        process.exit(1);
+      }
+
+      const chain = await chainManager.getChain(chainId);
+      if (!chain) {
+        console.error(`Chain not found: ${chainId}`);
+        process.exit(1);
+      }
+
+      const scope = chain.fileScope || [];
+
+      console.log(`Chain: ${chain.id}`);
+      if (scope.length === 0) {
+        console.log("No file scope declared.");
+        return;
+      }
+
+      console.log("File scope:");
+      for (const pattern of scope) {
+        console.log(`  - ${pattern}`);
+      }
+    },
+  },
+
+  "chain:conflicts": {
+    description: "List chains whose file scopes overlap with the given chain",
+    usage: "chain:conflicts <chain-id>",
+    handler: async (args) => {
+      const [chainId] = args;
+      if (!chainId) {
+        console.error("Usage: choragen chain:conflicts <chain-id>");
+        process.exit(1);
+      }
+
+      const chain = await chainManager.getChain(chainId);
+      if (!chain) {
+        console.error(`Chain not found: ${chainId}`);
+        process.exit(1);
+      }
+
+      const scope = chain.fileScope || [];
+      if (scope.length === 0) {
+        console.log(`Chain ${chain.id} has no file scope; no conflicts.`);
+        return;
+      }
+
+      const conflicts = await findConflictingChains(chain.id, projectRoot);
+      if (conflicts.length === 0) {
+        console.log("No conflicting chains found.");
+        return;
+      }
+
+      console.log(`Conflicts for ${chain.id}:`);
+      for (const conflict of conflicts) {
+        console.log(`  - ${conflict.id}`);
+        if (conflict.fileScope && conflict.fileScope.length > 0) {
+          console.log("    Scope:");
+          for (const pattern of conflict.fileScope) {
+            console.log(`      - ${pattern}`);
+          }
+        }
       }
     },
   },

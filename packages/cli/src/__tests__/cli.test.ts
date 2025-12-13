@@ -9,6 +9,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { execSync, type ExecSyncOptions } from "node:child_process";
+import { ChainManager } from "@choragen/core";
 
 // Path to the CLI entry point (built)
 const CLI_PATH = path.resolve(__dirname, "../../dist/bin.js");
@@ -120,6 +121,80 @@ describe("CLI Smoke Tests", () => {
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("No chains found");
+    });
+  });
+
+  describe("chain:scope command", () => {
+    it("shows file scope for a chain", async () => {
+      await createTaskDirs(tempDir);
+      const chainManager = new ChainManager(tempDir);
+      const chain = await chainManager.createChain({
+        requestId: "CR-001",
+        slug: "scope",
+        title: "Scope Chain",
+        fileScope: ["src/**", "lib/**"],
+      });
+
+      const result = runCli(["chain:scope", chain.id], tempDir);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("src/**");
+      expect(result.stdout).toContain("lib/**");
+    });
+
+    it("handles missing chain", async () => {
+      await createTaskDirs(tempDir);
+
+      const result = runCli(["chain:scope", "CHAIN-999-missing"], tempDir);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Chain not found");
+    });
+  });
+
+  describe("chain:conflicts command", () => {
+    it("lists conflicting chains", async () => {
+      await createTaskDirs(tempDir);
+      const chainManager = new ChainManager(tempDir);
+      const chainA = await chainManager.createChain({
+        requestId: "CR-001",
+        slug: "a",
+        title: "Chain A",
+        fileScope: ["src/**"],
+      });
+      const chainB = await chainManager.createChain({
+        requestId: "CR-001",
+        slug: "b",
+        title: "Chain B",
+        fileScope: ["src/index.ts"],
+      });
+      const chainC = await chainManager.createChain({
+        requestId: "CR-001",
+        slug: "c",
+        title: "Chain C",
+        fileScope: ["docs/**"],
+      });
+
+      const result = runCli(["chain:conflicts", chainA.id], tempDir);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain(chainB.id);
+      expect(result.stdout).not.toContain(chainC.id);
+    });
+
+    it("handles chains without scope", async () => {
+      await createTaskDirs(tempDir);
+      const chainManager = new ChainManager(tempDir);
+      const chain = await chainManager.createChain({
+        requestId: "CR-001",
+        slug: "noscope",
+        title: "No Scope Chain",
+      });
+
+      const result = runCli(["chain:conflicts", chain.id], tempDir);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("has no file scope");
     });
   });
 

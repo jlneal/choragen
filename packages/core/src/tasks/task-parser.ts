@@ -135,6 +135,7 @@ export function parseTaskMarkdown(
     title,
     description: sections["objective"] || "",
     expectedFiles: parseList(sections["expected files"] || ""),
+    fileScope: parseList(sections["file scope"] || ""),
     acceptance: parseList(sections["acceptance criteria"] || ""),
     constraints: parseList(sections["constraints"] || ""),
     notes: sections["notes"] || "",
@@ -189,6 +190,16 @@ export function serializeTaskMarkdown(task: Task): string {
   lines.push("");
   for (const file of task.expectedFiles) {
     lines.push(`- \`${file}\``);
+  }
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+
+  // File Scope
+  lines.push("## File Scope");
+  lines.push("");
+  for (const pattern of task.fileScope || []) {
+    lines.push(`- \`${pattern}\``);
   }
   lines.push("");
   lines.push("---");

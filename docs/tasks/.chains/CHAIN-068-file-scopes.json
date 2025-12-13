@@ -1,0 +1,13 @@
+{
+  "id": "CHAIN-068-file-scopes",
+  "sequence": 68,
+  "slug": "file-scopes",
+  "requestId": "CR-20251212-006",
+  "title": "File Scopes for Tasks and Chains",
+  "description": "Add fileScope field to Task and Chain types, collision detection, and CLI commands",
+  "type": "implementation",
+  "skipDesign": true,
+  "skipDesignJustification": "Design already documented in CR and standard-workflow.md feature doc",
+  "createdAt": "2025-12-13T01:35:27.337Z",
+  "updatedAt": "2025-12-13T01:35:27.337Z"
+}

@@ -9,3 +9,4 @@ export * from "./types.js";
 export * from "./task-manager.js";
 export * from "./chain-manager.js";
 export * from "./task-parser.js";
+export * from "./scope-utils.js";

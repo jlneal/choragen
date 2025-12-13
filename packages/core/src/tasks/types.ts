@@ -66,6 +66,8 @@ export interface Task {
   description: string;
   /** Files this task is expected to touch */
   expectedFiles: string[];
+  /** Glob patterns describing the files this task will modify */
+  fileScope?: string[];
   /** Acceptance criteria */
   acceptance: string[];
   /** Constraints or warnings */
@@ -109,6 +111,8 @@ export interface Chain {
   skipDesign?: boolean;
   /** Justification for skipping design (required when skipDesign is true) */
   skipDesignJustification?: string;
+  /** Aggregated file scope for the chain */
+  fileScope?: string[];
   /** All tasks in this chain */
   tasks: Task[];
   /** Created timestamp */
@@ -133,6 +137,8 @@ export interface CreateChainOptions {
   skipDesign?: boolean;
   /** Justification for skipping design (required when skipDesign is true) */
   skipDesignJustification?: string;
+  /** Explicit file scope for the chain (optional, typically derived from tasks) */
+  fileScope?: string[];
 }
 
 /** Options for creating a new task */
@@ -142,6 +148,7 @@ export interface CreateTaskOptions {
   title: string;
   description: string;
   expectedFiles?: string[];
+  fileScope?: string[];
   acceptance?: string[];
   constraints?: string[];
   notes?: string;

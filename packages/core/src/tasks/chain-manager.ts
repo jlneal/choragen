@@ -19,6 +19,8 @@ import type {
 import { DEFAULT_TASK_CONFIG, TASK_STATUSES } from "./types.js";
 import { TaskManager } from "./task-manager.js";
 import { formatChainId, parseChainId } from "./task-parser.js";
+import { LockManager } from "../locks/lock-manager.js";
+import type { LockAcquisitionResult } from "../locks/types.js";
 
 export class ChainManager {
   private config: TaskConfig;
@@ -73,6 +75,7 @@ export class ChainManager {
       dependsOn,
       skipDesign,
       skipDesignJustification,
+      fileScope: options.fileScope || [],
       tasks: [],
       createdAt: now,
       updatedAt: now,
@@ -153,6 +156,8 @@ export class ChainManager {
       });
     }
 
+    const fileScope = this.aggregateFileScope(tasks, metadata.fileScope);
+
     return {
       id: chainId,
       sequence: parsed.sequence,
@@ -165,6 +170,7 @@ export class ChainManager {
       skipDesign: metadata.skipDesign,
       skipDesignJustification: metadata.skipDesignJustification,
       tasks,
+      fileScope,
       createdAt: metadata.createdAt ? new Date(metadata.createdAt) : new Date(),
       updatedAt: new Date(),
     };
@@ -201,6 +207,9 @@ export class ChainManager {
     }
     if (chain.skipDesignJustification) {
       metadata.skipDesignJustification = chain.skipDesignJustification;
+    }
+    if (chain.fileScope && chain.fileScope.length > 0) {
+      metadata.fileScope = chain.fileScope;
     }
 
     await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2), "utf-8");
@@ -241,6 +250,9 @@ export class ChainManager {
     }
     if (chain.skipDesignJustification) {
       metadata.skipDesignJustification = chain.skipDesignJustification;
+    }
+    if (chain.fileScope && chain.fileScope.length > 0) {
+      metadata.fileScope = chain.fileScope;
     }
 
     await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2), "utf-8");
@@ -392,7 +404,7 @@ export class ChainManager {
    */
   async updateChain(
     chainId: string,
-    updates: Partial<Pick<Chain, "title" | "description" | "requestId" | "type" | "dependsOn" | "skipDesign" | "skipDesignJustification">>
+    updates: Partial<Pick<Chain, "title" | "description" | "requestId" | "type" | "dependsOn" | "skipDesign" | "skipDesignJustification" | "fileScope">>
   ): Promise<Chain | null> {
     const chain = await this.getChain(chainId);
     if (!chain) return null;
@@ -484,5 +496,31 @@ export class ChainManager {
     }
 
     return true;
+  }
+
+  /**
+   * Aggregate file scope from tasks and optional chain metadata
+   */
+  private aggregateFileScope(tasks: Task[], metadataScope?: string[]): string[] {
+    const scopeFromTasks = tasks.flatMap((task) => task.fileScope || []);
+    const combined = [...(metadataScope || []), ...scopeFromTasks];
+    const unique = new Set(combined.filter((pattern) => pattern.length > 0));
+    return Array.from(unique);
+  }
+
+  /**
+   * Acquire locks for a chain's file scope
+   */
+  async acquireLocks(chainId: string, agent = chainId): Promise<LockAcquisitionResult> {
+    const chain = await this.getChain(chainId);
+    if (!chain) {
+      return {
+        success: false,
+        error: `Chain ${chainId} not found`,
+      };
+    }
+
+    const lockManager = new LockManager(this.projectRoot);
+    return lockManager.acquireForScope(chainId, chain.fileScope || [], agent);
   }
 }

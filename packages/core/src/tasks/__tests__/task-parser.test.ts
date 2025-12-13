@@ -98,6 +98,13 @@ Create the API routes for the profile feature.
 
 ---
 
+## File Scope
+
+- \`app/api/profile/**\`
+- \`lib/profile/**\`
+
+---
+
 ## Acceptance Criteria
 
 - [ ] Routes respond with correct status codes
@@ -123,6 +130,7 @@ Some notes here.
       expect(task!.description).toContain("Create the API routes");
       expect(task!.expectedFiles).toContain("app/api/profile/route.ts");
       expect(task!.acceptance).toContain("Routes respond with correct status codes");
+      expect(task!.fileScope).toEqual(["app/api/profile/**", "lib/profile/**"]);
     });
 
     it("returns null for invalid markdown", () => {
@@ -142,6 +150,7 @@ Some notes here.
         title: "Test Task",
         description: "Do something",
         expectedFiles: ["file1.ts", "file2.ts"],
+        fileScope: ["src/**", "tests/**"],
         acceptance: ["Criterion 1", "Criterion 2"],
         constraints: ["Constraint 1"],
         notes: "Some notes",
@@ -161,6 +170,8 @@ Some notes here.
       expect(markdown).toContain("- [ ] Criterion 1");
       expect(markdown).toContain("- Constraint 1");
       expect(markdown).toContain("Some notes");
+      expect(markdown).toContain("## File Scope");
+      expect(markdown).toContain("`src/**`");
     });
 
     it("round-trips correctly", () => {
@@ -173,6 +184,7 @@ Some notes here.
         title: "Roundtrip Test",
         description: "Test roundtrip serialization",
         expectedFiles: ["a.ts"],
+        fileScope: ["packages/core/**"],
         acceptance: ["Works"],
         constraints: [],
         notes: "",
@@ -187,6 +199,7 @@ Some notes here.
       expect(parsed!.id).toBe(task.id);
       expect(parsed!.title).toBe(task.title);
       expect(parsed!.description).toBe(task.description);
+      expect(parsed!.fileScope).toEqual(task.fileScope);
     });
   });
 });

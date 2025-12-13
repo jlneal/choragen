@@ -10,6 +10,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { LockManager } from "../lock-manager.js";
 import type { LockFile } from "../types.js";
+import { ChainManager } from "../../tasks/chain-manager.js";
 
 describe("LockManager", () => {
   let tempDir: string;
@@ -286,6 +287,84 @@ describe("LockManager", () => {
 
       expect(result.error).toContain("src/**/*.ts");
       expect(result.error).toContain("CHAIN-001-test");
+    });
+  });
+
+  describe("scope integration", () => {
+    it("acquires locks for file scope", async () => {
+      const result = await lockManager.acquireForScope("CHAIN-001-test", ["src/**"]);
+
+      expect(result.success).toBe(true);
+      const lock = await lockManager.getLock("CHAIN-001-test");
+      expect(lock).not.toBeNull();
+      expect(lock!.files).toEqual(["src/**"]);
+    });
+
+    it("fails when scope overlaps existing lock", async () => {
+      await lockManager.acquireForScope("CHAIN-001-test", ["packages/core/**"]);
+
+      const result = await lockManager.acquireForScope(
+        "CHAIN-002-other",
+        ["packages/core/src/index.ts"]
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.conflictingChain).toBe("CHAIN-001-test");
+      expect(result.conflictingPatterns).toEqual(
+        expect.arrayContaining(["packages/core/**", "packages/core/src/index.ts"])
+      );
+    });
+
+    it("lists conflicts without acquiring", async () => {
+      await lockManager.acquireForScope("CHAIN-001-test", ["src/**"]);
+
+      const conflicts = await lockManager.checkScopeConflicts(["src/index.ts"]);
+
+      expect(conflicts).toHaveLength(1);
+      expect(conflicts[0].chainId).toBe("CHAIN-001-test");
+      expect(conflicts[0].overlappingPatterns).toEqual(
+        expect.arrayContaining(["src/**", "src/index.ts"])
+      );
+    });
+  });
+
+  describe("chain manager integration", () => {
+    it("acquires locks based on chain file scope", async () => {
+      const chainManager = new ChainManager(tempDir);
+      const chain = await chainManager.createChain({
+        requestId: "CR-001",
+        slug: "scope",
+        title: "Scope Chain",
+        fileScope: ["apps/web/**"],
+      });
+
+      const result = await chainManager.acquireLocks(chain.id, "agent-1");
+
+      expect(result.success).toBe(true);
+      const lock = await lockManager.getLock(chain.id);
+      expect(lock?.files).toEqual(["apps/web/**"]);
+    });
+
+    it("fails when chain scope conflicts", async () => {
+      const chainManager = new ChainManager(tempDir);
+      const chainA = await chainManager.createChain({
+        requestId: "CR-001",
+        slug: "a",
+        title: "Chain A",
+        fileScope: ["packages/core/**"],
+      });
+      const chainB = await chainManager.createChain({
+        requestId: "CR-001",
+        slug: "b",
+        title: "Chain B",
+        fileScope: ["packages/core/src/index.ts"],
+      });
+
+      await chainManager.acquireLocks(chainA.id, "agent-a");
+      const result = await chainManager.acquireLocks(chainB.id, "agent-b");
+
+      expect(result.success).toBe(false);
+      expect(result.conflictingChain).toBe(chainA.id);
     });
   });
 

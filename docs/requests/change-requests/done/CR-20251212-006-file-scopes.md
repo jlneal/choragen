@@ -2,7 +2,7 @@
 
 **ID**: CR-20251212-006  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-12  
 **Owner**: agent  
 
@@ -90,7 +90,7 @@ File scopes make parallelism safe and automatic.
 
 ## Commits
 
-No commits yet.
+_Pending commit by user_
 
 ---
 
@@ -112,4 +112,45 @@ Key implementation areas:
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+**Completed**: 2025-12-12
+
+### Implemented
+
+1. **Schema updates** (`packages/core/src/tasks/types.ts`)
+   - Added `fileScope?: string[]` to `Task` interface
+   - Added `fileScope?: string[]` to `Chain` interface
+   - Added `fileScope` to `CreateTaskOptions` and `CreateChainOptions`
+
+2. **Task parser** (`packages/core/src/tasks/task-parser.ts`)
+   - Parses `## File Scope` section from task markdown
+   - Serializes `fileScope` patterns to markdown
+
+3. **Chain manager** (`packages/core/src/tasks/chain-manager.ts`)
+   - Aggregates `fileScope` from tasks and chain metadata
+   - Added `acquireLocks(chainId, agent)` method for scope-based locking
+
+4. **Collision detection** (`packages/core/src/tasks/scope-utils.ts`)
+   - `hasOverlap(scopeA, scopeB)` — detects overlapping patterns
+   - `getOverlappingPatterns(scopeA, scopeB)` — returns specific overlaps
+   - `findConflictingChains(chainId)` — finds chains with overlapping scopes
+
+5. **Lock integration** (`packages/core/src/locks/lock-manager.ts`)
+   - `acquireForScope(chainId, fileScope)` — acquires locks for scope patterns
+   - `checkScopeConflicts(fileScope)` — returns conflicting locks
+
+6. **CLI commands** (`packages/cli/src/cli.ts`)
+   - `choragen chain:scope <chain-id>` — displays chain's file scope
+   - `choragen chain:conflicts <chain-id>` — lists chains with overlapping scopes
+
+### Tests Added
+
+- `packages/core/src/tasks/__tests__/task-parser.test.ts` — fileScope parsing/serialization
+- `packages/core/src/tasks/__tests__/scope-utils.test.ts` — overlap detection, conflict finding
+- `packages/core/src/locks/__tests__/lock-manager.test.ts` — scope integration, chain manager integration
+- `packages/cli/src/__tests__/cli.test.ts` — chain:scope and chain:conflicts commands
+
+### Out of Scope (as planned)
+
+- Automatic scope inference from code analysis
+- Runtime scope violation detection
+- Scope inheritance/templates

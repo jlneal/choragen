@@ -76,6 +76,7 @@ export class TaskManager {
       title,
       description,
       expectedFiles: options.expectedFiles || [],
+      fileScope: options.fileScope || [],
       acceptance: options.acceptance || [],
       constraints: options.constraints || [],
       notes: options.notes || "",
@@ -275,7 +276,7 @@ export class TaskManager {
   async updateTask(
     chainId: string,
     taskId: string,
-    updates: Partial<Pick<Task, "title" | "description" | "expectedFiles" | "acceptance" | "constraints" | "notes">>
+    updates: Partial<Pick<Task, "title" | "description" | "expectedFiles" | "fileScope" | "acceptance" | "constraints" | "notes">>
   ): Promise<Task | null> {
     const task = await this.getTask(chainId, taskId);
     if (!task) return null;

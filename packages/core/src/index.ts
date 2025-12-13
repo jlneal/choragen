@@ -19,3 +19,4 @@ export * from "./trace/index.js";
 export * from "./roles/index.js";
 export * from "./tools/index.js";
 export * from "./workflow/index.js";
+export * from "./tasks/scope-utils.js";
