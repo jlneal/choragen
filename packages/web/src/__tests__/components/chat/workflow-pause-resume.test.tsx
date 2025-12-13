@@ -35,6 +35,9 @@ vi.mock("@/lib/trpc/client", () => ({
       cancel: {
         useMutation: () => ({ mutate: cancelMutateMock, isPending: false }),
       },
+      discard: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
     },
   },
 }));
@@ -49,6 +52,18 @@ describe("WorkflowActions pause/resume", () => {
 
     expect(html).toContain("Pause");
     expect(html).toContain("Cancel workflow");
+  });
+
+  it("shows discard control when gate option is present", () => {
+    const html = renderToStaticMarkup(
+      <WorkflowActions
+        workflowId="WF-1"
+        status="active"
+        gateOptions={[{ label: "Discard", action: "discard" }]}
+      />
+    );
+
+    expect(html).toContain("Discard idea");
   });
 
   it("shows resume control for paused workflow", () => {

@@ -162,7 +162,7 @@ export class WorkflowManager {
    */
   async advance(workflowId: string): Promise<Workflow> {
     let workflow = await this.requireWorkflow(workflowId);
-    if (workflow.status === "completed" || workflow.status === "cancelled") {
+    if (workflow.status === "completed" || workflow.status === "cancelled" || workflow.status === "discarded") {
       throw new Error(`Workflow ${workflowId} is not active`);
     }
 
@@ -263,6 +263,34 @@ export class WorkflowManager {
   async updateStatus(workflowId: string, status: WorkflowStatus): Promise<Workflow> {
     const workflow = await this.requireWorkflow(workflowId);
     workflow.status = status;
+    workflow.updatedAt = new Date();
+    await this.persistWorkflow(workflow);
+    return workflow;
+  }
+
+  /**
+   * Discard a workflow with a provided reason, recording the decision in history.
+   */
+  async discard(workflowId: string, reason: string): Promise<Workflow> {
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      throw new Error("Discard reason is required");
+    }
+
+    const workflow = await this.requireWorkflow(workflowId);
+    const message: WorkflowMessage = {
+      id: randomUUID(),
+      role: "system",
+      content: trimmedReason,
+      stageIndex: workflow.currentStage,
+      timestamp: new Date(),
+      metadata: {
+        type: "discard_reason",
+      },
+    };
+
+    workflow.messages.push(message);
+    workflow.status = "discarded";
     workflow.updatedAt = new Date();
     await this.persistWorkflow(workflow);
     return workflow;

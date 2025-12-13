@@ -218,6 +218,24 @@ describe("WorkflowManager", () => {
     expect(reloaded?.messages[0].role).toBe("impl");
   });
 
+  it("discards a workflow with a recorded reason", async () => {
+    const manager = createManager();
+    const workflow = await manager.create({ requestId: "CR-15", template: baseTemplate });
+
+    const discarded = await manager.discard(workflow.id, "Idea rejected due to scope");
+
+    expect(discarded.status).toBe("discarded");
+    expect(discarded.messages).toHaveLength(1);
+    expect(discarded.messages[0]).toMatchObject({
+      role: "system",
+      content: "Idea rejected due to scope",
+      stageIndex: 0,
+      metadata: { type: "discard_reason" },
+    });
+
+    await expect(manager.advance(workflow.id)).rejects.toThrow("not active");
+  });
+
   it("emits gate prompt when human approval stage becomes active on create", async () => {
     const template: WorkflowTemplate = {
       ...templateMeta(),

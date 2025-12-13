@@ -43,6 +43,9 @@ vi.mock("@/lib/trpc/client", () => ({
       },
     }),
     workflow: {
+      get: {
+        useQuery: () => ({ data: undefined }),
+      },
       sendMessage: {
         useMutation: (options?: { onSuccess?: () => void }) => {
           return {
@@ -73,6 +76,13 @@ vi.mock("@/lib/trpc/client", () => ({
       resume: {
         useMutation: () => ({
           mutate: vi.fn(),
+          isPending: false,
+        }),
+      },
+      discard: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          mutateAsync: vi.fn(),
           isPending: false,
         }),
       },

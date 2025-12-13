@@ -13,6 +13,7 @@ const WORKFLOW_STATUSES: readonly WorkflowStatus[] = [
   "completed",
   "failed",
   "cancelled",
+  "discarded",
 ];
 
 /** Simplified workflow summary that accepts serialized tRPC responses */
@@ -34,6 +35,7 @@ export const STATUS_ORDER: (WorkflowStatus | "other")[] = [
   "active",
   "paused",
   "completed",
+  "discarded",
   "cancelled",
   "failed",
   "other",
@@ -45,6 +47,7 @@ export const STATUS_LABELS: Record<WorkflowStatus | "other", string> = {
   completed: "Completed",
   cancelled: "Cancelled",
   failed: "Failed",
+  discarded: "Discarded",
   other: "Other",
 };
 

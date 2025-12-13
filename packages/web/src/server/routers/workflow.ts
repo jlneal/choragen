@@ -80,6 +80,11 @@ const resumeWorkflowInputSchema = z.object({
   workflowId: z.string().min(1, "Workflow ID is required"),
 });
 
+const discardWorkflowInputSchema = z.object({
+  workflowId: z.string().min(1, "Workflow ID is required"),
+  reason: z.string().min(1, "Reason is required"),
+});
+
 const onMessageInputSchema = z.object({
   workflowId: z.string().min(1, "Workflow ID is required"),
 });
@@ -365,6 +370,24 @@ export const workflowRouter = router({
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: error instanceof Error ? error.message : "Failed to pause workflow",
+        });
+      }
+    }),
+
+  /**
+   * Discard a workflow with reasoning
+   */
+  discard: publicProcedure
+    .input(discardWorkflowInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const manager = getWorkflowManager(ctx.projectRoot);
+
+      try {
+        return await manager.discard(input.workflowId, input.reason);
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: error instanceof Error ? error.message : "Failed to discard workflow",
         });
       }
     }),

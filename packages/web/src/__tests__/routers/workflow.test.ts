@@ -41,6 +41,7 @@ const mockWorkflowManager = {
   addMessage: vi.fn(),
   satisfyGate: vi.fn(),
   updateStatus: vi.fn(),
+  discard: vi.fn(),
 };
 
 vi.mock("@choragen/core", async () => {
@@ -71,6 +72,7 @@ describe("workflow router", () => {
     mockWorkflowManager.addMessage.mockResolvedValue(mockWorkflow);
     mockWorkflowManager.satisfyGate.mockResolvedValue(mockWorkflow);
     mockWorkflowManager.updateStatus.mockResolvedValue(mockWorkflow);
+    mockWorkflowManager.discard.mockResolvedValue(mockWorkflow);
     mockedLoadTemplate.mockResolvedValue(mockTemplate);
     mockedSpawnAgentSession.mockReturnValue({
       sessionId: "session-test",
@@ -358,6 +360,26 @@ describe("workflow router", () => {
 
       await expect(
         caller.workflow.cancel({ workflowId: "WF-20251211-001" })
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    });
+  });
+
+  describe("discard", () => {
+    it("discards workflow with reason", async () => {
+      const result = await caller.workflow.discard({
+        workflowId: "WF-20251211-001",
+        reason: "Idea rejected",
+      });
+
+      expect(result).toEqual(mockWorkflow);
+      expect(mockWorkflowManager.discard).toHaveBeenCalledWith("WF-20251211-001", "Idea rejected");
+    });
+
+    it("throws BAD_REQUEST on discard failure", async () => {
+      mockWorkflowManager.discard.mockRejectedValueOnce(new Error("Cannot discard"));
+
+      await expect(
+        caller.workflow.discard({ workflowId: "WF-20251211-001", reason: "No longer needed" })
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     });
   });

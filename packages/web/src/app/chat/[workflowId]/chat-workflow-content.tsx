@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 
-import type { WorkflowMessage } from "@choragen/core";
+import type { StageGateOption, WorkflowMessage } from "@choragen/core";
 import { ChatContainer } from "@/components/chat/chat-container";
 import { trpc } from "@/lib/trpc/client";
 import { Button } from "@/components/ui/button";
@@ -166,6 +166,11 @@ export function ChatWorkflowContent({ workflowId }: ChatWorkflowContentProps) {
             workflowId={workflowId}
             status={workflow?.status}
             stageIndex={workflow?.currentStage}
+            gateOptions={
+              typeof workflow?.currentStage === "number"
+                ? workflow?.stages?.[workflow.currentStage]?.gate?.options
+                : undefined
+            }
           />
         </div>
       </div>
@@ -196,30 +201,37 @@ function ConversationCard({
   status,
   messages,
   stageIndex,
+  gateOptions,
 }: {
   isLoading: boolean;
   workflowId: string;
   status?: string;
   messages?: WorkflowMessage[];
   stageIndex?: number;
+  gateOptions?: StageGateOption[];
 }) {
   return (
     <Card className="h-full">
-      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <CardTitle>Message list</CardTitle>
-          <CardDescription>
-            Live messages and system updates for workflow{" "}
-            <span className="font-mono">{workflowId}</span>
-          </CardDescription>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="capitalize">
-            {status ?? "unknown"}
-          </Badge>
-          <WorkflowActions workflowId={workflowId} status={status} />
-        </div>
-      </CardHeader>
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <CardTitle>Message list</CardTitle>
+              <CardDescription>
+                Live messages and system updates for workflow{" "}
+                <span className="font-mono">{workflowId}</span>
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="capitalize">
+                {status ?? "unknown"}
+              </Badge>
+              <WorkflowActions
+                workflowId={workflowId}
+                status={status}
+                stageIndex={typeof stageIndex === "number" ? stageIndex : undefined}
+                gateOptions={gateOptions}
+              />
+            </div>
+          </CardHeader>
       <CardContent className="space-y-3">
         {isLoading && !messages ? (
           <ConversationSkeleton />

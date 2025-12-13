@@ -121,6 +121,14 @@ const gateSchema = z
     prompt: z.string().optional(),
     chainId: z.string().optional(),
     commands: z.array(z.string()).optional(),
+    options: z
+      .array(
+        z.object({
+          label: z.string(),
+          action: z.string(),
+        })
+      )
+      .optional(),
     satisfied: z.boolean().optional(),
     satisfiedBy: z.string().optional(),
     satisfiedAt: z.string().optional(),

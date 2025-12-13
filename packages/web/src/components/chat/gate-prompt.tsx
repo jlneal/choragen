@@ -10,6 +10,9 @@ import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface GatePromptProps {
   workflowId: string;
@@ -20,7 +23,13 @@ interface GatePromptProps {
 
 export function GatePrompt({ workflowId, stageIndex, prompt, gateType }: GatePromptProps) {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [discardReason, setDiscardReason] = useState("");
   const utils = trpc.useUtils();
+  const { data: workflow } = trpc.workflow.get.useQuery(workflowId);
+  const gateOptions = workflow?.stages?.[stageIndex]?.gate?.options ?? [];
+  const advanceOption = gateOptions.find((option) => option.action === "advance");
+  const discardOption = gateOptions.find((option) => option.action === "discard");
 
   const satisfyGate = trpc.workflow.satisfyGate.useMutation({
     onSuccess: () => {
@@ -47,6 +56,20 @@ export function GatePrompt({ workflowId, stageIndex, prompt, gateType }: GatePro
     },
   });
 
+  const discardMutation = trpc.workflow.discard.useMutation({
+    onSuccess: () => {
+      setStatusMessage("Idea discarded");
+      setDiscardOpen(false);
+      setDiscardReason("");
+      utils.workflow.get.invalidate(workflowId);
+      utils.workflow.list.invalidate();
+      utils.workflow.getHistory.invalidate({ workflowId });
+    },
+    onError: (error) => {
+      setStatusMessage(error.message || "Failed to discard");
+    },
+  });
+
   const isSubmitting = satisfyGate.isPending || invokeAgent.isPending;
 
   const handleApprove = async () => {
@@ -62,6 +85,19 @@ export function GatePrompt({ workflowId, stageIndex, prompt, gateType }: GatePro
       utils.workflow.list.invalidate();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to approve gate";
+      setStatusMessage(message);
+    }
+  };
+
+  const handleDiscard = async () => {
+    setStatusMessage(null);
+    try {
+      await discardMutation.mutateAsync({
+        workflowId,
+        reason: discardReason.trim(),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to discard workflow";
       setStatusMessage(message);
     }
   };
@@ -95,11 +131,47 @@ export function GatePrompt({ workflowId, stageIndex, prompt, gateType }: GatePro
         <CardFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex gap-2">
             <Button onClick={handleApprove} disabled={isSubmitting} size="sm">
-              {isSubmitting ? "Submitting..." : "Approve"}
+              {isSubmitting ? "Submitting..." : advanceOption?.label ?? "Approve"}
             </Button>
-            <Button variant="outline" onClick={handleReject} disabled={isSubmitting} size="sm">
-              Request Changes
-            </Button>
+            {discardOption ? (
+              <Dialog open={discardOpen} onOpenChange={setDiscardOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="destructive" size="sm" disabled={discardMutation.isPending}>
+                    {discardOption.label || "Discard"}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Discard this idea?</DialogTitle>
+                    <DialogDescription>
+                      Provide a short reason. This will be logged to the workflow history.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-2">
+                    <Label htmlFor="discard-reason">Reason</Label>
+                    <Textarea
+                      id="discard-reason"
+                      value={discardReason}
+                      onChange={(event) => setDiscardReason(event.target.value)}
+                      placeholder="Summarize why the idea is being discarded"
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="destructive"
+                      onClick={handleDiscard}
+                      disabled={discardMutation.isPending || discardReason.trim().length === 0}
+                    >
+                      {discardMutation.isPending ? "Discarding..." : "Confirm discard"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            ) : (
+              <Button variant="outline" onClick={handleReject} disabled={isSubmitting} size="sm">
+                Request Changes
+              </Button>
+            )}
           </div>
           {statusMessage ? (
             <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">

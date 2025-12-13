@@ -18,9 +18,21 @@ vi.mock("@/lib/trpc/client", () => ({
       workflow: {
         get: { invalidate: vi.fn() },
         list: { invalidate: vi.fn() },
+        getHistory: { invalidate: vi.fn() },
       },
     }),
     workflow: {
+      get: {
+        useQuery: () => ({
+          data: {
+            stages: [
+              { gate: { options: [] } },
+              { gate: { options: [] } },
+              { gate: { options: [{ label: "Continue", action: "advance" }] } },
+            ],
+          },
+        }),
+      },
       satisfyGate: {
         useMutation: (options?: { onSuccess?: () => void; onError?: () => void }) => {
           useMutationMock(options);
@@ -31,6 +43,14 @@ vi.mock("@/lib/trpc/client", () => ({
             error: null,
           };
         },
+      },
+      discard: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          mutateAsync: vi.fn(),
+          isPending: false,
+          error: null,
+        }),
       },
       invokeAgent: {
         useMutation: (options?: { onSuccess?: () => void; onError?: () => void }) => {

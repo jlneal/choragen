@@ -14,6 +14,7 @@ import {
   GATE_TYPES,
   STAGE_TYPES,
   type StageGate,
+  type StageGateOption,
   type StageTransitionHooks,
   type StageType,
   type CommandAction,
@@ -47,7 +48,7 @@ export interface WorkflowTemplate {
   updatedAt: Date;
 }
 
-export const BUILTIN_TEMPLATE_NAMES = ["standard", "hotfix", "documentation"] as const;
+export const BUILTIN_TEMPLATE_NAMES = ["standard", "hotfix", "documentation", "ideation"] as const;
 const WORKFLOW_TEMPLATE_DIR = ".choragen/workflow-templates";
 const BUILTIN_TEMPLATE_VERSION = 1;
 const BUILTIN_TEMPLATE_TIMESTAMP = new Date("2024-01-01T00:00:00Z");
@@ -167,6 +168,58 @@ const BUILTIN_TEMPLATES: Record<string, WorkflowTemplate> = {
     createdAt: BUILTIN_TEMPLATE_TIMESTAMP,
     updatedAt: BUILTIN_TEMPLATE_TIMESTAMP,
   },
+  ideation: {
+    name: "ideation",
+    displayName: "Ideation Workflow",
+    description: "Explore and refine ideas into actionable requests",
+    builtin: true,
+    version: BUILTIN_TEMPLATE_VERSION,
+    stages: [
+      {
+        name: "exploration",
+        type: "ideation",
+        roleId: "ideation",
+        gate: {
+          type: "human_approval",
+          prompt: "Continue to request creation, or discard this idea?",
+          options: [
+            { label: "Continue", action: "advance" },
+            { label: "Discard", action: "discard" },
+          ],
+        },
+      },
+      {
+        name: "proposal",
+        type: "ideation",
+        roleId: "ideation",
+        gate: {
+          type: "human_approval",
+          prompt: "Approve these request proposals?",
+        },
+      },
+      {
+        name: "creation",
+        type: "ideation",
+        roleId: "ideation",
+        gate: {
+          type: "auto",
+        },
+        hooks: {
+          onExit: [
+            {
+              type: "file_move",
+              fileMove: {
+                from: "docs/requests/change-requests/draft/*.md",
+                to: "docs/requests/change-requests/backlog/",
+              },
+            },
+          ],
+        },
+      },
+    ],
+    createdAt: BUILTIN_TEMPLATE_TIMESTAMP,
+    updatedAt: BUILTIN_TEMPLATE_TIMESTAMP,
+  },
 };
 
 /**
@@ -221,6 +274,19 @@ export function validateTemplate(template: WorkflowTemplate): WorkflowTemplate {
         throw new Error(`Stage ${stage.name} verification_pass gate requires commands`);
       }
     }
+    if (stage.gate.options) {
+      if (!Array.isArray(stage.gate.options)) {
+        throw new Error(`Stage ${stage.name} gate options must be an array`);
+      }
+      stage.gate.options.forEach((option, optionIndex) => {
+        if (!option?.label || typeof option.label !== "string") {
+          throw new Error(`Stage ${stage.name} gate option ${optionIndex} requires label`);
+        }
+        if (!option.action || typeof option.action !== "string") {
+          throw new Error(`Stage ${stage.name} gate option ${optionIndex} requires action`);
+        }
+      });
+    }
   });
 
   const normalized = normalizeTemplate(template);
@@ -266,6 +332,8 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
   let currentHookSection: keyof StageTransitionHooks | null = null;
   let currentAction: MutableTransitionAction | null = null;
   let inCommands = false;
+  let inGateOptions = false;
+  let currentGateOption: Partial<StageGateOption> | null = null;
   let inFileMove = false;
 
   for (const rawLine of lines) {
@@ -275,6 +343,8 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
 
     if (indent === 0) {
       inCommands = false;
+      inGateOptions = false;
+      currentGateOption = null;
       inFileMove = false;
       currentGate = null;
       currentStage = null;
@@ -290,6 +360,8 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
     // Stage start
     if (indent === 2 && trimmed.startsWith("- ")) {
       inCommands = false;
+      inGateOptions = false;
+      currentGateOption = null;
       inFileMove = false;
       currentGate = null;
       currentHooks = null;
@@ -318,6 +390,8 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
           assignGateProp(currentGate, key, value);
         }
         inCommands = false;
+        inGateOptions = false;
+        currentGateOption = null;
         inFileMove = false;
         currentHooks = null;
         currentHookSection = null;
@@ -385,11 +459,44 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
           currentGate.commands.push(parseScalar(maybeInline.startsWith("-") ? maybeInline.slice(1).trim() : maybeInline));
         }
         inCommands = true;
+        inGateOptions = false;
+        currentGateOption = null;
+        continue;
+      }
+
+      if (trimmed === "options:" || trimmed.startsWith("options:")) {
+        if (!currentGate.options) currentGate.options = [];
+        inGateOptions = true;
+        currentGateOption = null;
         continue;
       }
 
       const [key, value] = splitKeyValue(trimmed);
       assignGateProp(currentGate, key, value);
+      inGateOptions = false;
+      currentGateOption = null;
+      continue;
+    }
+
+    if (indent >= 8 && inGateOptions && currentGate) {
+      if (trimmed.startsWith("- ")) {
+        const option: Partial<StageGateOption> = {};
+        const rest = trimmed.slice(2);
+        if (rest) {
+          const [key, value] = splitKeyValue(rest);
+          assignGateOptionProp(option, key, value);
+        }
+        currentGate.options = currentGate.options ?? [];
+        currentGate.options.push(option as StageGateOption);
+        currentGateOption = option;
+        continue;
+      }
+
+      if (currentGateOption) {
+        const [key, value] = splitKeyValue(trimmed);
+        assignGateOptionProp(currentGateOption, key, value);
+      }
+
       continue;
     }
 
@@ -507,6 +614,7 @@ function assignGateProp(gate: Partial<StageGate>, key: string, rawValue: string)
   const value = parseScalar(rawValue);
   if (key === "type") gate.type = value as StageGate["type"];
   if (key === "prompt") gate.prompt = value as string;
+  if (key === "options") gate.options = Array.isArray(gate.options) ? gate.options : [];
   if (key === "chainId") gate.chainId = value as string;
   if (key === "satisfied") {
     const parsed = parseBoolean(value);
@@ -519,6 +627,12 @@ function assignGateProp(gate: Partial<StageGate>, key: string, rawValue: string)
       gate.satisfiedAt = parsed;
     }
   }
+}
+
+function assignGateOptionProp(option: Partial<StageGateOption>, key: string, rawValue: string): void {
+  const value = parseScalar(rawValue);
+  if (key === "label") option.label = value as string;
+  if (key === "action") option.action = value as string;
 }
 
 function assignActionProp(action: MutableTransitionAction, key: string, rawValue: string): void {

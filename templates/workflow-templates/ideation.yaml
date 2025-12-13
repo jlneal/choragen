@@ -1,0 +1,34 @@
+name: ideation
+displayName: Ideation Workflow
+description: Explore and refine ideas into actionable requests
+stages:
+  - name: exploration
+    type: ideation
+    roleId: ideation
+    gate:
+      type: human_approval
+      prompt: "Continue to request creation, or discard this idea?"
+      options:
+        - label: Continue
+          action: advance
+        - label: Discard
+          action: discard
+
+  - name: proposal
+    type: ideation
+    roleId: ideation
+    gate:
+      type: human_approval
+      prompt: "Approve these request proposals?"
+
+  - name: creation
+    type: ideation
+    roleId: ideation
+    gate:
+      type: auto
+    hooks:
+      onExit:
+        - type: file_move
+          fileMove:
+            from: "docs/requests/change-requests/draft/*.md"
+            to: "docs/requests/change-requests/backlog/"

@@ -351,6 +351,13 @@ function templateToYaml(template: WorkflowTemplate): string {
     lines.push(`      type: ${formatScalar(stage.gate.type)}`);
     if (stage.gate.prompt) lines.push(`      prompt: ${formatScalar(stage.gate.prompt)}`);
     if (stage.gate.chainId) lines.push(`      chainId: ${formatScalar(stage.gate.chainId)}`);
+    if (stage.gate.options && stage.gate.options.length > 0) {
+      lines.push("      options:");
+      stage.gate.options.forEach((option) => {
+        lines.push(`        - label: ${formatScalar(option.label)}`);
+        lines.push(`          action: ${formatScalar(option.action)}`);
+      });
+    }
     if (stage.gate.commands && stage.gate.commands.length > 0) {
       lines.push("      commands:");
       stage.gate.commands.forEach((command) => lines.push(`        - ${formatScalar(command)}`));

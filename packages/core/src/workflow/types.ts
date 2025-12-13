@@ -11,7 +11,8 @@ export type StageType =
   | "design"
   | "review"
   | "implementation"
-  | "verification";
+  | "verification"
+  | "ideation";
 
 /** All valid stage type values */
 export const STAGE_TYPES: readonly StageType[] = [
@@ -20,6 +21,7 @@ export const STAGE_TYPES: readonly StageType[] = [
   "review",
   "implementation",
   "verification",
+  "ideation",
 ] as const;
 
 /** Overall workflow status */
@@ -28,7 +30,8 @@ export type WorkflowStatus =
   | "paused"
   | "completed"
   | "failed"
-  | "cancelled";
+  | "cancelled"
+  | "discarded";
 
 /** All valid workflow status values */
 export const WORKFLOW_STATUSES: readonly WorkflowStatus[] = [
@@ -37,6 +40,7 @@ export const WORKFLOW_STATUSES: readonly WorkflowStatus[] = [
   "completed",
   "failed",
   "cancelled",
+  "discarded",
 ] as const;
 
 /** Current stage status */
@@ -206,12 +210,23 @@ export const MESSAGE_ROLES: readonly MessageRole[] = [
 /**
  * A gate defines what must happen to advance to the next stage.
  */
+export interface StageGateOption {
+  /** Human-friendly label to show in approval UI */
+  label: string;
+
+  /** Action to take when selected (e.g., advance, discard) */
+  action: string;
+}
+
 export interface StageGate {
   /** Gate type */
   type: GateType;
 
   /** For human_approval: prompt to show */
   prompt?: string;
+
+  /** Optional options for human_approval gates (e.g., continue vs discard) */
+  options?: StageGateOption[];
 
   /** For chain_complete: which chain must complete */
   chainId?: string;

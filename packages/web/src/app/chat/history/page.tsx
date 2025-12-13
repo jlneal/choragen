@@ -79,8 +79,8 @@ export default function WorkflowHistoryPage() {
               Workflow history
             </CardTitle>
             <CardDescription>
-              Browse active, paused, completed, and cancelled workflows. Open any chat to
-              continue the conversation.
+              Browse active, paused, completed, cancelled, or discarded workflows. Open
+              any chat to continue the conversation.
             </CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">

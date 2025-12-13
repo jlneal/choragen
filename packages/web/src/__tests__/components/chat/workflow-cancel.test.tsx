@@ -35,6 +35,9 @@ vi.mock("@/lib/trpc/client", () => ({
       cancel: {
         useMutation: useMutationMock,
       },
+      discard: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
     },
   },
 }));

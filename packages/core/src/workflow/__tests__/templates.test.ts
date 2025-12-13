@@ -126,6 +126,32 @@ stages:
     expect(template.stages.some((s) => s.type === "design")).toBe(false);
   });
 
+  it("parses ideation stages with gate options", async () => {
+    const yaml = `
+name: ideation-local
+stages:
+  - name: exploration
+    type: ideation
+    gate:
+      type: human_approval
+      prompt: "Continue or discard?"
+      options:
+        - label: Continue
+          action: advance
+        - label: Discard
+          action: discard
+`;
+    await fs.writeFile(path.join(templatesDir, "ideation-local.yaml"), yaml, "utf-8");
+
+    const template = await loadTemplate(tempDir, "ideation-local");
+
+    expect(template.stages[0].type).toBe("ideation");
+    expect(template.stages[0].gate.options).toEqual([
+      { label: "Continue", action: "advance" },
+      { label: "Discard", action: "discard" },
+    ]);
+  });
+
   it("lists built-in and local templates", async () => {
     await fs.writeFile(
       path.join(templatesDir, "doc.yaml"),
@@ -139,6 +165,7 @@ stages:
     expect(names).toContain("standard");
     expect(names).toContain("hotfix");
     expect(names).toContain("documentation");
+    expect(names).toContain("ideation");
   });
 
   it("validates template structure", () => {

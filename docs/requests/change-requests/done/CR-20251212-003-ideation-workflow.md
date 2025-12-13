@@ -2,7 +2,7 @@
 
 **ID**: CR-20251212-003  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-12  
 **Owner**: agent  
 
@@ -83,4 +83,31 @@ Key implementation areas:
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented via CHAIN-071-ideation-workflow (5 tasks):
+
+**Core changes:**
+- Added "discarded" to `WorkflowStatus` type and `WORKFLOW_STATUSES` constant
+- Discarded workflows are non-advanceable (same as completed/cancelled)
+- Added `StageGateOption` interface with `label` and `action` fields
+- Extended `StageGate` to support `options` array for human_approval gates
+- Implemented `WorkflowManager.discard(workflowId, reason)` with message logging
+- Added `workflow.discard` tRPC mutation with validation
+
+**Template:**
+- Created `templates/workflow-templates/ideation.yaml` with exploration/proposal/creation stages
+- Registered "ideation" in `BUILTIN_TEMPLATE_NAMES` and `BUILTIN_TEMPLATES`
+- Added "ideation" to `StageType` enum and `STAGE_TYPES` constant
+- Defined ideation stage tools in `STAGE_TOOL_MATRIX` (includes `request:create`)
+
+**UI:**
+- `WorkflowActions` accepts `gateOptions` prop and renders discard dialog with reasoning
+- `GatePrompt` dynamically renders gate option buttons and handles discard flow
+- `chat-workflow-content.tsx` passes current stage gate options to components
+- Discarded status displays correctly in workflow history
+
+**Tests:**
+- Core: discard flow test in `manager.test.ts`, gate options parsing in `templates.test.ts`
+- Web: discard mutation mock in `gate-prompt.test.tsx`, discard control test in `workflow-pause-resume.test.tsx`
+
+**Existing functionality leveraged:**
+- `request:create` tool already existed in `request-tools.ts` — no new implementation needed
