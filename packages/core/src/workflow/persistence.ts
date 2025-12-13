@@ -151,6 +151,7 @@ export async function saveWorkflow(projectRoot: string, workflow: Workflow): Pro
 function serializeWorkflow(workflow: Workflow): PersistedWorkflow {
   return {
     ...workflow,
+    blockingFeedbackIds: workflow.blockingFeedbackIds ?? [],
     createdAt: workflow.createdAt.toISOString(),
     updatedAt: workflow.updatedAt.toISOString(),
     stages: workflow.stages.map(serializeStage),
@@ -187,6 +188,7 @@ function serializeMessage(message: WorkflowMessage): PersistedWorkflowMessage {
 function reviveWorkflow(raw: PersistedWorkflow): Workflow {
   return {
     ...raw,
+    blockingFeedbackIds: raw.blockingFeedbackIds ?? [],
     createdAt: new Date(raw.createdAt),
     updatedAt: new Date(raw.updatedAt),
     stages: raw.stages.map(reviveStage),

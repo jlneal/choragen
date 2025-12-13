@@ -24,6 +24,7 @@ import type {
 import type { WorkflowTemplate, WorkflowTemplateStage } from "./templates.js";
 import { TransitionHookRunner, HookExecutionError } from "./hook-runner.js";
 import type { HookRunResult, TransitionHookContext } from "./hook-runner.js";
+import { FeedbackManager } from "../feedback/FeedbackManager.js";
 import {
   ensureWorkflowDirs,
   loadWorkflow,
@@ -69,6 +70,7 @@ export class WorkflowManager {
   private chainStatusChecker: ChainStatusChecker;
   private chainManager?: ChainManager;
   private hookRunner?: TransitionHookRunner;
+  private feedbackManager?: FeedbackManager;
 
   constructor(
     projectRoot: string,
@@ -78,6 +80,7 @@ export class WorkflowManager {
     this.commandRunner = options.commandRunner ?? this.defaultCommandRunner.bind(this);
     this.chainStatusChecker = options.chainStatusChecker ?? this.defaultChainStatusChecker.bind(this);
     this.hookRunner = options.hookRunner;
+    this.feedbackManager = new FeedbackManager(this.projectRoot);
   }
 
   /**
@@ -119,6 +122,7 @@ export class WorkflowManager {
       messages: [],
       createdAt: now,
       updatedAt: now,
+      blockingFeedbackIds: [],
     };
 
     this.addGatePromptIfNeeded(workflow, workflow.currentStage);
@@ -163,6 +167,7 @@ export class WorkflowManager {
     }
 
     const stage = workflow.stages[workflow.currentStage];
+    await this.ensureNoBlockingFeedback(workflow);
     await this.ensureGateSatisfied(workflow, stage);
 
     const hookRunner = this.getHookRunner();
@@ -318,6 +323,33 @@ export class WorkflowManager {
       this.hookRunner = new TransitionHookRunner(this.projectRoot, { commandRunner: this.commandRunner });
     }
     return this.hookRunner;
+  }
+
+  private getFeedbackManager(): FeedbackManager {
+    if (!this.feedbackManager) {
+      this.feedbackManager = new FeedbackManager(this.projectRoot);
+    }
+    return this.feedbackManager;
+  }
+
+  private async ensureNoBlockingFeedback(workflow: Workflow): Promise<void> {
+    const manager = this.getFeedbackManager();
+    const blockers = await manager.list({
+      workflowId: workflow.id,
+      type: "blocker",
+    });
+    const unresolved = blockers.filter(
+      (feedback) => feedback.status === "pending" || feedback.status === "acknowledged"
+    );
+
+    workflow.blockingFeedbackIds = unresolved.map((feedback) => feedback.id);
+
+    if (unresolved.length > 0) {
+      workflow.updatedAt = new Date();
+      await this.persistWorkflow(workflow);
+      const blockerList = unresolved.map((item) => item.id).join(", ");
+      throw new Error(`Workflow ${workflow.id} has unresolved blockers: ${blockerList}`);
+    }
   }
 
   private initializeGate(gate: WorkflowTemplateStage["gate"]): StageGate {

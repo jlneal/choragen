@@ -2,9 +2,10 @@
 
 **ID**: CR-20251212-002  
 **Domain**: core  
-**Status**: todo  
+**Status**: doing  
 **Created**: 2025-12-12  
 **Owner**: agent  
+**Chain**: CHAIN-070-agent-feedback  
 
 ---
 

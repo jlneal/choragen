@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { StageList, type WorkflowStageDisplay } from "./stage-list";
 import { ArtifactList } from "./artifact-list";
 import { WorkflowActions } from "./workflow-actions";
+import { FeedbackBadge } from "@/components/sidebar/FeedbackBadge";
+import { scrollToFeedbackSection } from "./feedback-scroll";
 
 interface WorkflowSidebarProps {
   workflowId: string;
@@ -99,7 +101,13 @@ export function WorkflowSidebar({
               <span className="font-mono text-xs text-muted-foreground">{workflowId}</span>
             </CardDescription>
           </div>
-          <WorkflowActions workflowId={workflowId} status={status} />
+          <div className="flex items-center gap-2">
+            <FeedbackBadge
+              workflowId={workflowId}
+              onClick={() => scrollToFeedbackSection()}
+            />
+            <WorkflowActions workflowId={workflowId} status={status} />
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4 text-sm">

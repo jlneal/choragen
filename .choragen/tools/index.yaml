@@ -330,7 +330,7 @@ tools:
 
   - id: feedback:create
     name: Feedback Create
-    description: Create a feedback item for human response
+    description: Create a structured feedback item for human response
     category: feedback
     mutates: true
     roles:
@@ -341,11 +341,59 @@ tools:
         "type": "object",
         "properties": {
           "workflowId": { "type": "string", "description": "Workflow ID to attach feedback to" },
-          "question": { "type": "string", "description": "Question or feedback content" },
-          "context": { "type": "string", "description": "Optional additional context" },
-          "blocking": { "type": "boolean", "description": "Whether workflow should pause until feedback is resolved" }
+          "type": {
+            "type": "string",
+            "description": "Feedback type",
+            "enum": ["clarification", "question", "idea", "blocker", "review"]
+          },
+          "content": { "type": "string", "description": "Question or feedback content" },
+          "priority": {
+            "type": "string",
+            "description": "Optional priority override",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "context": {
+            "type": "object",
+            "description": "Optional feedback context (files, code snippets, options)",
+            "properties": {
+              "files": {
+                "type": "array",
+                "description": "Related file paths",
+                "items": { "type": "string" }
+              },
+              "codeSnippets": {
+                "type": "array",
+                "description": "Code snippets for reference",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "file": { "type": "string" },
+                    "startLine": { "type": "number" },
+                    "endLine": { "type": "number" },
+                    "content": { "type": "string" }
+                  },
+                  "required": ["file", "startLine", "endLine", "content"]
+                }
+              },
+              "options": {
+                "type": "array",
+                "description": "Options the agent is considering",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": { "type": "string" },
+                    "description": { "type": "string" },
+                    "recommended": { "type": "boolean" }
+                  },
+                  "required": ["label", "description"]
+                }
+              }
+            }
+          },
+          "taskId": { "type": "string", "description": "Task ID if feedback is task-specific" },
+          "chainId": { "type": "string", "description": "Chain ID if feedback is chain-specific" }
         },
-        "required": ["workflowId", "question"]
+        "required": ["workflowId", "type", "content"]
       }
 
   - id: spawn_agent

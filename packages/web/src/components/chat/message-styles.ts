@@ -4,7 +4,13 @@
 import type { MessageRole, WorkflowMessage } from "@choragen/core";
 import { cn } from "@/lib/utils";
 
-export type MessageDisplayType = MessageRole | "error" | "gate_prompt" | "artifact" | "tool_call";
+export type MessageDisplayType =
+  | MessageRole
+  | "error"
+  | "gate_prompt"
+  | "artifact"
+  | "tool_call"
+  | "feedback";
 
 export interface MessageStyle {
   type: MessageDisplayType;
@@ -32,6 +38,9 @@ export function deriveMessageType(message: WorkflowMessage): MessageDisplayType 
   }
   if (message.metadata?.type === "tool_call") {
     return "tool_call";
+  }
+  if (message.metadata?.type === "feedback") {
+    return "feedback";
   }
   return message.role;
 }
@@ -67,6 +76,8 @@ function bubbleClass(type: MessageDisplayType): string {
       return "bg-card text-foreground border border-primary/60";
     case "tool_call":
       return "bg-muted/60 text-foreground border border-muted";
+    case "feedback":
+      return "bg-background text-foreground border border-primary/40";
     default:
       return "bg-card text-foreground border";
   }
@@ -81,6 +92,7 @@ function alignment(type: MessageDisplayType): string {
     case "gate_prompt":
     case "artifact":
     case "tool_call":
+    case "feedback":
       return "justify-center";
     default:
       return "justify-start";

@@ -23,6 +23,7 @@ import { workflowTemplateRouter } from "./workflow-template";
 import { settingsRouter } from "./settings";
 import { roleRouter } from "./role";
 import { toolRouter } from "./tool";
+import { feedbackRouter } from "./feedback";
 
 /**
  * Root application router.
@@ -135,6 +136,12 @@ export const appRouter = router({
    * Tool metadata and sync from code definitions.
    */
   tools: toolRouter,
+
+  /**
+   * Feedback router.
+   * Feedback lifecycle operations for workflows.
+   */
+  feedback: feedbackRouter,
 });
 
 /**

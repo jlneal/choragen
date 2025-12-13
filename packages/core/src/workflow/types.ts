@@ -337,4 +337,7 @@ export interface Workflow {
 
   /** When the workflow was last updated */
   updatedAt: Date;
+
+  /** Feedback IDs that are currently blocking advancement */
+  blockingFeedbackIds?: string[];
 }

@@ -9,6 +9,8 @@ import { getMessageStyle } from "./message-styles";
 import { GatePrompt } from "./gate-prompt";
 import { ArtifactLink } from "./artifact-link";
 import { ToolCallDisplay } from "./tool-call-display";
+import { FeedbackMessage } from "./FeedbackMessage";
+import type { FeedbackItem } from "@choragen/core";
 
 function asString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
@@ -67,6 +69,13 @@ function renderSystem(message: WorkflowMessage, formattedTime: string) {
 export function MessageItem({ message, workflowId }: MessageItemProps) {
   const formattedTime = formatMessageTimestamp(message.timestamp);
   const style = getMessageStyle(message);
+
+  if (style.type === "feedback" && message.metadata?.feedback) {
+    const feedback = normalizeFeedbackMetadata(message.metadata.feedback);
+    if (feedback) {
+      return <FeedbackMessage feedback={feedback} workflowId={workflowId ?? feedback.workflowId} />;
+    }
+  }
 
   if (style.type === "tool_call" && message.metadata?.type === "tool_call") {
     const toolCalls =
@@ -158,4 +167,35 @@ export function MessageItem({ message, workflowId }: MessageItemProps) {
       </div>
     </div>
   );
+}
+
+function normalizeFeedbackMetadata(feedback: unknown): FeedbackItem | null {
+  if (!feedback || typeof feedback !== "object") return null;
+  const data = feedback as Partial<FeedbackItem>;
+  if (
+    typeof data.id === "string" &&
+    typeof data.workflowId === "string" &&
+    typeof data.type === "string" &&
+    typeof data.content === "string" &&
+    typeof data.status === "string" &&
+    typeof data.priority === "string" &&
+    typeof data.stageIndex === "number" &&
+    data.createdAt &&
+    data.updatedAt
+  ) {
+    return {
+      ...data,
+      createdAt: new Date(data.createdAt),
+      updatedAt: new Date(data.updatedAt),
+      response: data.response
+        ? {
+            ...data.response,
+            respondedAt: data.response.respondedAt
+              ? new Date(data.response.respondedAt)
+              : new Date(),
+          }
+        : undefined,
+    } as FeedbackItem;
+  }
+  return null;
 }

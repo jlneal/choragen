@@ -18,3 +18,4 @@ export * from "./message-skeleton";
 export * from "./workflow-card-skeleton";
 export * from "./workflow-actions";
 export * from "./cancel-dialog";
+export * from "./FeedbackMessage";
