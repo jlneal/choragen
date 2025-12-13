@@ -482,8 +482,8 @@ workflowRouter.cancel.mutate({ workflowId: "WF-20251210-001" });
 - [x] Stages execute in defined order (managed by `WorkflowManager` in `@choragen/core`)
 - [x] Gates block advancement until satisfied (`satisfyGate`, gate prompts in chat)
 - [x] Human approval gates pause for user input (`gate-prompt.tsx`)
-- [ ] Chain complete gates auto-advance when chain finishes
-- [ ] Verification gates run commands and check results
+- [x] Chain complete gates auto-advance when chain finishes (`WorkflowManager.ensureGateSatisfied`)
+- [x] Verification gates run commands and check results (`WorkflowManager.ensureGateSatisfied`)
 - [x] Agent sessions are scoped to current stage (workflow status + sidebar actions)
 - [x] Tool availability is filtered by stage type (runtime enforcement)
 - [x] Workflow state persists across restarts (`WorkflowManager` storage)
@@ -504,20 +504,33 @@ workflowRouter.cancel.mutate({ workflowId: "WF-20251210-001" });
 - [Agent Runtime](./agent-runtime.md)
 - [Web Chat Interface](./web-chat-interface.md) (to be created)
 - [Task Chain Management](./task-chain-management.md)
+- [Standard Workflow](./standard-workflow.md) — Detailed 8-stage workflow with three-tier review
+- [Ideation Workflow](./ideation-workflow.md) — Dedicated workflow for idea exploration
+- [Specialized Agent Roles](./specialized-agent-roles.md) — Role definitions used by workflows
 
 ---
 
 ## Linked ADRs
 
 - ADR-010: Agent Runtime Architecture
-- ADR-TBD: Workflow Orchestration Design
+- ADR-011: Workflow Orchestration
+- ADR-012: Event-Driven Orchestration
 
 ---
 
 ## Open Questions
 
-1. **Parallel stages** — Should some stages be able to run in parallel?
+1. ~~**Parallel stages** — Should some stages be able to run in parallel?~~ Addressed: Chains within a stage can run in parallel if file scopes don't overlap. See [Standard Workflow](./standard-workflow.md).
 2. **Stage rollback** — Can we go back to a previous stage if issues are found?
 3. **Workflow branching** — Can a workflow spawn sub-workflows?
 4. **Template customization** — Can users modify templates per-workflow?
 5. **Timeout handling** — What happens if a stage stalls?
+
+---
+
+## Related Workflow Definitions
+
+This document describes the **orchestration infrastructure**. For specific workflow definitions, see:
+
+- [Standard Workflow](./standard-workflow.md) — 8-stage workflow for committed requests
+- [Ideation Workflow](./ideation-workflow.md) — 3-stage workflow for idea exploration
