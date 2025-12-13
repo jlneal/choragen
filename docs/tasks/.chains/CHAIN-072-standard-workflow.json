@@ -1,0 +1,23 @@
+{
+  "id": "CHAIN-072-standard-workflow",
+  "sequence": 72,
+  "slug": "standard-workflow",
+  "requestId": "CR-20251212-004",
+  "title": "Standard Workflow Implementation",
+  "description": "",
+  "createdAt": "2025-12-13T15:42:31.384Z",
+  "updatedAt": "2025-12-13T18:11:20.311Z",
+  "reviewStatus": "approved",
+  "fileScope": [
+    "templates/workflow-templates/standard.yaml",
+    "packages/cli/src/commands/task/**",
+    "packages/core/src/task/**",
+    "packages/cli/src/commands/chain/**",
+    "packages/core/src/chain/**",
+    "packages/cli/src/commands/request/**",
+    "packages/core/src/request/**",
+    "docs/tasks/in-review/",
+    "packages/core/src/hooks/**",
+    "N/A — verification task."
+  ]
+}

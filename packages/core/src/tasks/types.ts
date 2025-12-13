@@ -121,7 +121,12 @@ export interface Chain {
   updatedAt: Date;
   /** Optional hooks for chain lifecycle */
   hooks?: import("../workflow/types.js").ChainHooks;
+  /** Review status for chain-level approval */
+  reviewStatus?: ChainReviewStatus;
 }
+
+/** Chain review status after chain-level review */
+export type ChainReviewStatus = "approved" | "changes_requested";
 
 /** Options for creating a new chain */
 export interface CreateChainOptions {

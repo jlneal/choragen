@@ -169,6 +169,7 @@ export class ChainManager {
       dependsOn: metadata.dependsOn,
       skipDesign: metadata.skipDesign,
       skipDesignJustification: metadata.skipDesignJustification,
+      reviewStatus: metadata.reviewStatus as Chain["reviewStatus"],
       tasks,
       fileScope,
       createdAt: metadata.createdAt ? new Date(metadata.createdAt) : new Date(),
@@ -207,6 +208,9 @@ export class ChainManager {
     }
     if (chain.skipDesignJustification) {
       metadata.skipDesignJustification = chain.skipDesignJustification;
+    }
+    if (chain.reviewStatus) {
+      metadata.reviewStatus = chain.reviewStatus;
     }
     if (chain.fileScope && chain.fileScope.length > 0) {
       metadata.fileScope = chain.fileScope;
@@ -250,6 +254,9 @@ export class ChainManager {
     }
     if (chain.skipDesignJustification) {
       metadata.skipDesignJustification = chain.skipDesignJustification;
+    }
+    if (chain.reviewStatus) {
+      metadata.reviewStatus = chain.reviewStatus;
     }
     if (chain.fileScope && chain.fileScope.length > 0) {
       metadata.fileScope = chain.fileScope;
@@ -404,7 +411,7 @@ export class ChainManager {
    */
   async updateChain(
     chainId: string,
-    updates: Partial<Pick<Chain, "title" | "description" | "requestId" | "type" | "dependsOn" | "skipDesign" | "skipDesignJustification" | "fileScope">>
+    updates: Partial<Pick<Chain, "title" | "description" | "requestId" | "type" | "dependsOn" | "skipDesign" | "skipDesignJustification" | "fileScope" | "reviewStatus">>
   ): Promise<Chain | null> {
     const chain = await this.getChain(chainId);
     if (!chain) return null;

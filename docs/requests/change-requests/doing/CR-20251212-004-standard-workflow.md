@@ -2,7 +2,7 @@
 
 **ID**: CR-20251212-004  
 **Domain**: core  
-**Status**: todo  
+**Status**: doing  
 **Created**: 2025-12-12  
 **Owner**: agent  
 

@@ -418,3 +418,5 @@
 {"eventType":"chain:created","entityType":"chain","entityId":"CHAIN-070-agent-feedback","requestId":"CR-20251212-002","id":"ad460d9d-a149-4e36-a655-11b1fb458c47","timestamp":"2025-12-13T05:08:44.113Z"}
 {"eventType":"request:closed","entityType":"request","entityId":"CR-20251212-002","id":"0e32f406-c5d0-410f-a69e-92d12cadc2bb","timestamp":"2025-12-13T06:46:16.723Z"}
 {"eventType":"chain:created","entityType":"chain","entityId":"CHAIN-071-ideation-workflow","requestId":"CR-20251212-003","id":"1f459b89-5326-4253-bf82-a73d9aceed06","timestamp":"2025-12-13T06:50:41.953Z"}
+{"eventType":"chain:created","entityType":"chain","entityId":"CHAIN-072-standard-workflow","requestId":"CR-20251212-004","id":"b12dc3c9-5478-4327-a228-2e6a8f64b240","timestamp":"2025-12-13T15:42:31.385Z"}
+{"eventType":"chain:approved","entityType":"chain","entityId":"CHAIN-072-standard-workflow","requestId":"CR-20251212-004","metadata":{"reviewStatus":"approved"},"id":"64ae2f84-01cf-4370-8e36-0fc31634c389","timestamp":"2025-12-13T18:11:20.312Z"}

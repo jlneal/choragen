@@ -12,12 +12,19 @@
  */
 export type EventType =
   | "task:started"
+  | "task:submitted"
+  | "task:approved"
+  | "task:changes_requested"
   | "task:completed"
   | "task:rework"
   | "chain:created"
   | "chain:completed"
+  | "chain:approved"
+  | "chain:changes_requested"
   | "request:created"
-  | "request:closed";
+  | "request:closed"
+  | "request:approved"
+  | "request:changes_requested";
 
 /**
  * Entity types that can emit events
@@ -153,12 +160,19 @@ export const EMPTY_AGGREGATES: MetricsAggregate = {
   totalEvents: 0,
   eventsByType: {
     "task:started": 0,
+    "task:submitted": 0,
+    "task:approved": 0,
+    "task:changes_requested": 0,
     "task:completed": 0,
     "task:rework": 0,
     "chain:created": 0,
     "chain:completed": 0,
+    "chain:approved": 0,
+    "chain:changes_requested": 0,
     "request:created": 0,
     "request:closed": 0,
+    "request:approved": 0,
+    "request:changes_requested": 0,
   },
   totalTokens: {
     input: 0,

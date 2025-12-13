@@ -1,24 +1,46 @@
 name: standard
+displayName: Standard Workflow
+description: Execute a committed request through design, implementation, and completion
 stages:
-  - name: request
-    type: request
+  - name: planning
+    type: design
+    role: orchestration
     gate:
       type: human_approval
-      prompt: "CR created. Proceed to design?"
+      prompt: "Design chains ready. Proceed?"
+    onEnter:
+      - type: file_move
+        from: "docs/requests/change-requests/todo/{{requestId}}.md"
+        to: "docs/requests/change-requests/doing/{{requestId}}.md"
 
   - name: design
+    type: implementation
+    role: design
+    gate:
+      type: chain_complete
+    onEnter:
+      - type: command
+        command: "choragen chain:spawn-agents {{chainIds}}"
+
+  - name: impl-planning
     type: design
+    role: orchestration
     gate:
       type: human_approval
-      prompt: "Design complete. Proceed to implementation?"
+      prompt: "Implementation chains ready. Proceed?"
 
   - name: implementation
     type: implementation
+    role: implementation
     gate:
       type: chain_complete
+    onEnter:
+      - type: command
+        command: "choragen chain:spawn-agents {{chainIds}}"
 
   - name: verification
     type: verification
+    role: system
     gate:
       type: verification_pass
       commands:
@@ -26,8 +48,31 @@ stages:
         - "pnpm test"
         - "pnpm lint"
 
-  - name: completion
-    type: review
+  - name: commit
+    type: implementation
+    role: commit
     gate:
       type: human_approval
-      prompt: "All checks pass. Approve and merge?"
+      prompt: "Commits ready. Push?"
+
+  - name: request-review
+    type: review
+    role: review
+    gate:
+      type: human_approval
+      prompt: "Request complete. Approve and push?"
+
+  - name: completion
+    type: review
+    role: control
+    gate:
+      type: human_approval
+      prompt: "Final approval. Close request?"
+    onExit:
+      - type: file_move
+        from: "docs/requests/change-requests/doing/{{requestId}}.md"
+        to: "docs/requests/change-requests/done/{{requestId}}.md"
+      - type: command
+        command: "choragen request:close {{requestId}}"
+      - type: command
+        command: "choragen chain:archive {{chainIds}}"

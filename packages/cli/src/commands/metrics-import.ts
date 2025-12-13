@@ -345,12 +345,19 @@ export async function importMetrics(
   // Count events by type
   const eventCounts: Record<EventType, number> = {
     "task:started": 0,
+    "task:submitted": 0,
+    "task:approved": 0,
+    "task:changes_requested": 0,
     "task:completed": 0,
     "task:rework": 0,
     "chain:created": 0,
     "chain:completed": 0,
+    "chain:approved": 0,
+    "chain:changes_requested": 0,
     "request:created": 0,
     "request:closed": 0,
+    "request:approved": 0,
+    "request:changes_requested": 0,
   };
 
   let newEvents = 0;

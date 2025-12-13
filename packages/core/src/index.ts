@@ -9,6 +9,15 @@
  */
 
 export * from "./tasks/index.js";
+export * from "./task/submit.js";
+export * from "./task/review.js";
+export * from "./chain/review.js";
+export * from "./chain/parallel.js";
+export * from "./chain/scope-validator.js";
+export * from "./request/review.js";
+export * from "./hooks/events.js";
+export * from "./hooks/emitter.js";
+export * from "./hooks/handlers.js";
 export * from "./governance/index.js";
 export * from "./locks/index.js";
 export * from "./protocol/index.js";

@@ -66,6 +66,14 @@ import {
   formatWorkflowStatus,
   formatWorkflowList,
 } from "./commands/workflow.js";
+import { submitTaskCommand } from "./commands/task/submit.js";
+import { approveTaskCommand } from "./commands/task/approve.js";
+import { requestChangesCommand } from "./commands/task/request-changes.js";
+import { approveChainCommand } from "./commands/chain/approve.js";
+import { requestChainChangesCommand } from "./commands/chain/request-changes.js";
+import { approveRequestCommand } from "./commands/request/approve.js";
+import { requestChangesCommand as requestChangesRequestCommand } from "./commands/request/request-changes.js";
+import { spawnAgents } from "./commands/chain/spawn-agents.js";
 import { syncTools } from "./commands/tools/index.js";
 import { runMenuLoop } from "./menu/index.js";
 import * as readline from "node:readline";
@@ -611,6 +619,102 @@ const commands: Record<string, CommandDef> = {
     },
   },
 
+  "chain:approve": {
+    description: "Approve a chain after review",
+    usage: "chain:approve <chain-id>",
+    handler: async (args) => {
+      const [chainId] = args;
+      if (!chainId) {
+        console.error("Usage: choragen chain:approve <chain-id>");
+        process.exit(1);
+      }
+
+      const result = await approveChainCommand(
+        { chainManager, emitEvent },
+        { chainId }
+      );
+
+      if (!result.success) {
+        console.error(`Failed to approve chain: ${result.error}`);
+        process.exit(1);
+      }
+
+      console.log(`Approved chain: ${chainId}`);
+      if (result.reviewStatus) {
+        console.log(`  Review Status: ${result.reviewStatus}`);
+      }
+    },
+  },
+
+  "chain:request_changes": {
+    description: "Request changes on a chain after review",
+    usage: "chain:request_changes <chain-id> --reason \"...\"",
+    handler: async (args) => {
+      const positionalArgs: string[] = [];
+      let reason: string | undefined;
+
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === "--reason" && args[i + 1]) {
+          reason = args[++i];
+        } else if (arg.startsWith("--reason=")) {
+          reason = arg.slice("--reason=".length);
+        } else {
+          positionalArgs.push(arg);
+        }
+      }
+
+      const [chainId] = positionalArgs;
+      if (!chainId) {
+        console.error("Usage: choragen chain:request_changes <chain-id> --reason \"...\"");
+        process.exit(1);
+      }
+
+      if (!reason) {
+        console.error("Error: --reason is required");
+        console.error("Usage: choragen chain:request_changes <chain-id> --reason \"Description\"");
+        process.exit(1);
+      }
+
+      const result = await requestChainChangesCommand(
+        { chainManager, emitEvent },
+        { chainId, reason }
+      );
+
+      if (!result.success) {
+        console.error(`Failed to request changes: ${result.error}`);
+        process.exit(1);
+      }
+
+      console.log(`Requested changes for chain: ${chainId}`);
+      console.log(`  Review Status: ${result.reviewStatus}`);
+      console.log(`  Reason: ${reason}`);
+    },
+  },
+
+  "chain:spawn-agents": {
+    description: "Spawn agents for multiple chains in parallel (if scopes do not overlap)",
+    usage: "chain:spawn-agents <chain-id> [chain-id...]",
+    handler: async (args) => {
+      if (args.length === 0) {
+        console.error("Usage: choragen chain:spawn-agents <chain-id> [chain-id...]");
+        process.exit(1);
+      }
+
+      const result = await spawnAgents(projectRoot, args);
+
+      if (!result.success) {
+        console.error(`Failed to spawn agents:\n${result.error}`);
+        process.exit(1);
+      }
+
+      console.log("Spawned agents for chains:");
+      for (const id of result.spawned ?? []) {
+        console.log(`  - ${id}`);
+      }
+    },
+  },
+
   "chain:scope": {
     description: "Show a chain's aggregated file scope",
     usage: "chain:scope <chain-id>",
@@ -914,6 +1018,31 @@ const commands: Record<string, CommandDef> = {
     },
   },
 
+  "task:submit": {
+    description: "Submit a task for review (move to in-review)",
+    usage: "task:submit <chain-id> <task-id>",
+    handler: async (args) => {
+      const [chainId, taskId] = args;
+      if (!chainId || !taskId) {
+        console.error("Usage: choragen task:submit <chain-id> <task-id>");
+        process.exit(1);
+      }
+
+      const result = await submitTaskCommand(
+        { chainManager, taskManager, emitEvent },
+        { chainId, taskId }
+      );
+
+      if (!result.success) {
+        console.error(`Failed to submit task: ${result.error}`);
+        process.exit(1);
+      }
+
+      console.log(`Submitted task: ${result.task?.id ?? taskId}`);
+      console.log(`  ${result.previousStatus} → ${result.newStatus}`);
+    },
+  },
+
   "task:complete": {
     description: "Complete a task (move to in-review)",
     usage: "task:complete <chain-id> <task-id> [--tokens <input>,<output>] [--model <name>]",
@@ -987,13 +1116,62 @@ const commands: Record<string, CommandDef> = {
         console.error("Usage: choragen task:approve <chain-id> <task-id>");
         process.exit(1);
       }
-      const result = await taskManager.approveTask(chainId, taskId);
+      const result = await approveTaskCommand(
+        { chainManager, taskManager, emitEvent },
+        { chainId, taskId }
+      );
       if (!result.success) {
         console.error(`Failed to approve task: ${result.error}`);
         process.exit(1);
       }
-      console.log(`Approved task: ${result.task.id}`);
+      console.log(`Approved task: ${result.task?.id ?? taskId}`);
       console.log(`  ${result.previousStatus} → ${result.newStatus}`);
+    },
+  },
+
+  "task:request_changes": {
+    description: "Request changes on a task (move to in-progress)",
+    usage: "task:request_changes <chain-id> <task-id> --reason \"...\"",
+    handler: async (args) => {
+      const positionalArgs: string[] = [];
+      let reason: string | undefined;
+
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === "--reason" && args[i + 1]) {
+          reason = args[++i];
+        } else if (arg.startsWith("--reason=")) {
+          reason = arg.slice("--reason=".length);
+        } else {
+          positionalArgs.push(arg);
+        }
+      }
+
+      const [chainId, taskId] = positionalArgs;
+      if (!chainId || !taskId) {
+        console.error("Usage: choragen task:request_changes <chain-id> <task-id> --reason \"...\"");
+        process.exit(1);
+      }
+
+      if (!reason) {
+        console.error("Error: --reason is required");
+        console.error("Usage: choragen task:request_changes <chain-id> <task-id> --reason \"Description\"");
+        process.exit(1);
+      }
+
+      const result = await requestChangesCommand(
+        { chainManager, taskManager, emitEvent },
+        { chainId, taskId, reason }
+      );
+
+      if (!result.success) {
+        console.error(`Failed to request changes: ${result.error}`);
+        process.exit(1);
+      }
+
+      console.log(`Requested changes for task: ${result.task?.id ?? taskId}`);
+      console.log(`  ${result.previousStatus} → ${result.newStatus}`);
+      console.log(`  Reason: ${reason}`);
     },
   },
 
@@ -1482,6 +1660,83 @@ const commands: Record<string, CommandDef> = {
       } else {
         console.error(`❌ Failed to close CR: ${result.error}`);
         process.exit(1);
+      }
+    },
+  },
+
+  "request:approve": {
+    description: "Approve a request after chain review",
+    usage: "request:approve <request-id>",
+    handler: async (args) => {
+      const [requestId] = args;
+      if (!requestId) {
+        console.error("Usage: choragen request:approve <request-id>");
+        process.exit(1);
+      }
+
+      const result = await approveRequestCommand(
+        { projectRoot, chainManager, emitEvent },
+        { requestId }
+      );
+
+      if (!result.success) {
+        console.error(`Failed to approve request: ${result.error}`);
+        process.exit(1);
+      }
+
+      console.log(`Approved request: ${requestId}`);
+      console.log(`  Review Status: ${result.reviewStatus}`);
+      if (result.requestPath) {
+        console.log(`  Path: ${result.requestPath}`);
+      }
+    },
+  },
+
+  "request:request_changes": {
+    description: "Request changes on a request after review",
+    usage: "request:request_changes <request-id> --reason \"...\"",
+    handler: async (args) => {
+      const positionalArgs: string[] = [];
+      let reason: string | undefined;
+
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === "--reason" && args[i + 1]) {
+          reason = args[++i];
+        } else if (arg.startsWith("--reason=")) {
+          reason = arg.slice("--reason=".length);
+        } else {
+          positionalArgs.push(arg);
+        }
+      }
+
+      const [requestId] = positionalArgs;
+      if (!requestId) {
+        console.error("Usage: choragen request:request_changes <request-id> --reason \"...\"");
+        process.exit(1);
+      }
+
+      if (!reason) {
+        console.error("Error: --reason is required");
+        console.error("Usage: choragen request:request_changes <request-id> --reason \"Description\"");
+        process.exit(1);
+      }
+
+      const result = await requestChangesRequestCommand(
+        { projectRoot, chainManager, emitEvent },
+        { requestId, reason }
+      );
+
+      if (!result.success) {
+        console.error(`Failed to request changes: ${result.error}`);
+        process.exit(1);
+      }
+
+      console.log(`Requested changes for request: ${requestId}`);
+      console.log(`  Review Status: ${result.reviewStatus}`);
+      console.log(`  Reason: ${reason}`);
+      if (result.requestPath) {
+        console.log(`  Path: ${result.requestPath}`);
       }
     },
   },
