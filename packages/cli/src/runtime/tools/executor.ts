@@ -29,6 +29,15 @@ export type AuditLogCallback = (
   entry: Omit<AuditLogEntry, "timestamp" | "session">
 ) => Promise<void>;
 
+export interface ToolEvent {
+  /** Event type identifier (e.g., task.submitted) */
+  type: string;
+  /** Optional payload for the event */
+  payload?: Record<string, unknown>;
+}
+
+export type ToolEventEmitter = (event: ToolEvent) => Promise<void> | void;
+
 /**
  * Context provided to tool executors.
  */
@@ -45,6 +54,8 @@ export interface ExecutionContext {
   auditLog?: AuditLogCallback;
   /** Optional retry configuration for tool execution */
   retryConfig?: Partial<RetryConfig>;
+  /** Optional event emitter for lifecycle events */
+  eventEmitter?: ToolEventEmitter;
 }
 
 /**
@@ -70,6 +81,8 @@ export interface NestedSessionContext extends ExecutionContext {
 export interface ChildSessionConfig {
   chainId: string;
   taskId: string;
+  role?: string;
+  roleId?: string;
   context?: string;
 }
 
@@ -108,7 +121,23 @@ import { executeTaskList } from "./definitions/task-list.js";
 import { executeTaskStart } from "./definitions/task-start.js";
 import { executeTaskComplete } from "./definitions/task-complete.js";
 import { executeTaskApprove } from "./definitions/task-approve.js";
+import { executeTaskSubmit, executeTaskRequestChanges } from "./task-tools.js";
+import { executeChainApprove, executeChainRequestChanges } from "./chain-tools.js";
+import {
+  executeRequestCreate,
+  executeRequestApprove,
+  executeRequestChanges,
+} from "./request-tools.js";
+import { executeFeedbackCreate } from "./feedback-tools.js";
+import { executeSpawnAgent } from "./session-tools.js";
 import { executeSpawnImplSession } from "./definitions/spawn-impl-session.js";
+import {
+  executeGitStatus,
+  executeGitDiff,
+  executeGitCommit,
+  executeGitBranch,
+  executeGitPush,
+} from "./git-tools.js";
 import { executeReadFile } from "./definitions/read-file.js";
 import { executeWriteFile } from "./definitions/write-file.js";
 import { executeListFiles } from "./definitions/list-files.js";
@@ -119,11 +148,25 @@ import { executeSearchFiles } from "./definitions/search-files.js";
  */
 const TOOL_EXECUTORS: Map<string, ToolExecutorFn> = new Map([
   ["chain:status", executeChainStatus],
+  ["chain:approve", executeChainApprove],
+  ["chain:request_changes", executeChainRequestChanges],
+  ["request:create", executeRequestCreate],
+  ["request:approve", executeRequestApprove],
+  ["request:request_changes", executeRequestChanges],
+  ["feedback:create", executeFeedbackCreate],
+  ["spawn_agent", executeSpawnAgent],
+  ["git:status", executeGitStatus],
+  ["git:diff", executeGitDiff],
+  ["git:commit", executeGitCommit],
+  ["git:branch", executeGitBranch],
+  ["git:push", executeGitPush],
   ["task:status", executeTaskStatus],
   ["task:list", executeTaskList],
   ["task:start", executeTaskStart],
+  ["task:submit", executeTaskSubmit],
   ["task:complete", executeTaskComplete],
   ["task:approve", executeTaskApprove],
+  ["task:request_changes", executeTaskRequestChanges],
   ["spawn_impl_session", executeSpawnImplSession],
   ["read_file", executeReadFile],
   ["write_file", executeWriteFile],

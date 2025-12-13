@@ -2,7 +2,7 @@
 
 **ID**: CR-20251212-005  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-12  
 **Owner**: agent  
 
@@ -96,9 +96,14 @@ Without these tools, the workflows cannot be executed.
 ## Linked ADRs
 
 - ADR-010: Agent Runtime Architecture
-- ADR-TBD: Agent Tools Design
+- ADR-013: Agent Tools Design
 
 ---
+
+## Chain
+
+**Chain ID**: CHAIN-068-agent-tools  
+**Tasks**: 8 tasks (T001-T008)
 
 ## Commits
 
@@ -142,4 +147,23 @@ Key implementation areas:
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Completed 2025-12-12. All 14 agent tools implemented across 8 tasks in CHAIN-068:
+
+**Task Tools**: `task:submit`, `task:request_changes` — lifecycle transitions with event emission
+
+**Chain Tools**: `chain:approve`, `chain:request_changes` — chain review actions with events
+
+**Request Tools**: `request:create`, `request:approve`, `request:request_changes` — template-based request creation and review
+
+**Feedback Tools**: `feedback:create` — blocking/non-blocking feedback with workflow pause support
+
+**Session Tools**: `spawn_agent` — role-flexible nested agent spawning with privilege guards
+
+**Git Tools**: `git:status`, `git:diff`, `git:commit`, `git:branch`, `git:push` — safe git operations with commit message validation
+
+**Key Files**:
+- `packages/cli/src/runtime/tools/{task,chain,request,feedback,session,git}-tools.ts`
+- `packages/cli/src/runtime/tools/{index,registry,executor}.ts`
+- `.choragen/tools/index.yaml`
+- `packages/cli/src/runtime/__tests__/tool-integration.test.ts`
+- Unit tests for each tool category

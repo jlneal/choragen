@@ -9,7 +9,13 @@ import { randomUUID } from "node:crypto";
 import type { AgentRole } from "./tools/types.js";
 import type { LLMProvider, Message, Tool, ToolCall } from "./providers/types.js";
 import { ToolRegistry, defaultRegistry } from "./tools/registry.js";
-import { ToolExecutor, defaultExecutor, type ChildSessionConfig, type ChildSessionResult } from "./tools/executor.js";
+import {
+  ToolExecutor,
+  defaultExecutor,
+  type ChildSessionConfig,
+  type ChildSessionResult,
+  type ExecutionContext,
+} from "./tools/executor.js";
 import { GovernanceGate, defaultGovernanceGate } from "./governance-gate.js";
 import { PromptLoader, createToolSummaries } from "./prompt-loader.js";
 import { withRetry, DEFAULT_RETRY_CONFIG, type RetryConfig } from "./retry.js";
@@ -137,19 +143,11 @@ export interface LoopDependencies {
  * Extended execution context for nested session support.
  * Includes all base ExecutionContext fields plus nested session metadata.
  */
-export interface ExtendedExecutionContext {
-  /** Role of the agent executing the tool */
-  role: AgentRole;
-  /** Current chain ID (if in a chain context) */
-  chainId?: string;
-  /** Current task ID (if in a task context) */
-  taskId?: string;
+export interface ExtendedExecutionContext extends ExecutionContext {
   /** Workflow ID (if in a workflow context) */
   workflowId?: string;
   /** Workflow stage type (if in a workflow context) */
   stageType?: StageType;
-  /** Workspace root directory */
-  workspaceRoot: string;
   /** Current session ID */
   sessionId: string;
   /** Parent session ID (for nested sessions) */
@@ -198,6 +196,7 @@ export interface AgentSessionEvents {
     result?: unknown;
     error?: string;
   }) => void;
+  onEvent?: (event: { type: string; payload?: Record<string, unknown> }) => void;
 }
 
 /**
@@ -371,12 +370,19 @@ export async function runAgentSession(
 
   // Create the spawn child session function
   const spawnChildSession = async (childConfig: ChildSessionConfig): Promise<ChildSessionResult> => {
-    console.log(`[Loop] Spawning child impl session for task ${childConfig.taskId}`);
+    const childRole =
+      childConfig.role === "control" || childConfig.role === "impl"
+        ? childConfig.role
+        : "impl";
+    const childRoleId = childConfig.roleId ?? childConfig.role;
+    console.log(`[Loop] Spawning child session (role: ${childConfig.role ?? "impl"}) for task ${childConfig.taskId}`);
+    console.log(`[Loop] Current depth: ${nestingDepth}, next depth: ${nestingDepth + 1}`);
     
     // Run a nested agent session
     const childResult = await runAgentSession(
       {
-        role: "impl",
+        role: childRole,
+        roleId: childRoleId,
         provider,
         chainId: childConfig.chainId,
         taskId: childConfig.taskId,
@@ -423,6 +429,7 @@ export async function runAgentSession(
     deps,
     childSessionResults,
     spawnChildSession,
+    eventEmitter: deps.events?.onEvent,
   };
 
   const events = deps.events;
@@ -612,7 +619,7 @@ async function processToolCall(
   role: AgentRole,
   governanceGate: GovernanceGate,
   executor: ToolExecutor,
-  context: { role: AgentRole; chainId?: string; taskId?: string; workspaceRoot: string },
+  context: ExecutionContext,
   dryRun: boolean,
   checkpointHandler: CheckpointHandler,
   roleManager: RoleManager,

@@ -116,11 +116,24 @@ describe("ToolExecutor", () => {
       const tools = executor.getRegisteredTools();
 
       expect(tools).toContain("chain:status");
+      expect(tools).toContain("chain:approve");
+      expect(tools).toContain("chain:request_changes");
+      expect(tools).toContain("request:create");
+      expect(tools).toContain("request:approve");
+      expect(tools).toContain("request:request_changes");
+      expect(tools).toContain("spawn_agent");
+      expect(tools).toContain("git:status");
+      expect(tools).toContain("git:diff");
+      expect(tools).toContain("git:commit");
+      expect(tools).toContain("git:branch");
+      expect(tools).toContain("git:push");
       expect(tools).toContain("task:status");
       expect(tools).toContain("task:list");
       expect(tools).toContain("task:start");
+      expect(tools).toContain("task:submit");
       expect(tools).toContain("task:complete");
       expect(tools).toContain("task:approve");
+      expect(tools).toContain("task:request_changes");
       expect(tools).toContain("spawn_impl_session");
       expect(tools).toContain("read_file");
       expect(tools).toContain("write_file");
@@ -137,7 +150,7 @@ describe("defaultExecutor", () => {
 
   it("has all Phase 1 executors", () => {
     const tools = defaultExecutor.getRegisteredTools();
-    const EXPECTED_EXECUTOR_COUNT = 11;
+    const EXPECTED_EXECUTOR_COUNT = 25;
     expect(tools).toHaveLength(EXPECTED_EXECUTOR_COUNT);
   });
 });

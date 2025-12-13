@@ -29,6 +29,7 @@ export const STAGE_TOOL_MATRIX: Record<StageType, readonly string[]> = {
     "task:add",
     "task:status",
     "task:list",
+    "feedback:create",
     "read_file",
     "write_file", // docs authoring
     "list_files",
@@ -36,7 +37,12 @@ export const STAGE_TOOL_MATRIX: Record<StageType, readonly string[]> = {
   ],
   review: [
     "chain:status",
+    "chain:approve",
+    "chain:request_changes",
     "task:approve",
+    "task:request_changes",
+    "request:approve",
+    "request:request_changes",
     "task:status",
     "task:list",
     "read_file",
@@ -47,9 +53,11 @@ export const STAGE_TOOL_MATRIX: Record<StageType, readonly string[]> = {
   implementation: [
     "chain:status",
     "task:start",
+    "task:submit",
     "task:complete",
     "task:status",
     "task:list",
+    "feedback:create",
     "read_file",
     "write_file",
     "list_files",

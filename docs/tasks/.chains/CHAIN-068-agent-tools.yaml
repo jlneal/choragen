@@ -1,0 +1,36 @@
+id: CHAIN-068-agent-tools
+title: Agent Tools Implementation
+request: CR-20251212-005
+status: todo
+created: 2025-12-12
+type: implementation
+
+tasks:
+  - id: T001-task-lifecycle-tools
+    title: Task Lifecycle Tools
+    status: done
+  - id: T002-chain-lifecycle-tools
+    title: Chain Lifecycle Tools
+    status: done
+  - id: T003-request-lifecycle-tools
+    title: Request Lifecycle Tools
+    status: done
+  - id: T004-feedback-tools
+    title: Feedback Tools
+    status: done
+  - id: T005-spawn-agent-tool
+    title: Spawn Agent Tool
+    status: done
+  - id: T006-git-tools
+    title: Git Tools
+    status: done
+  - id: T007-tool-registry-update
+    title: Tool Registry Update
+    status: done
+  - id: T008-integration-tests
+    title: Integration Tests
+    status: done
+
+fileScope:
+  - "packages/cli/src/runtime/tools/**"
+  - ".choragen/tools/index.yaml"

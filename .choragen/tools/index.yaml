@@ -1,4 +1,4 @@
-generatedAt: 2025-12-12T00:48:32.079Z
+generatedAt: 2025-12-12T21:20:00.000Z
 tools:
   - id: chain:status
     name: Chain Status
@@ -204,6 +204,249 @@ tools:
         ]
       }
 
+  - id: task:submit
+    name: Task Submit
+    description: Submit a task for review, moving it from in-progress to in-review
+    category: task
+    mutates: true
+    roles:
+      - impl
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "chainId": { "type": "string", "description": "Chain ID (e.g., CHAIN-037-agent-runtime-core)" },
+          "taskId": { "type": "string", "description": "Task ID (e.g., 002-tool-registry)" },
+          "summary": { "type": "string", "description": "Brief summary of what was accomplished" }
+        },
+        "required": ["chainId", "taskId"]
+      }
+
+  - id: task:request_changes
+    name: Task Request Changes
+    description: Request changes on a task, moving it from in-review back to in-progress
+    category: task
+    mutates: true
+    roles:
+      - review
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "chainId": { "type": "string", "description": "Chain ID (e.g., CHAIN-037-agent-runtime-core)" },
+          "taskId": { "type": "string", "description": "Task ID (e.g., 002-tool-registry)" },
+          "reason": { "type": "string", "description": "Reason for requesting changes" },
+          "suggestions": { "type": "array", "items": { "type": "string" }, "description": "Optional suggestions to address the feedback" }
+        },
+        "required": ["chainId", "taskId", "reason"]
+      }
+
+  - id: chain:approve
+    name: Chain Approve
+    description: Approve a chain after review
+    category: chain
+    mutates: true
+    roles:
+      - review
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "chainId": { "type": "string", "description": "Chain ID (e.g., CHAIN-037-agent-runtime-core)" },
+          "reason": { "type": "string", "description": "Optional approval note or justification" }
+        },
+        "required": ["chainId"]
+      }
+
+  - id: chain:request_changes
+    name: Chain Request Changes
+    description: Request changes on a chain after review
+    category: chain
+    mutates: true
+    roles:
+      - review
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "chainId": { "type": "string", "description": "Chain ID (e.g., CHAIN-037-agent-runtime-core)" },
+          "reason": { "type": "string", "description": "Reason for requesting changes" }
+        },
+        "required": ["chainId", "reason"]
+      }
+
+  - id: request:create
+    name: Request Create
+    description: Create a new change or fix request in backlog
+    category: request
+    mutates: true
+    roles:
+      - ideation
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["cr", "fr"], "description": "Request type: cr (change request) or fr (fix request)" },
+          "title": { "type": "string", "description": "Title of the request" },
+          "domain": { "type": "string", "description": "Domain or area the request impacts" },
+          "content": { "type": "string", "description": "Primary description or body content for the request" }
+        },
+        "required": ["type", "title", "domain", "content"]
+      }
+
+  - id: request:approve
+    name: Request Approve
+    description: Approve a request after review
+    category: request
+    mutates: true
+    roles:
+      - review
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "requestId": { "type": "string", "description": "Request ID (e.g., CR-20251211-001)" },
+          "reason": { "type": "string", "description": "Optional approval note" }
+        },
+        "required": ["requestId"]
+      }
+
+  - id: request:request_changes
+    name: Request Changes
+    description: Request changes on a request during review
+    category: request
+    mutates: true
+    roles:
+      - review
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "requestId": { "type": "string", "description": "Request ID (e.g., CR-20251211-001)" },
+          "reason": { "type": "string", "description": "Reason for requesting changes" }
+        },
+        "required": ["requestId", "reason"]
+      }
+
+  - id: feedback:create
+    name: Feedback Create
+    description: Create a feedback item for human response
+    category: feedback
+    mutates: true
+    roles:
+      - impl
+      - design
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "workflowId": { "type": "string", "description": "Workflow ID to attach feedback to" },
+          "question": { "type": "string", "description": "Question or feedback content" },
+          "context": { "type": "string", "description": "Optional additional context" },
+          "blocking": { "type": "boolean", "description": "Whether workflow should pause until feedback is resolved" }
+        },
+        "required": ["workflowId", "question"]
+      }
+
+  - id: spawn_agent
+    name: Spawn Agent
+    description: Spawn a nested agent session for a specified role.
+    category: session
+    mutates: true
+    roles:
+      - orchestration
+      - control
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "role": { "type": "string", "description": "Role for the spawned agent (impl, design, review, ideation, commit, orchestration, control)" },
+          "chainId": { "type": "string", "description": "Optional chain context" },
+          "taskId": { "type": "string", "description": "Optional task context" },
+          "context": { "type": "string", "description": "Additional instructions for the spawned agent" }
+        },
+        "required": ["role"]
+      }
+
+  - id: git:status
+    name: Git Status
+    description: Show git status (short)
+    category: git
+    mutates: false
+    roles:
+      - commit
+    parameters:
+      {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+
+  - id: git:diff
+    name: Git Diff
+    description: Show git diff for optional files; supports staged diff
+    category: git
+    mutates: false
+    roles:
+      - commit
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "files": { "type": "array", "items": { "type": "string" }, "description": "Optional list of files to diff" },
+          "staged": { "type": "boolean", "description": "Show staged diff instead of working tree" }
+        }
+      }
+
+  - id: git:commit
+    name: Git Commit
+    description: Create a git commit with validated message format
+    category: git
+    mutates: true
+    roles:
+      - commit
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "description": "Commit message (must include CR/FR reference)" },
+          "files": { "type": "array", "items": { "type": "string" }, "description": "Optional list of files to stage before commit" }
+        },
+        "required": ["message"]
+      }
+
+  - id: git:branch
+    name: Git Branch
+    description: Create or checkout a branch (deletion not allowed)
+    category: git
+    mutates: true
+    roles:
+      - commit
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Branch name" },
+          "action": { "type": "string", "enum": ["create", "checkout"], "description": "Branch action" }
+        },
+        "required": ["name", "action"]
+      }
+
+  - id: git:push
+    name: Git Push
+    description: Push commits to remote (no force push allowed)
+    category: git
+    mutates: true
+    roles:
+      - commit
+    parameters:
+      {
+        "type": "object",
+        "properties": {
+          "remote": { "type": "string", "description": "Remote name (default: origin)" },
+          "branch": { "type": "string", "description": "Branch name (default: current)" }
+        }
+      }
   - id: write_file
     name: Write File
     description: Write content to a file. Creates parent directories if needed. Use createOnly to fail if file already exists.

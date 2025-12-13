@@ -18,6 +18,22 @@ import { taskListTool } from "./definitions/task-list.js";
 import { taskStartTool } from "./definitions/task-start.js";
 import { taskCompleteTool } from "./definitions/task-complete.js";
 import { taskApproveTool } from "./definitions/task-approve.js";
+import { taskSubmitTool, taskRequestChangesTool } from "./task-tools.js";
+import { chainApproveTool, chainRequestChangesTool } from "./chain-tools.js";
+import {
+  requestCreateTool,
+  requestApproveTool,
+  requestChangesTool,
+} from "./request-tools.js";
+import { feedbackCreateTool } from "./feedback-tools.js";
+import { spawnAgentTool } from "./session-tools.js";
+import {
+  gitStatusTool,
+  gitDiffTool,
+  gitCommitTool,
+  gitBranchTool,
+  gitPushTool,
+} from "./git-tools.js";
 import { spawnImplSessionTool } from "./definitions/spawn-impl-session.js";
 import { readFileTool } from "./definitions/read-file.js";
 import { writeFileTool } from "./definitions/write-file.js";
@@ -32,9 +48,23 @@ const ALL_TOOLS: ToolDefinition[] = [
   taskStatusTool,
   taskListTool,
   taskStartTool,
+  taskSubmitTool,
   taskCompleteTool,
   taskApproveTool,
+  taskRequestChangesTool,
+  chainApproveTool,
+  chainRequestChangesTool,
+  requestCreateTool,
+  requestApproveTool,
+  requestChangesTool,
+  feedbackCreateTool,
+  spawnAgentTool,
   spawnImplSessionTool,
+  gitStatusTool,
+  gitDiffTool,
+  gitCommitTool,
+  gitBranchTool,
+  gitPushTool,
   readFileTool,
   writeFileTool,
   listFilesTool,

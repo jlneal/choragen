@@ -180,7 +180,7 @@ describe("ToolRegistry", () => {
     it("returns all registered tools", () => {
       const registry = new ToolRegistry();
       const allTools = registry.getAllTools();
-      const EXPECTED_TOTAL_TOOL_COUNT = 11;
+      const EXPECTED_TOTAL_TOOL_COUNT = 25;
       expect(allTools).toHaveLength(EXPECTED_TOTAL_TOOL_COUNT);
     });
   });
