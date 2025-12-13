@@ -2,8 +2,9 @@
 
 **ID**: CR-20251212-001  
 **Domain**: core  
-**Status**: doing  
+**Status**: done  
 **Created**: 2025-12-12  
+**Completed**: 2025-12-12
 **Owner**: agent  
 
 ---
@@ -70,9 +71,7 @@ Specialized roles enable the assembly-line model where each agent has a clear, b
 
 ## Commits
 
-No commits yet.
-
----
+- 77f723f feat(roles): implement specialized agent roles with model configuration
 
 ## Implementation Notes
 
@@ -87,4 +86,13 @@ Key implementation areas:
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented all six tasks in CHAIN-069-specialized-agent-roles:
+
+1. **Extended Role interface** — Added `model?: RoleModelConfig` and `systemPrompt?: string` fields to the Role type in `@choragen/core`
+2. **Created roles YAML** — Defined 8 specialized roles in `.choragen/roles/index.yaml` with model configs (anthropic/claude-sonnet-4-20250514) and role-specific temperatures
+3. **Runtime model resolution** — Agent runtime now resolves role model config and passes provider/model/temperature to LLM providers with legacy fallback support
+4. **System prompt templates** — PromptLoader supports role systemPrompt with `{{chainId}}`, `{{taskId}}`, `{{toolSummaries}}` placeholders and `file:` references
+5. **Web UI role config** — Role editor includes provider dropdown, model input with suggestions, temperature slider, maxTokens, and collapsible system prompt textarea; role cards show temperature badges
+6. **Comprehensive tests** — Added tests for model config serialization, prompt loading, runtime resolution, and agent:start model config handling
+
+All 1,260 tests passing (510 core + 750 CLI).
