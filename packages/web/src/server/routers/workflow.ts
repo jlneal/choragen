@@ -33,6 +33,7 @@ const messageRoleEnum = z.enum(
 const createWorkflowInputSchema = z.object({
   requestId: z.string().min(1, "Request ID is required"),
   template: z.string().min(1, "Template name is required"),
+  initialMessage: z.string().optional(),
 });
 
 const listWorkflowInputSchema = z
@@ -159,10 +160,21 @@ export const workflowRouter = router({
       const manager = getWorkflowManager(ctx.projectRoot);
       const template = await loadTemplate(ctx.projectRoot, input.template);
 
-      return manager.create({
+      const workflow = await manager.create({
         requestId: input.requestId,
         template,
       });
+
+      // If an initial message was provided, add it to the workflow
+      if (input.initialMessage) {
+        await manager.addMessage(workflow.id, {
+          role: "human",
+          content: input.initialMessage,
+          stageIndex: 0,
+        });
+      }
+
+      return workflow;
     }),
 
   /**

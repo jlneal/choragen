@@ -13,6 +13,10 @@ import {
   Settings,
   Menu,
   Archive,
+  MessageSquare,
+  Wrench,
+  Users,
+  Workflow,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -34,6 +38,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Chat", href: "/chat", icon: MessageSquare },
   { name: "Chains", href: "/chains", icon: GitBranch },
   { name: "Git", href: "/git", icon: GitCommitHorizontal },
   {
@@ -42,6 +47,9 @@ const navItems: NavItem[] = [
     icon: FileText,
   },
   { name: "Backlog", href: "/backlog", icon: Archive },
+  { name: "Workflows", href: "/workflows", icon: Workflow },
+  { name: "Roles", href: "/roles", icon: Users },
+  { name: "Tools", href: "/tools", icon: Wrench },
   { name: "Sessions", href: "/sessions", icon: Bot },
   { name: "Metrics", href: "/metrics", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
