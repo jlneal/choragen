@@ -7,6 +7,7 @@
 import { describe, expect, it } from "vitest";
 import type {
   Role,
+  RoleModelConfig,
   ToolCategory,
   ToolMetadata,
   ToolParameterSchema,
@@ -20,13 +21,36 @@ describe("roles/types", () => {
       name: "Researcher",
       description: "Read-only access for exploration",
       toolIds: ["read_file", "search_files"],
+      model: {
+        provider: "anthropic",
+        model: "claude-sonnet-4-20250514",
+        temperature: 0.5,
+        maxTokens: 5000,
+        options: { topP: 0.9 },
+      },
+      systemPrompt: "You are a researcher.",
       createdAt: new Date("2025-12-11T00:00:00Z"),
       updatedAt: new Date("2025-12-12T00:00:00Z"),
     };
 
     expect(role.toolIds).toContain("read_file");
+    expect(role.model?.provider).toBe("anthropic");
+    expect(role.systemPrompt).toContain("researcher");
     expect(role.createdAt).toBeInstanceOf(Date);
     expect(role.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it("defines RoleModelConfig structure", () => {
+    const model: RoleModelConfig = {
+      provider: "openai",
+      model: "gpt-4.1",
+      temperature: 0.3,
+      maxTokens: 4000,
+      options: { topP: 0.8, frequencyPenalty: 0.2 },
+    };
+
+    expect(model.model).toBe("gpt-4.1");
+    expect(model.options?.topP).toBe(0.8);
   });
 
   it("defines ToolMetadata structure", () => {

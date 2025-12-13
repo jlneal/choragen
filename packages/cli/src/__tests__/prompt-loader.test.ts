@@ -7,6 +7,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { PromptLoader, createToolSummaries } from "../runtime/prompt-loader.js";
 import type { SessionContext, ToolSummary } from "../runtime/prompt-loader.js";
+import type { Role } from "@choragen/core";
 import * as fs from "node:fs/promises";
 import { join } from "node:path";
 
@@ -76,6 +77,88 @@ describe("PromptLoader", () => {
 
         expect(result).toContain("# Implementation Agent Role");
         expect(result).toContain("executing tasks from task files");
+      });
+    });
+
+    describe("role systemPrompt overrides", () => {
+      const baseRole: Role = {
+        id: "control",
+        name: "Control Agent",
+        toolIds: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      beforeEach(() => {
+        vi.mocked(fs.readFile).mockResolvedValue("# Base Prompt");
+      });
+
+      it("uses systemPrompt from role definition when provided", async () => {
+        const roleWithPrompt: Role = {
+          ...baseRole,
+          systemPrompt:
+            "Custom role prompt for {{chainId}}.\n\nTools:\n{{toolSummaries}}",
+        };
+        const context: SessionContext = {
+          ...baseContext,
+          chainId: "CHAIN-123",
+          availableTools: [{ name: "read_file", description: "Read a file" }],
+        };
+
+        const result = await loader.load("control", context, roleWithPrompt);
+
+        expect(result).toContain("Custom role prompt for CHAIN-123.");
+        expect(result).toContain("## Available Tools");
+        expect(result).toContain("read_file");
+        // Should not attempt to load default agent doc when systemPrompt is provided
+        expect(fs.readFile).toHaveBeenCalledTimes(0);
+      });
+
+      it("supports file: systemPrompt references relative to workspace", async () => {
+        const roleWithFilePrompt: Role = {
+          ...baseRole,
+          systemPrompt: "file:prompts/control.md",
+        };
+        vi.mocked(fs.readFile).mockResolvedValueOnce("# File prompt {{taskId}}");
+
+        const result = await loader.load(
+          "control",
+          { ...baseContext, taskId: "TASK-9" },
+          roleWithFilePrompt
+        );
+
+        expect(fs.readFile).toHaveBeenCalledWith(
+          join(mockWorkspaceRoot, "prompts/control.md"),
+          "utf-8"
+        );
+        expect(result).toContain("# File prompt TASK-9");
+      });
+
+      it("replaces placeholders and avoids duplicate tool sections when systemPrompt includes {{toolSummaries}}", async () => {
+        const roleWithPrompt: Role = {
+          ...baseRole,
+          systemPrompt: [
+            "# Custom Prompt",
+            "Chain: {{chainId}}",
+            "Task: {{taskId}}",
+            "{{toolSummaries}}",
+          ].join("\n"),
+        };
+
+        const context: SessionContext = {
+          ...baseContext,
+          chainId: "CHAIN-55",
+          taskId: "TASK-123",
+          availableTools: [{ name: "read_file", description: "Read file" }],
+        };
+
+        const result = await loader.load("control", context, roleWithPrompt);
+
+        expect(result).toContain("CHAIN-55");
+        expect(result).toContain("TASK-123");
+        const toolSectionMatches = result.match(/Available Tools/g) ?? [];
+        expect(toolSectionMatches.length).toBe(1);
+        expect(result).toContain("read_file");
       });
     });
 

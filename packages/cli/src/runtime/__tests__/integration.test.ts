@@ -152,6 +152,11 @@ function createTestDependencies() {
           toolIds: ["chain:status", "task:complete"],
           createdAt: new Date(),
           updatedAt: new Date(),
+          model: {
+            provider: "anthropic",
+            model: "claude-sonnet-4-20250514",
+            temperature: 0.3,
+          },
         };
       }
       return null;
@@ -188,7 +193,7 @@ function createTestDependencies() {
   return { registry, governanceGate, executor, promptLoader, chainStatusExecutor, roleManager };
 }
 
-describe("Agent Runtime Integration Tests", () => {
+  describe("Agent Runtime Integration Tests", () => {
   let testWorkspace: string;
 
   beforeEach(async () => {
@@ -296,6 +301,57 @@ describe("Agent Runtime Integration Tests", () => {
       expect(result.toolCalls[0].name).toBe("task:complete");
       expect(result.toolCalls[0].allowed).toBe(false);
       expect(result.toolCalls[0].denialReason).toContain("Tool not allowed for role");
+    });
+
+    it("falls back to legacy role IDs when the primary role is missing", async () => {
+      const deps = createTestDependencies();
+      // Override role manager to simulate missing "implementation" but present "implementer"
+      const roleManager = {
+        get: vi.fn(async (roleId: string) => {
+          if (roleId === "implementer") {
+            return {
+              id: "implementer",
+              name: "Implementer",
+              toolIds: ["chain:status"],
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+          }
+          return null;
+        }),
+      } as unknown as RoleManager;
+
+      const provider = new MockLLMProvider([
+        {
+          content: "Checking chain status",
+          toolCalls: [
+            { id: "call-1", name: "chain:status", arguments: { chainId: "CHAIN-99" } },
+          ],
+          stopReason: "tool_use",
+          usage: { inputTokens: 10, outputTokens: 5 },
+        },
+        {
+          content: "Done",
+          toolCalls: [],
+          stopReason: "end_turn",
+          usage: { inputTokens: 5, outputTokens: 5 },
+        },
+      ]);
+
+      const result = await runAgentSession(
+        {
+          role: "impl",
+          provider,
+          workspaceRoot: testWorkspace,
+        },
+        { ...deps, roleManager }
+      );
+
+      expect(roleManager.get).toHaveBeenCalledWith("implementation");
+      expect(roleManager.get).toHaveBeenCalledWith("implementer");
+      expect(result.success).toBe(true);
+      expect(result.toolCalls[0]?.name).toBe("chain:status");
+      expect(result.toolCalls[0]?.allowed).toBe(true);
     });
   });
 

@@ -16,10 +16,28 @@ export interface Role {
   description?: string;
   /** Tool IDs this role can use */
   toolIds: string[];
+  /** Optional model configuration for this role */
+  model?: RoleModelConfig;
+  /** Optional system prompt to prime the model */
+  systemPrompt?: string;
   /** When the role was created */
   createdAt: Date;
   /** When the role was last updated */
   updatedAt: Date;
+}
+
+/** Model configuration for a role */
+export interface RoleModelConfig {
+  /** LLM provider (anthropic, openai, etc.) */
+  provider: string;
+  /** Model identifier */
+  model: string;
+  /** Temperature (0.0 - 1.0) */
+  temperature: number;
+  /** Max tokens for response (optional) */
+  maxTokens?: number;
+  /** Additional provider-specific options */
+  options?: Record<string, unknown>;
 }
 
 /** JSON Schema definition for tool parameters */

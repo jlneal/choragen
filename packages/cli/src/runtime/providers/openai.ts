@@ -114,6 +114,7 @@ export class OpenAIProvider implements LLMProvider {
 
   private client: OpenAI;
   private maxTokens: number;
+  private temperature?: number;
 
   constructor(config: ProviderConfig) {
     this.client = new OpenAI({
@@ -121,6 +122,7 @@ export class OpenAIProvider implements LLMProvider {
     });
     this.model = config.model ?? DEFAULT_MODELS.openai;
     this.maxTokens = config.maxTokens ?? DEFAULT_MAX_TOKENS;
+    this.temperature = config.temperature;
   }
 
   async chat(messages: Message[], tools: Tool[]): Promise<ChatResponse> {
@@ -130,6 +132,7 @@ export class OpenAIProvider implements LLMProvider {
     const response = await this.client.chat.completions.create({
       model: this.model,
       max_tokens: this.maxTokens,
+      temperature: this.temperature,
       messages: openaiMessages,
       tools: openaiTools,
     });

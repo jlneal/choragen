@@ -1,7 +1,7 @@
 // ADR: ADR-011-web-api-architecture
 
 import Link from "next/link";
-import { ArrowRight, CalendarClock, Clock3, Hash, Wrench } from "lucide-react";
+import { ArrowRight, CalendarClock, Clock3, Hash, ThermometerSun, Wrench } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -36,6 +36,7 @@ export interface RoleCardProps {
   toolCount: number;
   createdAt: Date;
   updatedAt: Date;
+  temperature?: number;
   className?: string;
 }
 
@@ -46,6 +47,7 @@ export function RoleCard({
   toolCount,
   createdAt,
   updatedAt,
+  temperature,
   className,
 }: RoleCardProps) {
   return (
@@ -68,6 +70,12 @@ export function RoleCard({
             <Hash className="h-3.5 w-3.5" />
             {id}
           </Badge>
+          {typeof temperature === "number" && !Number.isNaN(temperature) ? (
+            <Badge variant="outline" className="w-fit gap-1 text-xs">
+              <ThermometerSun className="h-3.5 w-3.5 text-amber-500" />
+              {temperature.toFixed(1)}
+            </Badge>
+          ) : null}
           <p className="text-sm text-muted-foreground line-clamp-2">
             {description ?? "No description provided"}
           </p>

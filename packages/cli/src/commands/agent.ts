@@ -5,7 +5,7 @@
  * Provides the `agent:start` command for starting agent sessions.
  */
 
-import { MetricsCollector } from "@choragen/core";
+import { MetricsCollector, RoleManager, type Role } from "@choragen/core";
 import {
   runAgentSession,
   createProvider,
@@ -16,12 +16,22 @@ import {
   Session,
   getCostLimitsFromEnv,
   getApprovalTimeoutFromEnv,
+  resolveRoleId,
   type AgentRole,
   type ProviderName,
   type SessionResult,
   type ToolCallRecord,
   type CheckpointConfig,
 } from "../runtime/index.js";
+
+function isSupportedProviderName(name: string): name is ProviderName {
+  return name === "anthropic" || name === "openai" || name === "gemini" || name === "ollama";
+}
+
+const LEGACY_ROLE_ID_MAP: Record<AgentRole, string> = {
+  control: "controller",
+  impl: "implementer",
+};
 
 /**
  * Options for the agent:start command.
@@ -367,6 +377,29 @@ export async function runAgentStart(
 
   const { role, provider: providerOverride, model: modelOverride, chain, task, dryRun, maxTokens: maxTokensOverride, maxCost: maxCostOverride, requireApproval, autoApprove, approvalTimeout: approvalTimeoutOverride } = parseResult.options;
 
+  // Resolve dynamic role ID and load role definition (if available)
+  const roleManager = new RoleManager(workspaceRoot);
+  let resolvedRoleId = resolveRoleId(role);
+  let resolvedRole: Role | null = null;
+  try {
+    resolvedRole = await roleManager.get(resolvedRoleId);
+    if (!resolvedRole) {
+      const legacyRoleId = LEGACY_ROLE_ID_MAP[role];
+      if (legacyRoleId) {
+        resolvedRole = await roleManager.get(legacyRoleId);
+        if (resolvedRole) {
+          console.warn(
+            `[Agent] Role '${resolvedRoleId}' not found. Falling back to legacy role '${legacyRoleId}'.`
+          );
+          resolvedRoleId = legacyRoleId;
+        }
+      }
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`[Agent] Failed to load role '${resolvedRoleId}' from RoleManager: ${message}`);
+  }
+
   // Get cost limits from env vars, CLI flags override
   const envLimits = getCostLimitsFromEnv();
   const maxTokens = maxTokensOverride ?? envLimits.maxTokens;
@@ -382,8 +415,21 @@ export async function runAgentStart(
     approvalTimeoutMs,
   };
 
+  const roleModelConfig = resolvedRole?.model;
+
   // Determine provider
-  const providerName = providerOverride ?? getProviderFromEnv() ?? "anthropic";
+  const roleProvider =
+    roleModelConfig?.provider && isSupportedProviderName(roleModelConfig.provider)
+      ? roleModelConfig.provider
+      : undefined;
+  if (roleModelConfig?.provider && !roleProvider) {
+    console.warn(
+      `[Agent] Unsupported provider '${roleModelConfig.provider}' in role '${resolvedRoleId}', falling back to defaults.`
+    );
+  }
+
+  const providerName =
+    providerOverride ?? roleProvider ?? getProviderFromEnv() ?? "anthropic";
 
   // Check for API key (Ollama doesn't need one)
   const apiKey = getApiKeyFromEnv(providerName);
@@ -396,13 +442,24 @@ export async function runAgentStart(
     process.exit(1);
   }
 
-  // Determine model
-  const model = modelOverride ?? process.env.CHORAGEN_MODEL ?? DEFAULT_MODELS[providerName];
+  // Determine model and temperature
+  const roleModelName = roleModelConfig?.model;
+  const roleTemperature =
+    typeof roleModelConfig?.temperature === "number"
+      ? roleModelConfig.temperature
+      : undefined;
+
+  const model =
+    modelOverride ?? roleModelName ?? process.env.CHORAGEN_MODEL ?? DEFAULT_MODELS[providerName];
 
   // Create provider
   let llmProvider;
   try {
-    llmProvider = createProvider(providerName, { apiKey, model });
+    llmProvider = createProvider(providerName, {
+      apiKey,
+      model,
+      temperature: roleTemperature,
+    });
   } catch (err) {
     if (err instanceof ProviderError) {
       console.error(`Error: ${err.message}`);
@@ -421,6 +478,17 @@ export async function runAgentStart(
   });
 
   // Display header
+  const temperatureLabel = roleTemperature ?? "default";
+  const modelSource = modelOverride
+    ? "cli override"
+    : roleModelName
+      ? `role (${resolvedRoleId})`
+      : process.env.CHORAGEN_MODEL
+        ? "env"
+        : "provider default";
+  console.log(
+    `[Agent] Model selection: provider=${providerName}, model=${model}, temperature=${temperatureLabel} (source=${modelSource})`
+  );
   console.log(formatSessionHeader(role, model, session.id, dryRun ?? false));
   console.log("");
 
@@ -455,6 +523,8 @@ export async function runAgentStart(
     // Run the session
     const result = await runAgentSession({
       role,
+      roleId: resolvedRoleId,
+      roleManager,
       provider: llmProvider,
       chainId: chain,
       taskId: task,

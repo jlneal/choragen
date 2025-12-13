@@ -29,6 +29,8 @@ describe("RoleManager", () => {
       "reviewer",
       "controller",
     ]);
+    expect(roles.every((role) => role.model === undefined)).toBe(true);
+    expect(roles.every((role) => role.systemPrompt === undefined)).toBe(true);
     expect(roles[0].createdAt).toBeInstanceOf(Date);
 
     const filePath = path.join(tempDir, ".choragen/roles/index.yaml");
@@ -106,6 +108,75 @@ describe("RoleManager", () => {
     expect(roles.find((role) => role.id === "qa")).toBeUndefined();
     const fetched = await manager.get("qa");
     expect(fetched).toBeNull();
+  });
+
+  it("reads model config and system prompt from YAML", async () => {
+    const rolesDir = path.join(tempDir, ".choragen/roles");
+    await fs.mkdir(rolesDir, { recursive: true });
+    const yaml = `roles:
+  - id: control
+    name: Control Agent
+    description: Coordinates work
+    model:
+      provider: anthropic
+      model: claude-sonnet-4-20250514
+      temperature: 0.3
+      maxTokens: 4000
+      options:
+        topP: 0.9
+    systemPrompt: |
+      First line
+      Second line
+    toolIds:
+      - read_file
+      - list_files
+    createdAt: 2025-12-12T00:00:00.000Z
+    updatedAt: 2025-12-12T01:00:00.000Z
+`;
+    await fs.writeFile(path.join(rolesDir, "index.yaml"), yaml, "utf-8");
+
+    const role = await manager.get("control");
+    expect(role?.model).toEqual({
+      provider: "anthropic",
+      model: "claude-sonnet-4-20250514",
+      temperature: 0.3,
+      maxTokens: 4000,
+      options: { topP: 0.9 },
+    });
+    expect(role?.systemPrompt).toContain("First line");
+    expect(role?.toolIds).toEqual(["read_file", "list_files"]);
+  });
+
+  it("serializes and reloads model config and system prompt", async () => {
+    await manager.ensureDefaults();
+
+    const created = await manager.create({
+      name: "Model Tester",
+      description: "Ensures model config persists",
+      toolIds: ["read_file"],
+      model: {
+        provider: "anthropic",
+        model: "claude-sonnet-4-20250514",
+        temperature: 0.25,
+        maxTokens: 1234,
+        options: { topP: 0.8 },
+      },
+      systemPrompt: "file:prompts/model-tester.md",
+    });
+
+    const filePath = path.join(tempDir, ".choragen/roles/index.yaml");
+    const content = await fs.readFile(filePath, "utf-8");
+    expect(content).toContain("provider: anthropic");
+    expect(content).toContain("model: claude-sonnet-4-20250514");
+    expect(content).toContain("temperature: 0.25");
+    expect(content).toContain("maxTokens: 1234");
+    expect(content).toContain("systemPrompt: file:prompts/model-tester.md");
+
+    const reloaded = new RoleManager(tempDir);
+    const listed = await reloaded.list();
+    const role = listed.find((item) => item.id === created.id);
+    expect(role?.model).toEqual(created.model);
+    expect(role?.systemPrompt).toBe("file:prompts/model-tester.md");
   });
 
   it("throws when deleting a missing role", async () => {

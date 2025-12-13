@@ -136,6 +136,7 @@ export class AnthropicProvider implements LLMProvider {
 
   private client: Anthropic;
   private maxTokens: number;
+  private temperature?: number;
 
   constructor(config: ProviderConfig) {
     this.client = new Anthropic({
@@ -143,6 +144,7 @@ export class AnthropicProvider implements LLMProvider {
     });
     this.model = config.model ?? DEFAULT_MODELS.anthropic;
     this.maxTokens = config.maxTokens ?? DEFAULT_MAX_TOKENS;
+    this.temperature = config.temperature;
   }
 
   async chat(messages: Message[], tools: Tool[]): Promise<ChatResponse> {
@@ -153,6 +155,7 @@ export class AnthropicProvider implements LLMProvider {
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: this.maxTokens,
+      temperature: this.temperature,
       system: systemMessage,
       messages: anthropicMessages,
       tools: anthropicTools,

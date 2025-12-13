@@ -30,7 +30,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc/client";
+
+type RoleModelConfig = {
+  provider: string;
+  model: string;
+  temperature: number;
+  maxTokens?: number;
+};
 
 interface RoleEditorProps {
   mode: "create" | "edit";
@@ -40,13 +55,29 @@ interface RoleEditorProps {
     name: string;
     description?: string;
     toolIds: string[];
+    model?: RoleModelConfig;
+    systemPrompt?: string;
   };
 }
 
 interface FormErrors {
   name?: string;
   tools?: string;
+  provider?: string;
+  model?: string;
+  temperature?: string;
 }
+
+type ProviderOption = "anthropic" | "openai" | "gemini" | "ollama";
+
+const PROVIDER_OPTIONS: ProviderOption[] = ["anthropic", "openai", "gemini", "ollama"];
+
+const MODEL_SUGGESTIONS: Record<(typeof PROVIDER_OPTIONS)[number], string> = {
+  anthropic: "claude-sonnet-4-20250514",
+  openai: "gpt-4o",
+  gemini: "gemini-2.0-flash",
+  ollama: "llama3.2",
+};
 
 function RoleFormSkeleton() {
   return (
@@ -78,6 +109,18 @@ export function RoleEditor({ mode, roleId, role }: RoleEditorProps) {
 
   const [name, setName] = useState(role?.name ?? "");
   const [selectedToolIds, setSelectedToolIds] = useState<string[]>(role?.toolIds ?? []);
+  const [provider, setProvider] = useState<ProviderOption | "">(
+    (role?.model?.provider as ProviderOption | undefined) ?? ""
+  );
+  const [modelName, setModelName] = useState<string>(role?.model?.model ?? "");
+  const [temperature, setTemperature] = useState<number>(
+    role?.model?.temperature ?? 0.3
+  );
+  const [maxTokens, setMaxTokens] = useState<string>(
+    role?.model?.maxTokens?.toString() ?? ""
+  );
+  const [systemPrompt, setSystemPrompt] = useState<string>(role?.systemPrompt ?? "");
+  const [showSystemPrompt, setShowSystemPrompt] = useState<boolean>(Boolean(role?.systemPrompt));
   const [errors, setErrors] = useState<FormErrors>({});
 
   const initializedRef = useRef(false);
@@ -85,6 +128,12 @@ export function RoleEditor({ mode, roleId, role }: RoleEditorProps) {
     if (role && !initializedRef.current) {
       setName(role.name ?? "");
       setSelectedToolIds(role.toolIds ?? []);
+      setProvider((role.model?.provider as ProviderOption | undefined) ?? "");
+      setModelName(role.model?.model ?? "");
+      setTemperature(role.model?.temperature ?? 0.3);
+      setMaxTokens(role.model?.maxTokens?.toString() ?? "");
+      setSystemPrompt(role.systemPrompt ?? "");
+      setShowSystemPrompt(Boolean(role.systemPrompt));
       initializedRef.current = true;
     }
   }, [role]);
@@ -136,6 +185,12 @@ export function RoleEditor({ mode, roleId, role }: RoleEditorProps) {
   const validate = (): boolean => {
     const nextErrors: FormErrors = {};
     const trimmedName = name.trim();
+    const trimmedModel = modelName.trim();
+    const trimmedProvider = provider.trim();
+    const hasInputModelFields =
+      trimmedProvider.length > 0 ||
+      trimmedModel.length > 0 ||
+      maxTokens.trim().length > 0;
 
     if (!trimmedName) {
       nextErrors.name = "Name is required";
@@ -143,6 +198,27 @@ export function RoleEditor({ mode, roleId, role }: RoleEditorProps) {
 
     if (selectedToolIds.length === 0) {
       nextErrors.tools = "Select at least one tool";
+    }
+
+    if (hasInputModelFields) {
+      if (trimmedProvider && !PROVIDER_OPTIONS.includes(trimmedProvider as typeof PROVIDER_OPTIONS[number])) {
+        nextErrors.provider = "Provider must be anthropic, openai, gemini, or ollama";
+      }
+      if (!trimmedProvider) {
+        nextErrors.provider = "Provider is required for model configuration";
+      }
+      if (!trimmedModel) {
+        nextErrors.model = "Model name is required";
+      }
+      if (Number.isNaN(temperature) || temperature < 0 || temperature > 1) {
+        nextErrors.temperature = "Temperature must be between 0.0 and 1.0";
+      }
+      if (maxTokens.trim().length > 0) {
+        const parsedMax = Number(maxTokens);
+        if (!Number.isInteger(parsedMax) || parsedMax <= 0) {
+          nextErrors.model = "Max tokens must be a positive integer";
+        }
+      }
     }
 
     setErrors(nextErrors);
@@ -156,16 +232,45 @@ export function RoleEditor({ mode, roleId, role }: RoleEditorProps) {
     }
 
     const trimmedName = name.trim();
+    const trimmedProvider = provider.trim();
+    const trimmedModel = modelName.trim();
+    const hasInputModelFields =
+      trimmedProvider.length > 0 ||
+      trimmedModel.length > 0 ||
+      maxTokens.trim().length > 0;
+    const parsedMaxTokens =
+      maxTokens.trim().length > 0 ? Number(maxTokens) : undefined;
+    const modelConfig = hasInputModelFields
+      ? {
+          provider: trimmedProvider as ProviderOption,
+          model: trimmedModel,
+          temperature,
+          maxTokens: parsedMaxTokens,
+        }
+      : role?.model
+        ? null
+        : undefined;
+    const normalizedSystemPrompt =
+      systemPrompt.trim().length > 0
+        ? systemPrompt.trim()
+        : role?.systemPrompt
+          ? null
+          : undefined;
+
     if (mode === "create") {
       createMutation.mutate({
         name: trimmedName,
         toolIds: selectedToolIds,
+        model: modelConfig ?? undefined,
+        systemPrompt: normalizedSystemPrompt ?? undefined,
       });
     } else if (roleId) {
       updateMutation.mutate({
         id: roleId,
         name: trimmedName,
         toolIds: selectedToolIds,
+        model: modelConfig,
+        systemPrompt: normalizedSystemPrompt,
       });
     }
   };
@@ -256,6 +361,152 @@ export function RoleEditor({ mode, roleId, role }: RoleEditorProps) {
                 disabled={isMutating}
               />
               {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <p className="text-sm font-medium leading-tight">Model configuration</p>
+                <p className="text-sm text-muted-foreground">
+                  Configure the default model for this role. Leave blank to use environment defaults.
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="provider">Provider</Label>
+                  <Select
+                    value={provider}
+                    onValueChange={(value) => {
+                      setProvider(value as ProviderOption);
+                      if (errors.provider) {
+                        setErrors((prev) => ({ ...prev, provider: undefined }));
+                      }
+                      if (!modelName && value) {
+                        setModelName(MODEL_SUGGESTIONS[value as keyof typeof MODEL_SUGGESTIONS]);
+                      }
+                    }}
+                    disabled={isMutating}
+                  >
+                    <SelectTrigger id="provider">
+                      <SelectValue placeholder="Select a provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROVIDER_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.provider && (
+                    <p className="text-sm text-destructive">{errors.provider}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="model">Model</Label>
+                  <Input
+                    id="model"
+                    placeholder={
+                      provider && MODEL_SUGGESTIONS[provider as keyof typeof MODEL_SUGGESTIONS]
+                        ? MODEL_SUGGESTIONS[provider as keyof typeof MODEL_SUGGESTIONS]
+                        : "Model name (e.g., claude-sonnet-4-20250514)"
+                    }
+                    value={modelName}
+                    onChange={(event) => {
+                      setModelName(event.target.value);
+                      if (errors.model) {
+                        setErrors((prev) => ({ ...prev, model: undefined }));
+                      }
+                    }}
+                    disabled={isMutating}
+                  />
+                  {errors.model && <p className="text-sm text-destructive">{errors.model}</p>}
+                  {provider && MODEL_SUGGESTIONS[provider as keyof typeof MODEL_SUGGESTIONS] && (
+                    <p className="text-xs text-muted-foreground">
+                      Suggested: {MODEL_SUGGESTIONS[provider as keyof typeof MODEL_SUGGESTIONS]}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="temperature">
+                    Temperature <span className="text-muted-foreground">({temperature.toFixed(2)})</span>
+                  </Label>
+                  <input
+                    id="temperature"
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={temperature}
+                    onChange={(event) => {
+                      setTemperature(Number(event.target.value));
+                      if (errors.temperature) {
+                        setErrors((prev) => ({ ...prev, temperature: undefined }));
+                      }
+                    }}
+                    disabled={isMutating}
+                    className="w-full accent-primary"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>0.0</span>
+                    <span>1.0</span>
+                  </div>
+                  {errors.temperature && (
+                    <p className="text-sm text-destructive">{errors.temperature}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="maxTokens">Max tokens (optional)</Label>
+                  <Input
+                    id="maxTokens"
+                    type="number"
+                    min={1}
+                    placeholder="4096"
+                    value={maxTokens}
+                    onChange={(event) => {
+                      setMaxTokens(event.target.value);
+                      if (errors.model) {
+                        setErrors((prev) => ({ ...prev, model: undefined }));
+                      }
+                    }}
+                    disabled={isMutating}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="systemPrompt">System prompt</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowSystemPrompt((prev) => !prev)}
+                  >
+                    {showSystemPrompt ? "Hide" : "Show"}
+                  </Button>
+                </div>
+                {showSystemPrompt && (
+                  <Textarea
+                    id="systemPrompt"
+                    placeholder="Customize the behavior for this role. Supports {{chainId}}, {{taskId}}, and {{toolSummaries}} placeholders."
+                    value={systemPrompt}
+                    onChange={(event) => setSystemPrompt(event.target.value)}
+                    className="min-h-[140px]"
+                    disabled={isMutating}
+                  />
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {"Leave blank to use the default agent prompt. Use {{chainId}}, {{taskId}}, and {{toolSummaries}} placeholders to inject context."}
+                </p>
+              </div>
             </div>
 
             <Separator />

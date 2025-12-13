@@ -11,6 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc/client";
 
+type RoleModelConfig = {
+  provider: string;
+  model: string;
+  temperature: number;
+  maxTokens?: number;
+  options?: Record<string, unknown>;
+};
+
 interface RoleResponse {
   id: string;
   name: string;
@@ -18,6 +26,7 @@ interface RoleResponse {
   toolIds: string[];
   createdAt: string | Date;
   updatedAt: string | Date;
+  model?: RoleModelConfig;
 }
 
 interface RoleItem {
@@ -27,6 +36,7 @@ interface RoleItem {
   toolCount: number;
   createdAt: Date;
   updatedAt: Date;
+  temperature?: number;
 }
 
 function parseDate(value?: string | Date): Date {
@@ -42,6 +52,7 @@ function toRoleItem(role: RoleResponse): RoleItem {
     toolCount: role.toolIds?.length ?? 0,
     createdAt: parseDate(role.createdAt),
     updatedAt: parseDate(role.updatedAt),
+    temperature: role.model?.temperature,
   };
 }
 
@@ -156,6 +167,7 @@ export default function RolesPage() {
               toolCount={role.toolCount}
               createdAt={role.createdAt}
               updatedAt={role.updatedAt}
+              temperature={role.temperature}
             />
           ))}
         </div>

@@ -10,12 +10,26 @@ import { z } from "zod";
 import { router, publicProcedure, TRPCError } from "../trpc";
 import { RoleManager } from "@choragen/core";
 
+const providerEnum = z.enum(["anthropic", "openai", "gemini", "ollama"]);
+
+const modelConfigSchema = z.object({
+  provider: providerEnum,
+  model: z.string().min(1, "Model name is required"),
+  temperature: z
+    .number()
+    .min(0, "Temperature must be at least 0.0")
+    .max(1, "Temperature must be at most 1.0"),
+  maxTokens: z.number().int().positive("Max tokens must be positive").optional(),
+});
+
 const createRoleInputSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   toolIds: z
     .array(z.string().min(1, "Tool ID is required"))
     .min(1, "At least one tool is required"),
+  model: modelConfigSchema.optional(),
+  systemPrompt: z.string().optional(),
 });
 
 const updateRoleInputSchema = z.object({
@@ -23,6 +37,8 @@ const updateRoleInputSchema = z.object({
   name: z.string().min(1, "Name is required").optional(),
   description: z.string().optional(),
   toolIds: z.array(z.string().min(1, "Tool ID is required")).optional(),
+  model: modelConfigSchema.nullish(),
+  systemPrompt: z.string().nullish(),
 });
 
 function getRoleManager(projectRoot: string): RoleManager {
@@ -64,9 +80,17 @@ export const roleRouter = router({
     .input(createRoleInputSchema)
     .mutation(async ({ ctx, input }) => {
       const manager = getRoleManager(ctx.projectRoot);
+      const systemPrompt = input.systemPrompt?.trim() || undefined;
+      const model = input.model;
 
       try {
-        return await manager.create(input);
+        return await manager.create({
+          name: input.name,
+          description: input.description,
+          toolIds: input.toolIds,
+          model,
+          systemPrompt,
+        });
       } catch (error) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -85,12 +109,17 @@ export const roleRouter = router({
     .input(updateRoleInputSchema)
     .mutation(async ({ ctx, input }) => {
       const manager = getRoleManager(ctx.projectRoot);
+      const systemPrompt =
+        input.systemPrompt === null ? null : input.systemPrompt?.trim() || undefined;
+      const model = input.model === null ? null : input.model ?? undefined;
 
       try {
         return await manager.update(input.id, {
           name: input.name,
           description: input.description,
           toolIds: input.toolIds,
+          model,
+          systemPrompt,
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to update role";

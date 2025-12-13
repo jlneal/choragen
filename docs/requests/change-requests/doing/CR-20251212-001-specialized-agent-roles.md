@@ -2,7 +2,7 @@
 
 **ID**: CR-20251212-001  
 **Domain**: core  
-**Status**: todo  
+**Status**: doing  
 **Created**: 2025-12-12  
 **Owner**: agent  
 
@@ -64,7 +64,7 @@ Specialized roles enable the assembly-line model where each agent has a clear, b
 ## Linked ADRs
 
 - ADR-010: Agent Runtime Architecture
-- ADR-TBD: Specialized Agent Roles
+- ADR-014: Specialized Agent Roles
 
 ---
 

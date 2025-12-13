@@ -167,9 +167,19 @@ export interface ExtendedExecutionContext extends ExecutionContext {
 }
 
 const DEFAULT_ROLE_ID_MAP: Record<AgentRole, string> = {
+  control: "control",
+  impl: "implementation",
+};
+
+const LEGACY_ROLE_ID_MAP: Record<AgentRole, string> = {
   control: "controller",
   impl: "implementer",
 };
+
+export function resolveRoleId(role: AgentRole, override?: string): string {
+  if (override) return override;
+  return DEFAULT_ROLE_ID_MAP[role] ?? role;
+}
 
 function ensureToolCallId(toolCall: ToolCall): ToolCall {
   if (toolCall.id) {
@@ -255,7 +265,33 @@ export async function runAgentSession(
   const promptLoader = deps.promptLoader ?? new PromptLoader(workspaceRoot);
   const roleManager =
     configRoleManager ?? deps.roleManager ?? new RoleManager(workspaceRoot);
-  const resolvedRoleId = config.roleId ?? DEFAULT_ROLE_ID_MAP[role] ?? role;
+  let resolvedRoleId = resolveRoleId(role, config.roleId);
+  let resolvedRole = await roleManager.get(resolvedRoleId);
+
+  if (!resolvedRole && !config.roleId) {
+    const legacyRoleId = LEGACY_ROLE_ID_MAP[role];
+    if (legacyRoleId) {
+      const legacyRole = await roleManager.get(legacyRoleId);
+      if (legacyRole) {
+        console.warn(
+          `[Loop] Role '${resolvedRoleId}' not found. Falling back to legacy role '${legacyRoleId}'.`
+        );
+        resolvedRoleId = legacyRoleId;
+        resolvedRole = legacyRole;
+      }
+    }
+  }
+
+  if (resolvedRole?.model) {
+    const { provider: roleProvider, model: roleModel, temperature } = resolvedRole.model;
+    console.log(
+      `[Loop] Role model config resolved for '${resolvedRoleId}': provider=${roleProvider}, model=${roleModel}, temperature=${temperature ?? "default"}`
+    );
+  } else {
+    console.log(
+      `[Loop] No model config for role '${resolvedRoleId}', using provided provider defaults (${provider.name}:${provider.model})`
+    );
+  }
 
   // Check nesting depth limit
   if (nestingDepth > maxNestingDepth) {
@@ -347,13 +383,17 @@ export async function runAgentSession(
   );
 
   // Build system prompt
-  const systemPrompt = await promptLoader.load(role, {
-    sessionId,
-    chainId,
-    taskId,
-    workspaceRoot,
-    availableTools: createToolSummaries(toolDefinitions),
-  });
+  const systemPrompt = await promptLoader.load(
+    role,
+    {
+      sessionId,
+      chainId,
+      taskId,
+      workspaceRoot,
+      availableTools: createToolSummaries(toolDefinitions),
+    },
+    resolvedRole
+  );
 
   // Initialize conversation with system prompt
   const messages: Message[] = [
@@ -374,7 +414,7 @@ export async function runAgentSession(
       childConfig.role === "control" || childConfig.role === "impl"
         ? childConfig.role
         : "impl";
-    const childRoleId = childConfig.roleId ?? childConfig.role;
+    const childRoleId = resolveRoleId(childRole, childConfig.roleId);
     console.log(`[Loop] Spawning child session (role: ${childConfig.role ?? "impl"}) for task ${childConfig.taskId}`);
     console.log(`[Loop] Current depth: ${nestingDepth}, next depth: ${nestingDepth + 1}`);
     
@@ -383,6 +423,7 @@ export async function runAgentSession(
       {
         role: childRole,
         roleId: childRoleId,
+        roleManager,
         provider,
         chainId: childConfig.chainId,
         taskId: childConfig.taskId,

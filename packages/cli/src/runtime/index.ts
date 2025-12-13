@@ -13,7 +13,7 @@ export type {
   LoopDependencies,
   AgentSessionEvents,
 } from "./loop.js";
-export { runAgentSession } from "./loop.js";
+export { runAgentSession, resolveRoleId } from "./loop.js";
 
 // LLM Providers
 export type {

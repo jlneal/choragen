@@ -6,7 +6,8 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
+import type { Role } from "@choragen/core";
 import type { AgentRole } from "./tools/types.js";
 
 /**
@@ -76,6 +77,7 @@ You are an implementation agent responsible for executing tasks from task files.
  */
 export class PromptLoader {
   private docsPath: string;
+  private workspaceRoot: string;
 
   /**
    * Create a new PromptLoader.
@@ -83,32 +85,59 @@ export class PromptLoader {
    */
   constructor(workspaceRoot: string) {
     this.docsPath = join(workspaceRoot, "docs", "agents");
+    this.workspaceRoot = workspaceRoot;
   }
 
   /**
    * Load and assemble a complete system prompt for the given role and context.
    * @param role - Agent role ("control" or "impl")
    * @param context - Session context with chain/task info and available tools
+   * @param roleDefinition - Optional dynamic role definition with systemPrompt
    * @returns Complete system prompt string
    */
-  async load(role: AgentRole, context: SessionContext): Promise<string> {
-    const basePrompt = await this.loadBasePrompt(role);
-    const sessionSection = this.buildSessionSection(role, context);
+  async load(
+    role: AgentRole,
+    context: SessionContext,
+    roleDefinition?: Role | null
+  ): Promise<string> {
+    const basePrompt = await this.loadBasePrompt(role, roleDefinition);
     const toolsSection = this.buildToolsSection(context.availableTools);
+    const hasToolPlaceholder = basePrompt.includes("{{toolSummaries}}");
+
+    const resolvedBase = this.applyPlaceholders(basePrompt, {
+      toolSummaries: toolsSection,
+      chainId: context.chainId ?? "",
+      taskId: context.taskId ?? "",
+    });
+
+    const sessionSection = this.buildSessionSection(role, context);
     const footer = this.buildFooter();
 
-    return [basePrompt, "---", sessionSection, toolsSection, "---", footer].join(
-      "\n\n"
-    );
+    const sections = [resolvedBase.trim(), "---", sessionSection];
+    if (!hasToolPlaceholder) {
+      sections.push(toolsSection);
+    }
+    sections.push("---", footer);
+
+    return sections.join("\n\n");
   }
 
   /**
    * Load the base prompt from the agent docs file.
    * Falls back to a default prompt if the file is not found.
    * @param role - Agent role
+   * @param roleDefinition - Optional dynamic role definition
    * @returns Base prompt content
    */
-  private async loadBasePrompt(role: AgentRole): Promise<string> {
+  private async loadBasePrompt(
+    role: AgentRole,
+    roleDefinition?: Role | null
+  ): Promise<string> {
+    const rolePrompt = roleDefinition?.systemPrompt?.trim();
+    if (rolePrompt) {
+      return this.resolveSystemPrompt(rolePrompt);
+    }
+
     const filename = role === "control" ? "control-agent.md" : "impl-agent.md";
     const filePath = join(this.docsPath, filename);
 
@@ -119,6 +148,42 @@ export class PromptLoader {
       // File not found or unreadable, use fallback
       return FALLBACK_PROMPTS[role];
     }
+  }
+
+  /**
+   * Resolve system prompt content, supporting file: references.
+   */
+  private async resolveSystemPrompt(systemPrompt: string): Promise<string> {
+    if (systemPrompt.startsWith("file:")) {
+      const filePathRaw = systemPrompt.slice("file:".length).trim();
+      const filePath = isAbsolute(filePathRaw)
+        ? filePathRaw
+        : join(this.workspaceRoot, filePathRaw);
+
+      try {
+        return await readFile(filePath, "utf-8");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return `# System Prompt Load Error\n\nFailed to load system prompt from ${filePath}: ${message}`;
+      }
+    }
+
+    return systemPrompt;
+  }
+
+  /**
+   * Apply template placeholders to the base prompt.
+   */
+  private applyPlaceholders(
+    template: string,
+    values: Record<string, string>
+  ): string {
+    return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key) => {
+      if (values[key] !== undefined) {
+        return values[key];
+      }
+      return match;
+    });
   }
 
   /**

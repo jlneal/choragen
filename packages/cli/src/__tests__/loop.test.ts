@@ -535,7 +535,8 @@ describe("runAgentSession", () => {
           chainId: "CHAIN-001",
           taskId: "001",
           workspaceRoot: testWorkspace,
-        })
+        }),
+        expect.anything()
       );
     });
 

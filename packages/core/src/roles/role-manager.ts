@@ -10,18 +10,23 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import type { Role } from "./types.js";
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+import type { Role, RoleModelConfig } from "./types.js";
 
 export interface CreateRoleInput {
   name: string;
   description?: string;
   toolIds: string[];
+  model?: RoleModelConfig;
+  systemPrompt?: string;
 }
 
 export interface UpdateRoleInput {
   name?: string;
   description?: string;
   toolIds?: string[];
+  model?: RoleModelConfig | null;
+  systemPrompt?: string | null;
 }
 
 export class RoleManager {
@@ -57,6 +62,8 @@ export class RoleManager {
       name: input.name,
       description: input.description,
       toolIds: [...input.toolIds],
+      model: input.model,
+      systemPrompt: input.systemPrompt,
       createdAt: now,
       updatedAt: now,
     };
@@ -80,6 +87,14 @@ export class RoleManager {
       name: input.name ?? existing.name,
       description: input.description ?? existing.description,
       toolIds: input.toolIds ? [...input.toolIds] : existing.toolIds,
+      model:
+        input.model === null
+          ? undefined
+          : input.model ?? existing.model,
+      systemPrompt:
+        input.systemPrompt === null
+          ? undefined
+          : input.systemPrompt ?? existing.systemPrompt,
       updatedAt: new Date(),
     };
 
@@ -214,120 +229,92 @@ function slugify(value: string): string {
 }
 
 function parseRolesYaml(content: string): Role[] {
-  const roles: Role[] = [];
-  const lines = content.split("\n");
-  let current: Partial<Role> & { toolIds?: string[] } | null = null;
-  let inToolIds = false;
-
-  for (const rawLine of lines) {
-    if (rawLine.trim() === "" || rawLine.trim().startsWith("#")) continue;
-
-    const indent = rawLine.search(/\S/);
-    const trimmed = rawLine.trim();
-
-    if (indent === 0 && trimmed === "roles:") {
-      continue;
-    }
-
-    if (indent === 2 && trimmed.startsWith("- ")) {
-      if (current) {
-        roles.push(finalizeRole(current));
+  const parsed = parseYaml(content) as
+    | {
+        roles?: RoleYaml[];
       }
-      current = {};
-      inToolIds = false;
+    | null
+    | undefined;
 
-      const rest = trimmed.slice(2).trim();
-      if (rest) {
-        const [key, value] = splitKeyValue(rest);
-        assignRoleProp(current, key, value);
-        inToolIds = key === "toolIds";
-      }
-      continue;
-    }
-
-    if (!current) {
-      continue;
-    }
-
-    if (indent === 4 && trimmed === "toolIds:") {
-      inToolIds = true;
-      current.toolIds = current.toolIds ?? [];
-      continue;
-    }
-
-    if (indent === 4) {
-      const [key, value] = splitKeyValue(trimmed);
-      assignRoleProp(current, key, value);
-      inToolIds = false;
-      continue;
-    }
-
-    if (inToolIds && indent >= 6 && trimmed.startsWith("- ")) {
-      const value = trimmed.slice(2).trim();
-      current.toolIds = current.toolIds ?? [];
-      current.toolIds.push(value);
-    }
-  }
-
-  if (current) {
-    roles.push(finalizeRole(current));
-  }
-
-  return roles;
+  const roles = Array.isArray(parsed?.roles) ? parsed?.roles : [];
+  return roles.map((role) => finalizeRole(role));
 }
 
 function serializeRolesYaml(roles: Role[]): string {
-  const lines: string[] = ["roles:"];
+  const payload = {
+    roles: roles.map((role) => ({
+      id: role.id,
+      name: role.name,
+      description: role.description,
+      model: role.model ? { ...role.model } : undefined,
+      systemPrompt: role.systemPrompt,
+      toolIds: [...role.toolIds],
+      createdAt: role.createdAt.toISOString(),
+      updatedAt: role.updatedAt.toISOString(),
+    })),
+  };
 
-  roles.forEach((role, index) => {
-    lines.push(`  - id: ${role.id}`);
-    lines.push(`    name: ${role.name}`);
-    if (role.description) {
-      lines.push(`    description: ${role.description}`);
-    }
-    lines.push("    toolIds:");
-    for (const toolId of role.toolIds) {
-      lines.push(`      - ${toolId}`);
-    }
-    lines.push(`    createdAt: ${role.createdAt.toISOString()}`);
-    lines.push(`    updatedAt: ${role.updatedAt.toISOString()}`);
-
-    if (index < roles.length - 1) {
-      lines.push("");
-    }
-  });
-
-  return lines.join("\n");
+  return stringifyYaml(payload, { lineWidth: 0 });
 }
 
-function assignRoleProp(
-  target: Partial<Role>,
-  key: string,
-  value: string
-): void {
-  if (key === "id") target.id = value;
-  if (key === "name") target.name = value;
-  if (key === "description") target.description = value;
-  if (key === "createdAt") target.createdAt = new Date(value);
-  if (key === "updatedAt") target.updatedAt = new Date(value);
-  if (key === "toolIds") target.toolIds = [];
-}
-
-function finalizeRole(
-  partial: Partial<Role> & { toolIds?: string[] }
-): Role {
+function finalizeRole(role: RoleYaml): Role {
   return {
-    id: partial.id ?? "",
-    name: partial.name ?? "",
-    description: partial.description,
-    toolIds: partial.toolIds ?? [],
-    createdAt: partial.createdAt ?? new Date(),
-    updatedAt: partial.updatedAt ?? new Date(),
+    id: role.id ?? "",
+    name: role.name ?? "",
+    description: role.description,
+    model: normalizeModel(role.model),
+    systemPrompt: typeof role.systemPrompt === "string" ? role.systemPrompt : undefined,
+    toolIds: role.toolIds ? [...role.toolIds] : [],
+    createdAt: role.createdAt ? new Date(role.createdAt) : new Date(),
+    updatedAt: role.updatedAt ? new Date(role.updatedAt) : new Date(),
   };
 }
 
-function splitKeyValue(line: string): [string, string] {
-  const idx = line.indexOf(":");
-  if (idx === -1) return [line.trim(), ""];
-  return [line.slice(0, idx).trim(), line.slice(idx + 1).trim()];
+function normalizeModel(model: RoleYamlModel | undefined): RoleModelConfig | undefined {
+  if (!model) {
+    return undefined;
+  }
+
+  if (
+    typeof model.provider !== "string" ||
+    typeof model.model !== "string" ||
+    model.temperature === undefined
+  ) {
+    return undefined;
+  }
+
+  const temperature = Number(model.temperature);
+  const maxTokens =
+    model.maxTokens === undefined ? undefined : Number(model.maxTokens);
+
+  if (Number.isNaN(temperature)) {
+    return undefined;
+  }
+
+  return {
+    provider: model.provider,
+    model: model.model,
+    temperature,
+    maxTokens: Number.isNaN(maxTokens ?? 0) ? undefined : maxTokens,
+    options: model.options,
+  };
+}
+
+interface RoleYamlModel {
+  provider?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  options?: Record<string, unknown>;
+}
+
+interface RoleYaml {
+  id?: string;
+  name?: string;
+  description?: string;
+  model?: RoleYamlModel;
+  systemPrompt?: string;
+  toolIds?: string[];
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 }

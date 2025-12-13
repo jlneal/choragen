@@ -176,11 +176,13 @@ export class GeminiProvider implements LLMProvider {
 
   private client: GoogleGenerativeAI;
   private maxTokens: number;
+  private temperature?: number;
 
   constructor(config: ProviderConfig) {
     this.client = new GoogleGenerativeAI(config.apiKey);
     this.model = config.model ?? DEFAULT_MODELS.gemini;
     this.maxTokens = config.maxTokens ?? DEFAULT_MAX_TOKENS;
+    this.temperature = config.temperature;
   }
 
   async chat(messages: Message[], tools: Tool[]): Promise<ChatResponse> {
@@ -194,6 +196,7 @@ export class GeminiProvider implements LLMProvider {
       systemInstruction,
       generationConfig: {
         maxOutputTokens: this.maxTokens,
+        temperature: this.temperature,
       },
       tools: functionDeclarations
         ? [{ functionDeclarations }]
