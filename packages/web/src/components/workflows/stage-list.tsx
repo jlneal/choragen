@@ -20,14 +20,16 @@ import { CSS } from "@dnd-kit/utilities";
 import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { StageEditor, type RoleOption, type ToolOption } from "./stage-editor";
+import { StageEditor } from "./stage-editor";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/lib/trpc/client";
 import {
   DEFAULT_STAGE,
   type TemplateStageInput,
-} from "./template-form";
+  type RoleOption,
+  type ToolOption,
+} from "./types";
 
 interface StageListProps {
   stages: TemplateStageInput[];

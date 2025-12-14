@@ -10,7 +10,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { STAGE_TYPES, GATE_TYPES, type StageType, type GateType, type TemplateStageInput } from "./template-form";
+import {
+  STAGE_TYPES,
+  GATE_TYPES,
+  type StageType,
+  type GateType,
+  type TemplateStageInput,
+  type RoleOption,
+  type ToolOption,
+} from "./types";
+
+// Re-export types for backward compatibility
+export type { RoleOption, ToolOption };
 
 interface StageEditorProps {
   stage: TemplateStageInput;
@@ -21,19 +32,6 @@ interface StageEditorProps {
   disableDelete?: boolean;
   onChange: (stage: TemplateStageInput) => void;
   onDelete?: () => void;
-}
-
-export interface RoleOption {
-  id: string;
-  name: string;
-  description?: string;
-  toolIds: string[];
-}
-
-export interface ToolOption {
-  id: string;
-  name: string;
-  description?: string;
 }
 
 function GateFields({

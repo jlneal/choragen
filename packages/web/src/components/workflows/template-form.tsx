@@ -10,52 +10,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { StageList } from "./stage-list";
+import {
+  STAGE_TYPES,
+  GATE_TYPES,
+  DEFAULT_STAGE,
+  type StageType,
+  type GateType,
+  type TemplateStageInput,
+  type TemplateFormValues,
+} from "./types";
 
-export const STAGE_TYPES = ["request", "design", "review", "implementation", "verification", "ideation"] as const;
-export const GATE_TYPES = ["auto", "human_approval", "chain_complete", "verification_pass"] as const;
-export type StageType = (typeof STAGE_TYPES)[number];
-export type GateType = (typeof GATE_TYPES)[number];
-
-export type TemplateStageInput = {
-  name: string;
-  type: StageType;
-  roleId?: string;
-  initPrompt?: string;
-  gate: {
-    type: GateType;
-    prompt?: string;
-    chainId?: string;
-    commands?: string[];
-    options?: { label: string; action: string }[];
-    satisfied?: boolean;
-    satisfiedBy?: string;
-    satisfiedAt?: string;
-  };
-  hooks?: {
-    onEnter?: StageAction[];
-    onExit?: StageAction[];
-  };
+// Re-export types for backward compatibility
+export {
+  STAGE_TYPES,
+  GATE_TYPES,
+  DEFAULT_STAGE,
+  type StageType,
+  type GateType,
+  type TemplateStageInput,
+  type TemplateFormValues,
 };
-
-type StageAction = {
-  type: "command" | "task_transition" | "file_move" | "custom";
-  command?: string;
-  taskTransition?: "start" | "complete" | "approve";
-  fileMove?: { from: string; to: string };
-  handler?: string;
-  blocking?: boolean;
-};
-
-export interface TemplateFormValues {
-  name: string;
-  displayName?: string;
-  description?: string;
-  builtin?: boolean;
-  version?: number;
-  stages: TemplateStageInput[];
-  changedBy?: string;
-  changeDescription?: string;
-}
 
 export interface TemplateFormProps {
   mode: "create" | "edit";
@@ -70,12 +44,6 @@ export interface TemplateFormProps {
   isDeleting?: boolean;
   isDuplicating?: boolean;
 }
-
-export const DEFAULT_STAGE: TemplateStageInput = {
-  name: "implementation",
-  type: "implementation",
-  gate: { type: "chain_complete" },
-};
 
 export function TemplateForm({
   mode,

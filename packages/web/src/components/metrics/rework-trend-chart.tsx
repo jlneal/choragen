@@ -12,16 +12,7 @@ import {
 } from "recharts";
 
 import { ChartContainer } from "./chart-container";
-
-/**
- * Data point for rework trend chart
- */
-export interface ReworkTrendDataPoint {
-  /** Date label (e.g., "Mon", "2024-01-15") */
-  date: string;
-  /** Rework rate as percentage (0-100) */
-  rate: number;
-}
+import type { ReworkTrendDataPoint } from "@/hooks";
 
 interface ReworkTrendChartProps {
   /** Array of rework rate data points */

@@ -13,14 +13,10 @@ export { MetricCardSkeleton } from "./metric-card-skeleton";
 // Chart components
 export { ChartContainer } from "./chart-container";
 export { ChartSkeleton } from "./chart-skeleton";
-export {
-  TaskCompletionChart,
-  type TaskCompletionDataPoint,
-} from "./task-completion-chart";
-export {
-  ReworkTrendChart,
-  type ReworkTrendDataPoint,
-} from "./rework-trend-chart";
+export { TaskCompletionChart } from "./task-completion-chart";
+export { ReworkTrendChart } from "./rework-trend-chart";
+// Re-export types from hooks for backward compatibility
+export type { TaskCompletionDataPoint, ReworkTrendDataPoint } from "@/hooks";
 
 // Filter components
 export { TimeRangeFilter } from "./time-range-filter";

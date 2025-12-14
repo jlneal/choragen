@@ -9,10 +9,28 @@
  */
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc/client";
-import type {
-  TaskCompletionDataPoint,
-  ReworkTrendDataPoint,
-} from "@/components/metrics";
+
+/**
+ * Data point for task completion chart
+ * Defined locally to avoid circular dependency with @/components/metrics
+ */
+export interface TaskCompletionDataPoint {
+  /** Date label (e.g., "Mon", "2024-01-15") */
+  date: string;
+  /** Number of tasks completed */
+  count: number;
+}
+
+/**
+ * Data point for rework trend chart
+ * Defined locally to avoid circular dependency with @/components/metrics
+ */
+export interface ReworkTrendDataPoint {
+  /** Date label (e.g., "Mon", "2024-01-15") */
+  date: string;
+  /** Rework rate as percentage (0-100) */
+  rate: number;
+}
 
 /**
  * Return type for useMetrics hook

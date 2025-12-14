@@ -12,16 +12,7 @@ import {
 } from "recharts";
 
 import { ChartContainer } from "./chart-container";
-
-/**
- * Data point for task completion chart
- */
-export interface TaskCompletionDataPoint {
-  /** Date label (e.g., "Mon", "2024-01-15") */
-  date: string;
-  /** Number of tasks completed */
-  count: number;
-}
+import type { TaskCompletionDataPoint } from "@/hooks";
 
 interface TaskCompletionChartProps {
   /** Array of completion data points */
