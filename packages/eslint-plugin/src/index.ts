@@ -50,6 +50,7 @@ export const configs = {
       "@choragen/require-try-catch-in-async": "warn",
       "@choragen/require-error-boundary": "warn",
       "@choragen/require-readonly-properties": "warn",
+      "@choragen/require-subscription-link": "warn",
 
       // Test quality
       "@choragen/no-trivial-assertions": "warn",
@@ -100,6 +101,7 @@ export const configs = {
       "@choragen/require-try-catch-in-async": "error",
       "@choragen/require-error-boundary": "error",
       "@choragen/require-readonly-properties": "error",
+      "@choragen/require-subscription-link": "error",
 
       // Test quality
       "@choragen/no-trivial-assertions": "error",

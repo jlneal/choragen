@@ -40,6 +40,7 @@ import requireReadonlyProperties from "./require-readonly-properties.js";
 import noCoreInClientComponent from "./no-core-in-client-component.js";
 import noCircularImports from "./no-circular-imports.js";
 import noNodeImportsInContracts from "./no-node-imports-in-contracts.js";
+import requireSubscriptionLink from "./require-subscription-link.js";
 
 export const rules = {
   // Traceability rules
@@ -73,6 +74,7 @@ export const rules = {
   "no-core-in-client-component": noCoreInClientComponent,
   "no-circular-imports": noCircularImports,
   "no-node-imports-in-contracts": noNodeImportsInContracts,
+  "require-subscription-link": requireSubscriptionLink,
 
   // Test quality rules
   "no-trivial-assertions": noTrivialAssertions,
