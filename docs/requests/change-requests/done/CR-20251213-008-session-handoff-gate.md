@@ -2,7 +2,7 @@
 
 **ID**: CR-20251213-008  
 **Domain**: core  
-**Status**: doing  
+**Status**: done  
 **Created**: 2025-12-13  
 **Owner**: agent  
 
@@ -73,7 +73,7 @@ A session handoff gate ensures clean transitions between agent sessions.
 
 ## Commits
 
-No commits yet.
+- `bbc72a1` feat(core): add session handoff gate for agent transitions
 
 ---
 
