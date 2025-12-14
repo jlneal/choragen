@@ -102,13 +102,16 @@ The audit is not a single agent but a **chain of specialized audit tasks**, each
 | 1 | `security-audit` | Security vulnerabilities, secrets, permissions | Task-level findings |
 | 2 | `architecture-audit` | Design patterns, coupling, dependencies | Task-level findings |
 | 3 | `standards-audit` | Naming, structure, conventions | Task-level findings |
-| 4 | `traceability-audit` | CR/FR refs, scope compliance, commit format | Task-level findings |
-| 5 | `review` | Cross-cutting concerns, overall assessment | Task-level findings |
-| 6 | `feedback-compilation` | Compile all findings into feedback items | Actual `audit` feedback |
+| 4 | `documentation-audit` | Comments, README, API docs, design doc refs | Task-level findings |
+| 5 | `testing-audit` | Test coverage, test quality, edge cases | Task-level findings |
+| 6 | `traceability-audit` | CR/FR refs, scope compliance, commit format | Task-level findings |
+| 7 | `performance-audit` | Obvious inefficiencies, resource usage | Task-level findings |
+| 8 | `review` | Cross-cutting concerns, overall assessment | Task-level findings |
+| 9 | `feedback-compilation` | Compile all findings into feedback items | Actual `audit` feedback |
 
 ### Task-Level Findings
 
-Each audit task (1-5) produces **internal findings** stored in the chain context, not actual feedback:
+Each audit task (1-8) produces **internal findings** stored in the chain context, not actual feedback:
 
 ```typescript
 interface AuditTaskFindings {
@@ -126,7 +129,7 @@ interface AuditTaskFindings {
 
 ### Feedback Compilation Task
 
-The final task (6) reads all task-level findings and:
+The final task (9) reads all task-level findings and:
 1. Deduplicates overlapping findings
 2. Prioritizes by severity
 3. Groups related findings
@@ -180,11 +183,29 @@ await tools.feedback.create({
 - [ ] Changed files within declared scope
 - [ ] No unrelated changes bundled
 
+**Documentation Audit:**
+- [ ] Code comments present where needed
+- [ ] README updated if applicable
+- [ ] API documentation current
+- [ ] Design doc references present (DesignContract)
+
+**Testing Audit:**
+- [ ] New code has corresponding tests
+- [ ] Test coverage reasonable
+- [ ] Edge cases considered
+- [ ] Test names descriptive
+
+**Performance Audit:**
+- [ ] No obvious O(n²) or worse algorithms
+- [ ] No unnecessary loops or allocations
+- [ ] Resource cleanup present (if applicable)
+- [ ] No blocking operations in hot paths
+
 **Review (Cross-cutting):**
 - [ ] Changes are coherent as a unit
 - [ ] No obvious bugs or logic errors
-- [ ] Test coverage appropriate
 - [ ] Overall quality assessment
+- [ ] Nothing slipped through other audits
 
 ---
 
