@@ -7,6 +7,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { execSync } from "node:child_process";
+import { validateRequestForClosure } from "./request-validate.js";
 
 export interface CloseRequestResult {
   success: boolean;
@@ -140,7 +141,8 @@ function updateCommitsSection(content: string, commits: string[]): string {
  */
 export async function closeRequest(
   projectRoot: string,
-  requestId: string
+  requestId: string,
+  options?: { force?: boolean }
 ): Promise<CloseRequestResult> {
   // Check if already closed
   if (await isRequestClosed(projectRoot, requestId)) {
@@ -157,6 +159,17 @@ export async function closeRequest(
       success: false,
       error: `Request not found: ${requestId}`,
     };
+  }
+
+  if (!options?.force) {
+    const validation = await validateRequestForClosure(projectRoot, requestId);
+    if (!validation.valid) {
+      const errorList = validation.errors.map((message) => `- ${message}`).join("\n");
+      return {
+        success: false,
+        error: `Validation failed:\n${errorList}`,
+      };
+    }
   }
 
   // Get commits for this request

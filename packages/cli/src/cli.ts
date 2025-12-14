@@ -1745,7 +1745,10 @@ const commands: Record<string, CommandDef> = {
     description: "Close a request (CR or FR) with commit history",
     usage: "request:close <request-id>",
     handler: async (args) => {
-      const [requestId] = args;
+      const positionalArgs = args.filter((arg) => !arg.startsWith("--"));
+      const [requestId] = positionalArgs;
+      const force = args.includes("--force");
+
       if (!requestId) {
         console.error("Usage: choragen request:close <request-id>");
         process.exit(1);
@@ -1753,7 +1756,11 @@ const commands: Record<string, CommandDef> = {
 
       console.log(`Closing ${requestId}...`);
 
-      const result = await closeRequest(projectRoot, requestId);
+      if (force) {
+        console.warn("⚠️  Force flag used: skipping validation gate");
+      }
+
+      const result = await closeRequest(projectRoot, requestId, { force });
       if (result.success) {
         // Emit request:closed event
         await emitEvent({

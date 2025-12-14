@@ -1,0 +1,19 @@
+{
+  "id": "CHAIN-075-request-closure-gate",
+  "sequence": 75,
+  "slug": "request-closure-gate",
+  "requestId": "CR-20251213-007",
+  "title": "Request Closure Gate",
+  "description": "",
+  "createdAt": "2025-12-14T05:20:30.898Z",
+  "updatedAt": "2025-12-14T06:07:20.928Z",
+  "type": "implementation",
+  "reviewStatus": "approved",
+  "fileScope": [
+    "packages/cli/src/commands/request-validate.ts",
+    "packages/cli/src/commands/request-close.ts",
+    "packages/cli/src/cli.ts",
+    "packages/cli/src/__tests__/request-validate.test.ts",
+    "packages/cli/src/__tests__/request-close.test.ts"
+  ]
+}
