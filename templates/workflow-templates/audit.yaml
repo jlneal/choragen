@@ -1,0 +1,165 @@
+name: audit
+displayName: Commit Audit Chain
+description: Run sequential audit tasks after commits to produce advisory audit feedback
+stages:
+  - name: security-audit
+    type: review
+    roleId: security_audit
+    initPrompt: |
+      You are performing a security audit for commit {{commitSha}} (workflow {{workflowId}}).
+
+      Inputs:
+      - Commit message: {{commitMessage}}
+      - Files changed: {{filesChanged}}
+      - Diff (if available): {{diffPath}}
+      - Prior findings: audit.taskFindings (if any)
+
+      Tasks:
+      - Spot-check for secrets, credentials, tokens, or sensitive constants.
+      - Look for missing validation or obvious injection risks.
+      - Check permissions/authorization flows touched by this commit.
+      - Record findings in chain context (audit.taskFindings) without creating feedback.
+
+      Checklist:
+      - [ ] No secrets or credentials in code
+      - [ ] No hardcoded API keys
+      - [ ] Proper input validation
+      - [ ] No obvious injection vulnerabilities
+    gate:
+      type: auto
+
+  - name: architecture-audit
+    type: review
+    roleId: architecture_audit
+    initPrompt: |
+      You are performing an architecture audit for commit {{commitSha}} (workflow {{workflowId}}).
+
+      Focus:
+      - Patterns, coupling/cohesion, dependency choices introduced by this commit.
+      - Architectural risks or deviations from existing conventions.
+      - Accumulate findings in audit.taskFindings (do not emit feedback here).
+
+      Checklist:
+      - [ ] Follows established patterns
+      - [ ] Appropriate coupling/cohesion
+      - [ ] Dependencies are reasonable
+      - [ ] No circular dependencies introduced
+    gate:
+      type: auto
+
+  - name: standards-audit
+    type: review
+    roleId: standards_audit
+    initPrompt: |
+      You are performing a standards audit for commit {{commitSha}}.
+
+      Focus:
+      - Naming, file structure, conventions, and consistency with repository norms.
+      - Note findings to audit.taskFindings with severity/category/description, not feedback.
+
+      Checklist:
+      - [ ] Naming conventions followed
+      - [ ] File structure conventions followed
+      - [ ] Code style consistent
+      - [ ] Required documentation or annotations present
+    gate:
+      type: auto
+
+  - name: documentation-audit
+    type: review
+    roleId: documentation_audit
+    initPrompt: |
+      You are performing a documentation audit for commit {{commitSha}}.
+
+      Focus:
+      - Comments, README updates, API docs, design doc references impacted by this commit.
+      - Capture missing or outdated documentation as findings in audit.taskFindings.
+
+      Checklist:
+      - [ ] Comments updated where behavior changed
+      - [ ] README/docs reflect new behavior or commands
+      - [ ] API docs/design doc references refreshed
+      - [ ] Links and references are correct
+    gate:
+      type: auto
+
+  - name: testing-audit
+    type: review
+    roleId: testing_audit
+    initPrompt: |
+      You are performing a testing audit for commit {{commitSha}}.
+
+      Focus:
+      - Test coverage, edge cases, negative paths, and test quality.
+      - Record coverage gaps or fragile tests into audit.taskFindings.
+
+      Checklist:
+      - [ ] Tests cover changed paths
+      - [ ] Edge cases considered
+      - [ ] Regressions guarded
+      - [ ] Flaky or fragile patterns avoided
+    gate:
+      type: auto
+
+  - name: traceability-audit
+    type: review
+    roleId: traceability_audit
+    initPrompt: |
+      You are performing a traceability audit for commit {{commitSha}}.
+
+      Focus:
+      - Commit message format, CR/FR references, scope alignment, and unrelated changes.
+      - Capture findings in audit.taskFindings for later feedback compilation.
+
+      Checklist:
+      - [ ] Commit message follows format
+      - [ ] CR/FR reference present and valid
+      - [ ] Changed files within declared scope
+      - [ ] No unrelated changes bundled
+    gate:
+      type: auto
+
+  - name: performance-audit
+    type: review
+    roleId: performance_audit
+    initPrompt: |
+      You are performing a performance audit for commit {{commitSha}}.
+
+      Focus:
+      - Obvious inefficiencies, unnecessary allocations, I/O hotspots, or degraded complexity.
+      - Record only the findings (audit.taskFindings); do not create feedback yet.
+
+      Checklist:
+      - [ ] Avoids unnecessary allocations or heavy loops
+      - [ ] No accidental synchronous I/O on hot paths
+      - [ ] No degraded algorithmic complexity
+      - [ ] Resource usage is reasonable
+    gate:
+      type: auto
+
+  - name: review
+    type: review
+    roleId: audit_review
+    initPrompt: |
+      You are performing a cross-cutting audit review for commit {{commitSha}}.
+
+      Focus:
+      - Synthesize themes across prior audit tasks.
+      - Add any final findings to audit.taskFindings (category "cross-cutting" when appropriate).
+      - Prioritize severity and mark suggestions where possible.
+    gate:
+      type: auto
+
+  - name: feedback-compilation
+    type: review
+    roleId: audit_compilation
+    initPrompt: |
+      You are compiling audit findings into audit feedback items for commit {{commitSha}}.
+
+      Tasks:
+      - Read audit.taskFindings from chain context (all prior stages).
+      - Deduplicate, group related findings, and prioritize by severity.
+      - Create audit feedback items (type: audit) with commit context and suggestions.
+      - Leave audit.taskFindings intact for traceability.
+    gate:
+      type: auto

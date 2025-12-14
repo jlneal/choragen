@@ -22,6 +22,8 @@ import {
   type FeedbackResponse,
   type FeedbackStatus,
   type FeedbackType,
+  FEEDBACK_TYPE_BEHAVIOR,
+  FEEDBACK_TYPES,
 } from "./types.js";
 import {
   feedbackItemSchema,
@@ -31,13 +33,14 @@ import {
 const FEEDBACK_DIR_NAME = "feedback";
 const FEEDBACK_INDEX_FILE = "feedback-index.json";
 
-const DEFAULT_PRIORITY_BY_TYPE: Record<FeedbackType, FeedbackPriority> = {
-  blocker: "critical",
-  clarification: "medium",
-  review: "medium",
-  question: "low",
-  idea: "low",
-};
+const DEFAULT_PRIORITY_BY_TYPE: Record<FeedbackType, FeedbackPriority> =
+  FEEDBACK_TYPES.reduce<Record<FeedbackType, FeedbackPriority>>(
+    (priorities, type) => {
+      priorities[type] = FEEDBACK_TYPE_BEHAVIOR[type].defaultPriority;
+      return priorities;
+    },
+    {} as Record<FeedbackType, FeedbackPriority>
+  );
 
 interface FeedbackIndex {
   lastSequence: number;
@@ -178,7 +181,7 @@ export class FeedbackManager {
     }
 
     feedback.status = "acknowledged";
-    feedback.updatedAt = new Date();
+    feedback.updatedAt = nextTimestamp(feedback.updatedAt);
     await this.saveFeedbackItem(feedback);
     return feedback;
   }
@@ -366,4 +369,12 @@ function serializeFeedback(
         }
       : undefined,
   };
+}
+
+function nextTimestamp(previous: Date): Date {
+  const now = new Date();
+  if (now.getTime() > previous.getTime()) {
+    return now;
+  }
+  return new Date(previous.getTime() + 1);
 }

@@ -2,7 +2,7 @@
 
 **ID**: CR-20251213-003  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-13  
 **Owner**: agent  
 
@@ -59,13 +59,26 @@ Commit audits provide a lightweight review layer that catches issues that slip t
 
 ## Linked ADRs
 
-- (To be created: ADR for audit request type and automatic request creation)
+- [ADR-015: Commit Audit Mechanism](../../../adr/done/ADR-015-commit-audit-mechanism.md)
 
 ---
 
 ## Commits
 
-No commits yet.
+- `f58f6c1` — feat(core): implement commit audit mechanism
+
+---
+
+## Task Chain
+
+- **Chain**: CHAIN-074-commit-audit
+- **Tasks**:
+  - 001: Add Audit Feedback Type (impl)
+  - 002: Implement Audit Findings Types (impl)
+  - 003: Implement Post-Commit Gate (impl)
+  - 004: Create Audit Chain Template (impl)
+  - 005: Update Design Documents (control)
+  - 006: Verification (control)
 
 ---
 
@@ -211,4 +224,19 @@ await tools.feedback.create({
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented commit audit mechanism with all specified components:
+
+**Delivered:**
+- `audit` feedback type with `FEEDBACK_TYPE_BEHAVIOR` metadata (default priority, blocksWork, description)
+- Audit findings domain types: `AuditSeverity`, `AuditTaskType`, `AuditFinding`, `AuditTaskFindings`, `AuditChainContext`
+- `post_commit` gate type with async audit chain creation (fire-and-forget, non-blocking)
+- 9-stage audit workflow template with role assignments and checklists
+- Design doc updates for agent-feedback, standard-workflow, governance-enforcement
+
+**Files:**
+- `packages/core/src/audit/types.ts`, `packages/core/src/audit/index.ts`
+- `packages/core/src/feedback/types.ts`, `packages/core/src/feedback/FeedbackManager.ts`
+- `packages/core/src/workflow/gates/post-commit.ts`, `packages/core/src/workflow/types.ts`
+- `templates/workflow-templates/audit.yaml`
+
+**Follow-up:** None required. Audit chain execution depends on agent runtime integration.

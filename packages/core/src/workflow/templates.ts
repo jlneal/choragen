@@ -639,6 +639,10 @@ function assignGateProp(gate: Partial<StageGate>, key: string, rawValue: string)
       gate.satisfiedAt = parsed;
     }
   }
+  if (key === "auditEnabled") {
+    const parsed = parseBoolean(value);
+    gate.auditEnabled = parsed ?? value === "true";
+  }
 }
 
 function assignGateOptionProp(option: Partial<StageGateOption>, key: string, rawValue: string): void {

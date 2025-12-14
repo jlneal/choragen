@@ -22,6 +22,7 @@ export * from "./governance/index.js";
 export * from "./locks/index.js";
 export * from "./protocol/index.js";
 export * from "./feedback/index.js";
+export * from "./audit/index.js";
 export * from "./validation/index.js";
 export * from "./metrics/index.js";
 export * from "./config/index.js";

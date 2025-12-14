@@ -10,6 +10,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 import { FeedbackManager } from "../FeedbackManager.js";
+import { FEEDBACK_TYPE_BEHAVIOR } from "../types.js";
 
 describe("FeedbackManager", () => {
   let tempDir: string;
@@ -41,6 +42,19 @@ describe("FeedbackManager", () => {
     );
     const stored = await fs.readFile(storedPath, "utf-8");
     expect(stored).toContain(feedback.id);
+  });
+
+  it("applies audit defaults and metadata for system-generated findings", async () => {
+    const feedback = await manager.create({
+      workflowId: "WF-010",
+      stageIndex: 2,
+      type: "audit",
+      createdByRole: "control",
+      content: "Audit findings for commit abc123.",
+    });
+
+    expect(feedback.priority).toBe("low");
+    expect(FEEDBACK_TYPE_BEHAVIOR.audit.blocksWork).toBe(false);
   });
 
   it("retrieves feedback by id after reload", async () => {

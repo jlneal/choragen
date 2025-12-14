@@ -13,6 +13,7 @@ export const FEEDBACK_TYPES = [
   "idea",
   "blocker",
   "review",
+  "audit",
 ] as const;
 export type FeedbackType = (typeof FEEDBACK_TYPES)[number];
 
@@ -31,6 +32,64 @@ export const FEEDBACK_PRIORITIES = [
   "critical",
 ] as const;
 export type FeedbackPriority = (typeof FEEDBACK_PRIORITIES)[number];
+
+export interface FeedbackTypeBehavior {
+  /** Default priority to assign when none is provided */
+  defaultPriority: FeedbackPriority;
+  /** Whether this feedback type should halt workflow progress until addressed */
+  blocksWork: boolean;
+  /** Description of what the feedback type represents */
+  description: string;
+}
+
+export const FEEDBACK_TYPE_BEHAVIOR: Record<
+  FeedbackType,
+  FeedbackTypeBehavior
+> = {
+  clarification: {
+    defaultPriority: "medium",
+    blocksWork: true,
+    description:
+      "Requests missing information needed to continue the workflow.",
+  },
+  question: {
+    defaultPriority: "low",
+    blocksWork: false,
+    description:
+      "Asks about implementation or design choices; typically advisory.",
+  },
+  idea: {
+    defaultPriority: "low",
+    blocksWork: false,
+    description:
+      "Suggests improvements or alternatives; does not block progress.",
+  },
+  blocker: {
+    defaultPriority: "critical",
+    blocksWork: true,
+    description:
+      "Reports an issue preventing progress; requires resolution before continuing.",
+  },
+  review: {
+    defaultPriority: "medium",
+    blocksWork: false,
+    description:
+      "Requests human review of work; gating depends on process, not type.",
+  },
+  /**
+   * System-generated, batched spot-check findings from commit audits.
+   *
+   * These are advisory, non-blocking findings that are not a comprehensive QA
+   * pass. Audit feedback may spur follow-up requests but should not halt the
+   * current workflow on its own.
+   */
+  audit: {
+    defaultPriority: "low",
+    blocksWork: false,
+    description:
+      "Batched, advisory spot-check findings produced by commit audits.",
+  },
+};
 
 export interface FeedbackCodeSnippet {
   /** File path that contains the snippet */

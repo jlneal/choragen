@@ -65,7 +65,8 @@ export type GateType =
   | "auto"
   | "human_approval"
   | "chain_complete"
-  | "verification_pass";
+  | "verification_pass"
+  | "post_commit";
 
 /** All valid gate type values */
 export const GATE_TYPES: readonly GateType[] = [
@@ -73,6 +74,7 @@ export const GATE_TYPES: readonly GateType[] = [
   "human_approval",
   "chain_complete",
   "verification_pass",
+  "post_commit",
 ] as const;
 
 /**
@@ -237,6 +239,18 @@ export interface StageGate {
   /** For verification_pass: commands that must succeed */
   commands?: string[];
 
+  /** For post_commit: commit metadata captured after git:commit */
+  commit?: PostCommitMetadata;
+
+  /** Whether audit creation should run for post_commit gates (defaults to true) */
+  auditEnabled?: boolean;
+
+  /** Whether the post_commit audit trigger has already been dispatched */
+  auditTriggered?: boolean;
+
+  /** Audit chain created from post_commit gate (if available) */
+  auditChainId?: string;
+
   /** Whether the gate has been satisfied */
   satisfied: boolean;
 
@@ -280,6 +294,20 @@ export interface WorkflowStage {
 
   /** When this stage completed */
   completedAt?: Date;
+}
+
+/**
+ * Commit metadata provided to the post_commit gate.
+ */
+export interface PostCommitMetadata {
+  /** Commit SHA */
+  sha: string;
+  /** Commit message */
+  message: string;
+  /** Commit author */
+  author: string;
+  /** Files changed in the commit */
+  filesChanged: string[];
 }
 
 /**

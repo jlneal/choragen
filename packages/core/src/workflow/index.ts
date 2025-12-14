@@ -11,3 +11,4 @@ export * from "./templates.js";
 export * from "./stage-tools.js";
 export * from "./template-manager.js";
 export * from "./hook-runner.js";
+export * from "./gates/index.js";

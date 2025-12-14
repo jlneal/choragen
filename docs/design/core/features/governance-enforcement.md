@@ -75,9 +75,20 @@ mutations:
 
 ---
 
+## Commit Audits
+
+Governance enforcement is complemented by **commit audits** — automated post-commit spot checks that review commits for standards compliance. While governance rules prevent unauthorized mutations at write time, audits provide advisory feedback after commits are created.
+
+Audit findings are non-blocking and produce `audit` feedback items. Critical findings may spawn follow-up Fix Requests.
+
+See [ADR-015: Commit Audit Mechanism](../../adr/done/ADR-015-commit-audit-mechanism.md) for details.
+
+---
+
 ## Linked ADRs
 
 - [ADR-002: Governance Schema](../../adr/done/ADR-002-governance-schema.md)
+- [ADR-015: Commit Audit Mechanism](../../adr/done/ADR-015-commit-audit-mechanism.md)
 
 ---
 

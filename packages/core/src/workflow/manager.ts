@@ -26,6 +26,11 @@ import { TransitionHookRunner, HookExecutionError } from "./hook-runner.js";
 import type { HookRunResult, TransitionHookContext } from "./hook-runner.js";
 import { FeedbackManager } from "../feedback/FeedbackManager.js";
 import {
+  triggerPostCommitAudit,
+  type AuditChainCreator,
+  type PostCommitGate,
+} from "./gates/post-commit.js";
+import {
   ensureWorkflowDirs,
   loadWorkflow,
   loadWorkflowIndex,
@@ -71,16 +76,23 @@ export class WorkflowManager {
   private chainManager?: ChainManager;
   private hookRunner?: TransitionHookRunner;
   private feedbackManager?: FeedbackManager;
+  private auditChainCreator?: AuditChainCreator;
 
   constructor(
     projectRoot: string,
-    options: { commandRunner?: CommandRunner; chainStatusChecker?: ChainStatusChecker; hookRunner?: TransitionHookRunner } = {}
+    options: {
+      commandRunner?: CommandRunner;
+      chainStatusChecker?: ChainStatusChecker;
+      hookRunner?: TransitionHookRunner;
+      auditChainCreator?: AuditChainCreator;
+    } = {}
   ) {
     this.projectRoot = projectRoot;
     this.commandRunner = options.commandRunner ?? this.defaultCommandRunner.bind(this);
     this.chainStatusChecker = options.chainStatusChecker ?? this.defaultChainStatusChecker.bind(this);
     this.hookRunner = options.hookRunner;
     this.feedbackManager = new FeedbackManager(this.projectRoot);
+    this.auditChainCreator = options.auditChainCreator;
   }
 
   /**
@@ -452,6 +464,28 @@ export class WorkflowManager {
           if (result.exitCode !== 0) {
             throw new Error(`Verification command failed: ${command}`);
           }
+        }
+        this.markGateSatisfied(stage, "system");
+        return;
+      }
+      case "post_commit": {
+        const postCommitGate = stage.gate as PostCommitGate;
+        if (postCommitGate.auditEnabled !== false && !postCommitGate.auditTriggered) {
+          triggerPostCommitAudit(
+            postCommitGate,
+            {
+              workflowId: workflow.id,
+              stageIndex: workflow.currentStage,
+            },
+            this.auditChainCreator,
+            async (auditChainId) => {
+              workflow.updatedAt = new Date();
+              await this.persistWorkflow(workflow);
+              if (auditChainId) {
+                // persistWorkflow already stored auditChainId on gate via reference mutation
+              }
+            }
+          );
         }
         this.markGateSatisfied(stage, "system");
         return;

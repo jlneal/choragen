@@ -187,7 +187,10 @@ If verification fails, workflow pauses for investigation.
 | 6.2 | 🔧 Tool | tool | `git:status` — check staged files |
 | 6.3 | 🤖 Commit | agent | Drafts commit message(s) with CR reference |
 | 6.4 | 🔧 Tool | tool | `git:commit` — creates commit(s) |
-| 6.5 | 🚪 Gate | gate | `human_approval`: "Commits ready. Push?" |
+| 6.5 | ⚙️ Hook | hook | `post_commit` gate triggers async audit chain creation |
+| 6.6 | 🚪 Gate | gate | `human_approval`: "Commits ready. Push?" |
+
+**Post-Commit Gate**: After `git:commit` completes, a `post_commit` gate fires asynchronously to create an audit chain. This does not block workflow progression — the audit runs in parallel and produces advisory `audit` feedback items. The gate can be disabled via `auditEnabled: false` in the workflow template.
 
 ---
 

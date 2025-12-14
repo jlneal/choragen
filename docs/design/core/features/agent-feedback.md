@@ -43,6 +43,7 @@ Introduce a **Feedback** structure that:
 | **idea** | Suggest improvements or alternatives | Low | No |
 | **blocker** | Report something preventing progress | High | Yes |
 | **review** | Request human review of work | Medium | Sometimes |
+| **audit** | System-generated spot-check findings from commit audits | Low | No |
 
 ---
 
@@ -103,7 +104,8 @@ type FeedbackType =
   | "question"
   | "idea"
   | "blocker"
-  | "review";
+  | "review"
+  | "audit";
 
 type FeedbackStatus = 
   | "pending"      // Awaiting human response
@@ -359,6 +361,12 @@ const feedbackRouter = router({
 - [ ] Dashboard shows aggregated pending feedback count
 - [ ] Blocker feedback prevents workflow advancement until resolved
 - [ ] Feedback includes context (files, code snippets, options)
+
+---
+
+## Linked ADRs
+
+- [ADR-015: Commit Audit Mechanism](../../../adr/done/ADR-015-commit-audit-mechanism.md)
 
 ---
 
