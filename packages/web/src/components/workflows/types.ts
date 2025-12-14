@@ -1,5 +1,7 @@
 // ADR: ADR-011-web-api-architecture
 
+import type { ModelReference } from "@choragen/core";
+
 /**
  * Shared types and constants for workflow components.
  * Extracted to break circular dependency between template-form, stage-list, and stage-editor.
@@ -24,6 +26,7 @@ export type TemplateStageInput = {
   type: StageType;
   roleId?: string;
   initPrompt?: string;
+  defaultModel?: ModelReference;
   gate: {
     type: GateType;
     prompt?: string;

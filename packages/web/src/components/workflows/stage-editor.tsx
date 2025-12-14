@@ -19,6 +19,7 @@ import {
   type RoleOption,
   type ToolOption,
 } from "./types";
+import { StageModelConfig } from "./stage-model-config";
 
 // Re-export types for backward compatibility
 export type { RoleOption, ToolOption };
@@ -337,6 +338,23 @@ export function StageEditor({
               <Badge variant="outline">{stage.gate.type}</Badge>
             )}
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Default model</Label>
+          <p className="text-xs text-muted-foreground">
+            Optional. Pre-selects the model for this stage; can be overridden in chat.
+          </p>
+          {editable ? (
+            <StageModelConfig
+              value={stage.defaultModel}
+              onChange={(model) => handleStageChange("defaultModel", model)}
+            />
+          ) : (
+            <Badge variant="outline">
+              {stage.defaultModel ? `${stage.defaultModel.provider}: ${stage.defaultModel.model}` : "No default"}
+            </Badge>
+          )}
         </div>
 
         <GateFields stage={stage} editable={editable} onChange={handleGateChange} />

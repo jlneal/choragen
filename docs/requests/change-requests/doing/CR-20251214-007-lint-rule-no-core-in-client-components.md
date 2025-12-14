@@ -1,6 +1,6 @@
 # Change Request: ESLint rule to prevent @choragen/core imports in client components
 
-**ID**: CR-20251214-001  
+**ID**: CR-20251214-007  
 **Domain**: eslint-plugin  
 **Status**: todo  
 **Created**: 2025-12-14  

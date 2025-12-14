@@ -11,6 +11,7 @@ import { ArtifactLink } from "./artifact-link";
 import { ToolCallDisplay } from "./tool-call-display";
 import { FeedbackMessage } from "./FeedbackMessage";
 import type { FeedbackItem } from "@choragen/core";
+import { ModelBadge } from "./message";
 
 function asString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
@@ -147,7 +148,7 @@ export function MessageItem({ message, workflowId }: MessageItemProps) {
     <div className={`flex ${style.alignmentClass}`}>
       <div className={style.wrapperClass}>
         <div className={style.bubbleClass}>
-          <div className={`flex items-center justify-between text-xs ${headerTextClass}`}>
+          <div className={`flex items-center justify-between gap-2 text-xs ${headerTextClass}`}>
             <span className="inline-flex items-center gap-2 font-medium capitalize">
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
               {style.badge ? (
@@ -158,7 +159,10 @@ export function MessageItem({ message, workflowId }: MessageItemProps) {
                 "You"
               )}
             </span>
-            <span>{formattedTime}</span>
+            <div className="flex items-center gap-2">
+              <ModelBadge model={message.model} />
+              <span>{formattedTime}</span>
+            </div>
           </div>
           <p className={`mt-2 whitespace-pre-wrap text-sm ${contentTextClass}`}>
             {message.content}

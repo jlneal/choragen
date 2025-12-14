@@ -62,6 +62,14 @@ export const STAGE_STATUSES: readonly StageStatus[] = [
   "skipped",
 ] as const;
 
+/** Identifies a model provided by a specific provider */
+export interface ModelReference {
+  /** Provider identifier (e.g., openai, anthropic) */
+  provider: string;
+  /** Model identifier (e.g., gpt-4o, claude-3-sonnet) */
+  model: string;
+}
+
 /** Gate type determines what must happen to advance to the next stage */
 export type GateType =
   | "auto"
@@ -323,6 +331,9 @@ export interface WorkflowStage {
 
   /** When this stage completed */
   completedAt?: Date;
+
+  /** Default model to use for work performed in this stage */
+  defaultModel?: ModelReference;
 }
 
 /**
@@ -360,6 +371,9 @@ export interface WorkflowMessage {
 
   /** Optional metadata (tool calls, artifacts, streaming chunks, etc.) */
   metadata?: WorkflowMessageMetadata;
+
+  /** Model used to generate this message (if applicable) */
+  model?: ModelReference;
 }
 
 /**

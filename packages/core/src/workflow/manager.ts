@@ -20,6 +20,7 @@ import type {
   WorkflowMessage,
   WorkflowMessageMetadata,
   MessageRole,
+  ModelReference,
 } from "./types.js";
 import type { WorkflowTemplate, WorkflowTemplateStage } from "./templates.js";
 import { TransitionHookRunner, HookExecutionError } from "./hook-runner.js";
@@ -59,6 +60,7 @@ export interface AddMessageOptions {
   content: string;
   stageIndex: number;
   metadata?: WorkflowMessageMetadata;
+  model?: ModelReference;
 }
 
 export interface CommandResult {
@@ -116,6 +118,7 @@ export class WorkflowManager {
         sessionId: stageDef.sessionId,
         gate,
         hooks: stageDef.hooks,
+        defaultModel: stageDef.defaultModel,
         startedAt: status === "active" ? now : undefined,
       };
 
@@ -286,12 +289,33 @@ export class WorkflowManager {
       stageIndex: options.stageIndex,
       timestamp: new Date(),
       metadata: options.metadata,
+      model: options.model,
     };
 
     workflow.messages.push(message);
     workflow.updatedAt = new Date();
     await this.persistWorkflow(workflow);
     return workflow;
+  }
+
+  /**
+   * Return the active model for the current stage, preferring the most recent message model.
+   */
+  async getCurrentModel(workflowId: string): Promise<ModelReference | undefined> {
+    const workflow = await this.requireWorkflow(workflowId);
+    const stage = workflow.stages[workflow.currentStage];
+    if (!stage) {
+      throw new Error(`Stage ${workflow.currentStage} not found for workflow ${workflowId}`);
+    }
+
+    for (let i = workflow.messages.length - 1; i >= 0; i -= 1) {
+      const message = workflow.messages[i];
+      if (message.stageIndex === workflow.currentStage && message.model) {
+        return message.model;
+      }
+    }
+
+    return stage.defaultModel;
   }
 
   /**

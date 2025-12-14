@@ -24,6 +24,7 @@ import { settingsRouter } from "./settings";
 import { roleRouter } from "./role";
 import { toolRouter } from "./tool";
 import { feedbackRouter } from "./feedback";
+import { providersRouter } from "./providers";
 
 /**
  * Root application router.
@@ -142,6 +143,12 @@ export const appRouter = router({
    * Feedback lifecycle operations for workflows.
    */
   feedback: feedbackRouter,
+
+  /**
+   * Providers router.
+   * Lists available models for configured providers.
+   */
+  providers: providersRouter,
 });
 
 /**

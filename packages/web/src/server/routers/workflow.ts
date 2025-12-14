@@ -16,6 +16,7 @@ import {
   type WorkflowStatus,
   type MessageRole,
   type WorkflowMessage,
+  type ModelReference,
   loadTemplate,
 } from "@choragen/core";
 
@@ -47,6 +48,12 @@ const sendMessageInputSchema = z.object({
   content: z.string().min(1, "Content is required"),
   stageIndex: z.number().int().min(0, "Stage index must be non-negative"),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  model: z
+    .object({
+      provider: z.string().min(1, "Provider is required"),
+      model: z.string().min(1, "Model is required"),
+    })
+    .optional(),
 });
 
 const satisfyGateInputSchema = z.object({
@@ -190,6 +197,7 @@ export const workflowRouter = router({
           content: input.content,
           stageIndex: input.stageIndex,
           metadata: input.metadata,
+          model: input.model as ModelReference | undefined,
         });
       } catch (error) {
         throw new TRPCError({
@@ -387,5 +395,16 @@ export const workflowRouter = router({
           delayHandle.cancel();
         }
       }
+    }),
+
+  /**
+   * Get the current model for the active workflow stage.
+   */
+  currentModel: publicProcedure
+    .input(onMessageInputSchema)
+    .query(async ({ ctx, input }) => {
+      const manager = getWorkflowManager(ctx.projectRoot);
+      const model = await manager.getCurrentModel(input.workflowId);
+      return model ?? null;
     }),
 });

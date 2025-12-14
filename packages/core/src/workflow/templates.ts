@@ -25,6 +25,7 @@ import {
   type SpawnAgentAction,
   type TaskTransitionAction,
   type TransitionAction,
+  type ModelReference,
 } from "./types.js";
 
 export interface WorkflowTemplateStage {
@@ -33,6 +34,7 @@ export interface WorkflowTemplateStage {
   gate: Omit<StageGate, "satisfied" | "satisfiedBy" | "satisfiedAt"> & Partial<Pick<StageGate, "satisfied" | "satisfiedBy" | "satisfiedAt">>;
   roleId?: string;
   initPrompt?: string;
+  defaultModel?: ModelReference;
   hooks?: StageTransitionHooks;
   chainId?: string;
   sessionId?: string;
@@ -333,6 +335,9 @@ export function validateTemplate(template: WorkflowTemplate): WorkflowTemplate {
     if (stage.initPrompt && typeof stage.initPrompt !== "string") {
       throw new Error(`Stage ${stage.name} in template ${template.name} has invalid initPrompt`);
     }
+    if (stage.defaultModel) {
+      validateModelReference(stage.defaultModel, `Stage ${stage.name} in template ${template.name} defaultModel`);
+    }
     validateHooks(stage, idx, template.name);
   });
 
@@ -356,6 +361,7 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
   const lines = content.split(/\r?\n/);
   let currentStage: Partial<WorkflowTemplateStage> | null = null;
   let currentGate: Partial<StageGate> | null = null;
+  let currentDefaultModel: Partial<ModelReference> | null = null;
   let currentHooks: StageTransitionHooks | null = null;
   let currentHookSection: keyof StageTransitionHooks | null = null;
   let currentAction: MutableTransitionAction | null = null;
@@ -375,6 +381,7 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
       currentGateOption = null;
       inFileMove = false;
       currentGate = null;
+      currentDefaultModel = null;
       currentStage = null;
       currentHooks = null;
       currentHookSection = null;
@@ -392,6 +399,7 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
       currentGateOption = null;
       inFileMove = false;
       currentGate = null;
+      currentDefaultModel = null;
       currentHooks = null;
       currentHookSection = null;
       currentAction = null;
@@ -409,6 +417,8 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
 
     // Stage properties
     if (indent === 4 && currentStage) {
+      currentDefaultModel = null;
+
       if (trimmed === "gate:" || trimmed.startsWith("gate:")) {
         currentGate = (currentStage.gate || { type: "auto" }) as Partial<StageGate>;
         currentStage.gate = currentGate as StageGate;
@@ -427,6 +437,25 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
         continue;
       }
 
+      if (trimmed === "defaultModel:" || trimmed.startsWith("defaultModel:")) {
+        currentDefaultModel = (currentStage.defaultModel || { provider: "", model: "" }) as Partial<ModelReference>;
+        currentStage.defaultModel = currentDefaultModel as ModelReference;
+        const maybeInline = trimmed.replace("defaultModel:", "").trim();
+        if (maybeInline) {
+          const [key, value] = splitKeyValue(maybeInline);
+          assignModelReferenceProp(currentDefaultModel, key, value);
+        }
+        inCommands = false;
+        inGateOptions = false;
+        currentGateOption = null;
+        inFileMove = false;
+        currentGate = null;
+        currentHooks = null;
+        currentHookSection = null;
+        currentAction = null;
+        continue;
+      }
+
       if (trimmed === "hooks:" || trimmed.startsWith("hooks:")) {
         currentHooks = currentStage.hooks ?? {};
         currentStage.hooks = currentHooks;
@@ -439,6 +468,12 @@ function parseTemplateYaml(content: string): WorkflowTemplate {
 
       const [key, value] = splitKeyValue(trimmed);
       assignStageProp(currentStage, key, value);
+      continue;
+    }
+
+    if (indent >= 6 && currentDefaultModel) {
+      const [key, value] = splitKeyValue(trimmed);
+      assignModelReferenceProp(currentDefaultModel, key, value);
       continue;
     }
 
@@ -638,6 +673,12 @@ function assignStageProp(stage: Partial<WorkflowTemplateStage>, key: string, raw
   }
 }
 
+function assignModelReferenceProp(modelRef: Partial<ModelReference>, key: string, rawValue: string): void {
+  const value = parseScalar(rawValue);
+  if (key === "provider") modelRef.provider = value;
+  if (key === "model") modelRef.model = value;
+}
+
 function assignGateProp(gate: Partial<StageGate>, key: string, rawValue: string): void {
   const value = parseScalar(rawValue);
   if (key === "type") gate.type = value as StageGate["type"];
@@ -709,6 +750,15 @@ function parseScalar(raw: string): string {
     value = value.slice(1, -1);
   }
   return value;
+}
+
+function validateModelReference(model: ModelReference, context: string): void {
+  if (typeof model.provider !== "string" || model.provider.trim() === "") {
+    throw new Error(`${context} provider must be a non-empty string`);
+  }
+  if (typeof model.model !== "string" || model.model.trim() === "") {
+    throw new Error(`${context} model must be a non-empty string`);
+  }
 }
 
 function validateHooks(stage: WorkflowTemplateStage, stageIndex: number, templateName: string): void {

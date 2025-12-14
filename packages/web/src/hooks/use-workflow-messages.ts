@@ -22,6 +22,7 @@ interface SubscriptionMessage {
   stageIndex: number;
   timestamp: string | Date;
   metadata?: Record<string, unknown>;
+   model?: WorkflowMessage["model"];
 }
 
 function normalizeMessage(message: SubscriptionMessage): WorkflowMessage {
