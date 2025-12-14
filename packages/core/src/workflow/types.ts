@@ -260,6 +260,9 @@ export interface WorkflowStage {
   /** Current stage status */
   status: StageStatus;
 
+  /** Prompt injected into agent context when stage activates */
+  initPrompt?: string;
+
   /** Chain created for this stage (if applicable) */
   chainId?: string;
 

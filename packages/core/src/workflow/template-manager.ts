@@ -345,6 +345,7 @@ function templateToYaml(template: WorkflowTemplate): string {
     lines.push(`  - name: ${formatScalar(stage.name)}`);
     lines.push(`    type: ${formatScalar(stage.type)}`);
     if (stage.roleId) lines.push(`    roleId: ${formatScalar(stage.roleId)}`);
+    if (stage.initPrompt) lines.push(`    initPrompt: ${formatScalar(stage.initPrompt)}`);
     if (stage.chainId) lines.push(`    chainId: ${formatScalar(stage.chainId)}`);
     if (stage.sessionId) lines.push(`    sessionId: ${formatScalar(stage.sessionId)}`);
     lines.push("    gate:");

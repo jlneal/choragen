@@ -344,6 +344,22 @@ export function StageEditor({
         <GateFields stage={stage} editable={editable} onChange={handleGateChange} />
 
         <div className="space-y-2">
+          <Label>Init Prompt</Label>
+          {editable ? (
+            <Textarea
+              value={stage.initPrompt ?? ""}
+              onChange={(event) => handleStageChange("initPrompt", event.target.value)}
+              placeholder="Instructions injected when this stage activates..."
+              rows={4}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+              {stage.initPrompt || "—"}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-semibold">Hooks</Label>
             <Badge variant="outline">

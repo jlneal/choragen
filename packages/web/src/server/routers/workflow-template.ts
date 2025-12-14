@@ -150,6 +150,7 @@ const templateStageSchema = z.object({
   name: z.string().min(1, "Stage name is required"),
   type: stageTypeEnum,
   roleId: z.string().optional(),
+  initPrompt: z.string().optional(),
   chainId: z.string().optional(),
   sessionId: z.string().optional(),
   gate: gateSchema,

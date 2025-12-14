@@ -5,6 +5,13 @@ stages:
   - name: exploration
     type: ideation
     roleId: ideation
+    initPrompt: |
+      You are exploring ideas in workflow {{workflowId}}.
+
+      Your tasks:
+      - Brainstorm and refine the problem space; capture value, impact, and feasibility.
+      - Identify candidate requests and risks; keep scope focused.
+      - Decide whether to continue or discard. Use the gate to request approval to advance or discard this idea.
     gate:
       type: human_approval
       agentTriggered: true
@@ -18,6 +25,13 @@ stages:
   - name: proposal
     type: ideation
     roleId: ideation
+    initPrompt: |
+      You are formalizing proposals for workflow {{workflowId}}.
+
+      Your tasks:
+      - Convert refined ideas into clear request proposals with goals, scope, and acceptance criteria.
+      - Capture expected artifacts and risks; reference any supporting research.
+      - Prepare for human approval to proceed to request creation.
     gate:
       type: human_approval
       prompt: "Approve these request proposals?"
@@ -25,6 +39,13 @@ stages:
   - name: creation
     type: ideation
     roleId: ideation
+    initPrompt: |
+      You are creating request documents for workflow {{workflowId}}.
+
+      Your tasks:
+      - Generate CR/FR drafts from approved proposals with traceability links.
+      - Ensure IDs, titles, and acceptance criteria are clear and actionable.
+      - Upon completion, this stage will move drafts from draft/ to backlog/ via the hook.
     gate:
       type: auto
     hooks:

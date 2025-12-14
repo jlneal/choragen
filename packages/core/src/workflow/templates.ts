@@ -32,6 +32,7 @@ export interface WorkflowTemplateStage {
   type: StageType;
   gate: Omit<StageGate, "satisfied" | "satisfiedBy" | "satisfiedAt"> & Partial<Pick<StageGate, "satisfied" | "satisfiedBy" | "satisfiedAt">>;
   roleId?: string;
+  initPrompt?: string;
   hooks?: StageTransitionHooks;
   chainId?: string;
   sessionId?: string;
@@ -308,6 +309,9 @@ export function validateTemplate(template: WorkflowTemplate): WorkflowTemplate {
   normalized.stages.forEach((stage, idx) => {
     if (stage.roleId && typeof stage.roleId !== "string") {
       throw new Error(`Stage ${stage.name} in template ${template.name} has invalid roleId`);
+    }
+    if (stage.initPrompt && typeof stage.initPrompt !== "string") {
+      throw new Error(`Stage ${stage.name} in template ${template.name} has invalid initPrompt`);
     }
     validateHooks(stage, idx, template.name);
   });
@@ -609,7 +613,7 @@ function assignTemplateProp(template: WorkflowTemplate, key: string, rawValue: s
 
 function assignStageProp(stage: Partial<WorkflowTemplateStage>, key: string, rawValue: string): void {
   const value = parseScalar(rawValue);
-  if (key === "name" || key === "type" || key === "chainId" || key === "sessionId" || key === "roleId") {
+  if (key === "name" || key === "type" || key === "chainId" || key === "sessionId" || key === "roleId" || key === "initPrompt") {
     (stage as Record<string, unknown>)[key] = value;
   }
 }

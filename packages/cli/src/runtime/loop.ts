@@ -396,13 +396,27 @@ export async function runAgentSession(
   );
 
   // Initialize conversation with system prompt
-  const messages: Message[] = [
-    { role: "system", content: systemPrompt },
-    {
+  const messages: Message[] = [{ role: "system", content: systemPrompt }];
+
+  const stageInitPrompt = workflowContext?.stage.initPrompt?.trim();
+  if (stageInitPrompt) {
+    const resolvedPrompt = substituteInitPromptVariables(stageInitPrompt, {
+      requestId: workflowContext?.workflow.requestId,
+      workflowId: workflowContext?.workflow.id,
+      chainId,
+      stageName: workflowContext?.stage.name,
+      stageType: workflowContext?.stage.type,
+    });
+    messages.push({
       role: "user",
-      content: buildInitialUserMessage(role, chainId, taskId, parentContext),
-    },
-  ];
+      content: `## Stage Instructions\n\n${resolvedPrompt}`,
+    });
+  }
+
+  messages.push({
+    role: "user",
+    content: buildInitialUserMessage(role, chainId, taskId, parentContext),
+  });
 
   if (inputMessage && inputMessage.trim().length > 0) {
     messages.push({ role: "user", content: inputMessage.trim() });
@@ -802,4 +816,22 @@ function buildInitialUserMessage(
   }
 
   return parts.join(" ");
+}
+
+function substituteInitPromptVariables(
+  initPrompt: string,
+  context: {
+    requestId?: string;
+    workflowId?: string;
+    chainId?: string;
+    stageName?: string;
+    stageType?: string;
+  }
+): string {
+  return initPrompt
+    .replace(/\{\{requestId\}\}/g, context.requestId ?? "")
+    .replace(/\{\{workflowId\}\}/g, context.workflowId ?? "")
+    .replace(/\{\{chainId\}\}/g, context.chainId ?? "")
+    .replace(/\{\{stageName\}\}/g, context.stageName ?? "")
+    .replace(/\{\{stageType\}\}/g, context.stageType ?? "");
 }

@@ -2,17 +2,40 @@ name: hotfix
 stages:
   - name: request
     type: request
+    initPrompt: |
+      You are triaging a hotfix for {{requestId}}.
+
+      Your tasks:
+      - Confirm severity, impact, and affected scope; capture minimal fix surface.
+      - Identify the smallest viable change; avoid scope creep.
+      - Create an implementation chain/task if needed and gather required context.
+      - Request approval to proceed with the fix once ready.
     gate:
       type: human_approval
       prompt: "FR created. Proceed directly to implementation?"
 
   - name: implementation
     type: implementation
+    initPrompt: |
+      You are implementing the hotfix for {{requestId}} (chain {{chainId}} if provided).
+
+      Your tasks:
+      - Apply the minimal code change to resolve the issue quickly and safely.
+      - Add targeted tests to prove the fix and avoid regressions.
+      - Keep commits focused and reference {{requestId}}.
+      - Complete the implementation chain to satisfy the gate.
     gate:
       type: chain_complete
 
   - name: verification
     type: verification
+    initPrompt: |
+      You are verifying the hotfix for {{requestId}} at stage {{stageName}} ({{stageType}}).
+
+      Your tasks:
+      - Run required checks (pnpm build, pnpm test) and any targeted regression tests.
+      - Validate the fix behavior against the reported issue and acceptance criteria.
+      - Document results or blockers so the verification_pass gate can be satisfied.
     gate:
       type: verification_pass
       commands:
@@ -21,6 +44,13 @@ stages:
 
   - name: completion
     type: review
+    initPrompt: |
+      You are finalizing the hotfix for {{requestId}}.
+
+      Your tasks:
+      - Review diffs and test results; ensure commits are scoped and reference {{requestId}}.
+      - Confirm stakeholders are informed and any release notes are prepared.
+      - Approve merge or request follow-up changes to close the hotfix.
     gate:
       type: human_approval
       prompt: "Hotfix ready. Approve and merge?"

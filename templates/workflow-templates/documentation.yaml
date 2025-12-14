@@ -2,16 +2,37 @@ name: documentation
 stages:
   - name: request
     type: request
+    initPrompt: |
+      You are setting up a documentation workflow for {{requestId}}.
+
+      Your tasks:
+      - Clarify documentation scope, audiences, and target files/sections.
+      - Create implementation chain/tasks if needed to track work.
+      - Prepare links to relevant design or request context; the gate auto-advances when setup is complete.
     gate:
       type: auto
 
   - name: implementation
     type: implementation
+    initPrompt: |
+      You are implementing documentation updates for {{requestId}} (workflow {{workflowId}}).
+
+      Your tasks:
+      - Update or create docs with clear structure, examples, and traceability to the request.
+      - Keep scope focused on documentation-only changes; run any checks needed for docs.
+      - Complete the implementation chain to satisfy the gate.
     gate:
       type: chain_complete
 
   - name: completion
     type: review
+    initPrompt: |
+      You are reviewing documentation changes for {{requestId}} before approval.
+
+      Your tasks:
+      - Verify accuracy, clarity, and formatting; ensure links and references are correct.
+      - Confirm scope matches the request and no code changes are pending.
+      - Approve or request edits to satisfy the final gate.
     gate:
       type: human_approval
       prompt: "Documentation updated. Approve?"

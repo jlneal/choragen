@@ -120,17 +120,6 @@ The chain is **bi-directional** at CR/FR ↔ Commits:
 
 Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`
 
-## Workflow-Driven Development (WDD)
-
-- Start from a **request** (CR/FR) and create a **chain** for multi-step work; default to creating a chain unless explicitly exempt.
-- Use the **web chat** for live workflows:
-  - History view: `packages/web/src/app/chat/history/page.tsx`
-  - Workflow chat: `packages/web/src/app/chat/[workflowId]/page.tsx`
-  - Chat components: `packages/web/src/components/chat/`
-  - Workflow API: `packages/web/src/server/routers/workflow.ts`
-- Chat is the primary surface for running workflows, approving gates, and handling errors. Keep sidebar actions (pause/resume/cancel) and error UI in sync with API changes.
-- When adding features, update the relevant design doc (`docs/design/core/features/web-chat-interface.md`, `docs/design/core/features/workflow-orchestration.md`) with file references to maintain traceability.
-
 ## Package Structure
 
 | Package | Description |
@@ -140,29 +129,6 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`
 | `@choragen/contracts` | DesignContract, ApiError, HttpStatus |
 | `@choragen/eslint-plugin` | ESLint rules (future) |
 | `@choragen/test-utils` | Testing utilities |
-
-## CLI Commands
-
-```bash
-# Chain management
-choragen chain:new <cr-id> <slug> [title]
-choragen chain:status [chain-id]
-choragen chain:list
-
-# Task management
-choragen task:add <chain-id> <slug> <title>
-choragen task:start <chain-id> <task-id>
-choragen task:complete <chain-id> <task-id>
-choragen task:next <chain-id>
-
-# Request lifecycle
-choragen request:close <request-id>  # Populates commits, moves to done
-
-# Governance & Locks
-choragen governance:check <action> <file1> [file2...]
-choragen lock:acquire <chain-id> <pattern1> [pattern2...]
-choragen lock:release <chain-id>
-```
 
 ## Agent Roles
 

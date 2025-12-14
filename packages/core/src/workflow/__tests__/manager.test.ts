@@ -28,11 +28,13 @@ const baseTemplate: WorkflowTemplate = {
     {
       name: "Request",
       type: "request",
+      initPrompt: "Gather request context",
       gate: { type: "auto", satisfied: false },
     },
     {
       name: "Design",
       type: "design",
+      initPrompt: "Outline solution approach",
       gate: { type: "human_approval", prompt: "Approve design" },
     },
   ],
@@ -67,6 +69,7 @@ describe("WorkflowManager", () => {
     expect(workflow.id).toMatch(/^WF-\d{8}-\d{3}$/);
     expect(workflow.stages[0].status).toBe("awaiting_gate");
     expect(workflow.stages[0].gate.satisfied).toBe(true);
+    expect(workflow.stages[0].initPrompt).toBe("Gather request context");
     expect(index.workflows[workflow.id]).toBeDefined();
     expect(JSON.parse(stored).id).toBe(workflow.id);
   });

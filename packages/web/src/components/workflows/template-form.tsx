@@ -20,6 +20,7 @@ export type TemplateStageInput = {
   name: string;
   type: StageType;
   roleId?: string;
+  initPrompt?: string;
   gate: {
     type: GateType;
     prompt?: string;
@@ -133,6 +134,7 @@ export function TemplateForm({
         ...stage,
         name: stage.name.trim(),
         roleId: stage.roleId?.trim() || undefined,
+        initPrompt: stage.initPrompt?.trim() || undefined,
         gate: {
           ...stage.gate,
           prompt: stage.gate.prompt?.trim() || undefined,

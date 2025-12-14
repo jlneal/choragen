@@ -5,6 +5,14 @@ stages:
   - name: planning
     type: design
     roleId: orchestration
+    initPrompt: |
+      You are planning the design phase for request {{requestId}}.
+
+      Your tasks:
+      - Review the request file to understand goals, constraints, and risks.
+      - Break down the work into design chains and tasks (choragen chain:new, choragen task:add).
+      - Assign owners and roles for design tasks and capture dependencies.
+      - When design chains are ready, request human approval to proceed.
     gate:
       type: human_approval
       prompt: "Design chains ready. Proceed?"
@@ -16,6 +24,14 @@ stages:
   - name: design
     type: implementation
     roleId: design
+    initPrompt: |
+      You are executing the design work for request {{requestId}}.
+
+      Your tasks:
+      - Work through the active design chain(s) to produce architecture and UX decisions.
+      - Update design docs with file references and keep traceability to {{requestId}}.
+      - Capture open risks and mitigation notes for implementation.
+      - Ensure the design chain is complete to satisfy the gate.
     gate:
       type: chain_complete
     onEnter:
@@ -25,6 +41,14 @@ stages:
   - name: impl-planning
     type: design
     roleId: orchestration
+    initPrompt: |
+      You are planning implementation for request {{requestId}}.
+
+      Your tasks:
+      - Review approved design outputs and clarify acceptance criteria.
+      - Create implementation chains and tasks (choragen chain:new / task:add) for the work ahead.
+      - Map roles, environments, and dependencies; note risks for verification.
+      - When implementation plan is ready, seek human approval to proceed.
     gate:
       type: human_approval
       prompt: "Implementation chains ready. Proceed?"
@@ -32,6 +56,14 @@ stages:
   - name: implementation
     type: implementation
     roleId: implementation
+    initPrompt: |
+      You are implementing request {{requestId}} (chain {{chainId}} if provided).
+
+      Your tasks:
+      - Execute implementation chain tasks; write code, tests, and migration steps as needed.
+      - Keep changes small and traceable; document decisions in-line with the request.
+      - Coordinate with reviewers on risky areas and keep verification needs in mind.
+      - Complete the implementation chain to satisfy the gate.
     gate:
       type: chain_complete
     onEnter:
@@ -41,6 +73,13 @@ stages:
   - name: verification
     type: verification
     roleId: system
+    initPrompt: |
+      You are verifying request {{requestId}} at stage {{stageName}} ({{stageType}}).
+
+      Your tasks:
+      - Run the required commands (pnpm build, pnpm test, pnpm lint) and fix any failures.
+      - Validate acceptance criteria, migrations, and documentation updates.
+      - Record results and blockers so the verification_pass gate can be satisfied.
     gate:
       type: verification_pass
       commands:
@@ -51,6 +90,13 @@ stages:
   - name: commit
     type: implementation
     roleId: commit
+    initPrompt: |
+      You are preparing commits for request {{requestId}} (chain {{chainId}} if applicable).
+
+      Your tasks:
+      - Review diffs for scope and quality; ensure tests are passing.
+      - Structure commits with proper messages referencing {{requestId}} and chain context.
+      - Stage changes for approval, noting any outstanding risks or manual steps.
     gate:
       type: human_approval
       prompt: "Commits ready. Push?"
@@ -58,6 +104,13 @@ stages:
   - name: request-review
     type: review
     roleId: review
+    initPrompt: |
+      You are performing the final request review for {{requestId}}.
+
+      Your tasks:
+      - Inspect commits, docs, and test results to confirm acceptance criteria are met.
+      - Flag any issues or regressions; request fixes if needed.
+      - Provide a clear approval or change request to satisfy the gate.
     gate:
       type: human_approval
       prompt: "Request complete. Approve and push?"
@@ -65,6 +118,13 @@ stages:
   - name: completion
     type: review
     roleId: control
+    initPrompt: |
+      You are closing out request {{requestId}}.
+
+      Your tasks:
+      - Move the request to done and archive related chains after approval.
+      - Run closure commands (choragen request:close {{requestId}}, choragen chain:archive {{chainIds}}) if appropriate.
+      - Record completion notes and ensure artifacts are linked for traceability.
     gate:
       type: human_approval
       prompt: "Final approval. Close request?"

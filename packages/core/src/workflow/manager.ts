@@ -98,6 +98,7 @@ export class WorkflowManager {
         name: stageDef.name,
         type: stageDef.type,
         status,
+        initPrompt: stageDef.initPrompt,
         chainId: stageDef.chainId,
         sessionId: stageDef.sessionId,
         gate,

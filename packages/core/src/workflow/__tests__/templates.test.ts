@@ -65,6 +65,7 @@ stages:
   - name: request
     type: request
     roleId: control
+    initPrompt: "Kickoff instructions"
     gate:
       type: auto
     hooks:
@@ -74,6 +75,7 @@ stages:
   - name: verify
     type: verification
     roleId: impl
+    initPrompt: "Verify before approve"
     gate:
       type: verification_pass
       commands:
@@ -102,6 +104,8 @@ stages:
     expect(template.stages).toHaveLength(2);
     expect(template.stages[1].gate.commands).toEqual(["npm test"]);
     expect(template.stages[0].roleId).toBe("control");
+    expect(template.stages[0].initPrompt).toBe("Kickoff instructions");
+    expect(template.stages[1].initPrompt).toBe("Verify before approve");
     expect(template.stages[0].hooks?.onEnter?.[0]).toMatchObject({
       type: "command",
       command: "echo enter",
