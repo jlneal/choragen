@@ -2,7 +2,7 @@
 
 **ID**: CR-20251213-008  
 **Domain**: core  
-**Status**: todo  
+**Status**: doing  
 **Created**: 2025-12-13  
 **Owner**: agent  
 
@@ -33,13 +33,13 @@ A session handoff gate ensures clean transitions between agent sessions.
 
 ## Acceptance Criteria
 
-- [ ] Handoff triggers validation before session ends
-- [ ] Gate verifies task file is properly formatted
-- [ ] Gate verifies previous work is committed (no uncommitted changes to task scope)
-- [ ] Gate verifies handoff notes/context are present
-- [ ] Gate validates receiving agent role matches task type
-- [ ] Failed validations produce actionable feedback
-- [ ] Gate can suggest missing context items
+- [x] Handoff triggers validation before session ends
+- [x] Gate verifies task file is properly formatted
+- [x] Gate verifies previous work is committed (no uncommitted changes to task scope)
+- [x] Gate verifies handoff notes/context are present
+- [x] Gate validates receiving agent role matches task type
+- [x] Failed validations produce actionable feedback
+- [x] Gate can suggest missing context items
 
 ---
 
@@ -79,7 +79,16 @@ No commits yet.
 
 ## Task Chain
 
-[Created during implementation]
+**Chain**: CHAIN-077-session-handoff-gate  
+**Location**: `docs/tasks/todo/CHAIN-077-session-handoff-gate/`
+
+| Task | Description | Status |
+|------|-------------|--------|
+| 001 | Define handoff validation types | done |
+| 002 | Implement handoff validation runner | done |
+| 003 | Implement session handoff gate | done |
+| 004 | Add unit tests | done |
+| 005 | Export and integrate | done |
 
 ---
 
@@ -138,4 +147,29 @@ The session handoff gate should verify:
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented session handoff gate with 5 validation checks:
+
+**Files created:**
+- `packages/core/src/workflow/gates/handoff-types.ts` — Type definitions
+- `packages/core/src/workflow/gates/handoff-validation.ts` — Validation runner
+- `packages/core/src/workflow/gates/session-handoff.ts` — Gate function
+- `packages/core/src/workflow/__tests__/session-handoff-gate.test.ts` — 32 unit tests
+
+**Files modified:**
+- `packages/core/src/workflow/gates/index.ts` — Added exports
+- `packages/core/src/workflow/types.ts` — Added `session_handoff` to `GateType`
+- `packages/core/src/workflow/manager.ts` — Added gate handler
+
+**Validation checks:**
+1. `task_format` — Validates task file structure
+2. `uncommitted_work` — Detects uncommitted changes in scope
+3. `handoff_notes` — Verifies context section exists
+4. `role_match` — Validates from/to roles match task type
+5. `blocking_feedback` — Checks for unresolved blocking items
+
+**Key exports:**
+- `runSessionHandoffGate()` — Main gate function
+- `runHandoffValidation()` — Validation runner
+- `createSessionHandoffGate()` — Gate factory
+- `parseHandoffContext()` — Context parser
+- Types: `HandoffAgentRole`, `HandoffContext`, `SessionHandoffGateResult`, etc.

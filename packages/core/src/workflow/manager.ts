@@ -490,6 +490,12 @@ export class WorkflowManager {
         this.markGateSatisfied(stage, "system");
         return;
       }
+      case "session_handoff": {
+        // Session handoff gates are validated externally via runSessionHandoffGate
+        // and satisfied when the receiving agent acknowledges the handoff
+        this.markGateSatisfied(stage, "system");
+        return;
+      }
       default: {
         const gateType: never = stage.gate.type;
         throw new Error(`Unsupported gate type: ${gateType}`);

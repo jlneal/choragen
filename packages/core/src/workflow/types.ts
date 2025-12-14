@@ -66,7 +66,8 @@ export type GateType =
   | "human_approval"
   | "chain_complete"
   | "verification_pass"
-  | "post_commit";
+  | "post_commit"
+  | "session_handoff";
 
 /** All valid gate type values */
 export const GATE_TYPES: readonly GateType[] = [
@@ -75,6 +76,7 @@ export const GATE_TYPES: readonly GateType[] = [
   "chain_complete",
   "verification_pass",
   "post_commit",
+  "session_handoff",
 ] as const;
 
 /**
