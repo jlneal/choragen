@@ -41,7 +41,7 @@ export default [
       ],
       "@typescript-eslint/no-explicit-any": "off",
       "no-unused-vars": "off", // Use TypeScript version instead
-      "@choragen/no-core-in-client-component": "error",
+      "@choragen/no-server-import-in-client": "error",
       "@choragen/require-design-contract": "error",
     },
   },

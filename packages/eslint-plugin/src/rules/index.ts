@@ -38,6 +38,7 @@ import requireTryCatchInAsync from "./require-try-catch-in-async.js";
 import requireErrorBoundary from "./require-error-boundary.js";
 import requireReadonlyProperties from "./require-readonly-properties.js";
 import noCoreInClientComponent from "./no-core-in-client-component.js";
+import noServerImportInClient from "./no-server-import-in-client.js";
 import noCircularImports from "./no-circular-imports.js";
 import noNodeImportsInContracts from "./no-node-imports-in-contracts.js";
 import requireSubscriptionLink from "./require-subscription-link.js";
@@ -73,7 +74,8 @@ export const rules = {
   "require-try-catch-in-async": requireTryCatchInAsync,
   "require-error-boundary": requireErrorBoundary,
   "require-readonly-properties": requireReadonlyProperties,
-  "no-core-in-client-component": noCoreInClientComponent,
+  "no-core-in-client-component": noCoreInClientComponent, // Deprecated alias
+  "no-server-import-in-client": noServerImportInClient,
   "no-circular-imports": noCircularImports,
   "no-node-imports-in-contracts": noNodeImportsInContracts,
   "require-subscription-link": requireSubscriptionLink,
