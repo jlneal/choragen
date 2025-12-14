@@ -54,3 +54,16 @@ stages:
     gate:
       type: human_approval
       prompt: "Hotfix ready. Approve and merge?"
+
+  - name: reflection
+    type: reflection
+    initPrompt: |
+      You are performing a post-fix reflection for {{requestId}}.
+
+      Capture improvement suggestions by answering:
+      - Root cause analysis of the defect
+      - Escape analysis: why was this not caught earlier?
+      - Preventive measures and guardrails
+      - Categorize each idea using: lint, workflow, environment, documentation, testing, commit-hook, workflow-hook
+    gate:
+      type: auto

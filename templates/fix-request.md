@@ -73,6 +73,23 @@ No commits yet.
 
 ---
 
+## Reflection
+
+**Why did this occur?**
+{{REFLECTION_WHY}}
+
+**What allowed it to reach this stage?**
+{{REFLECTION_ESCAPE}}
+
+**How could it be prevented?**
+{{REFLECTION_PREVENTION}}
+
+**Suggested improvements**:
+- Category: {{SUGGESTION_CATEGORY}}
+- Description: {{SUGGESTION_DESCRIPTION}}
+
+---
+
 ## Completion Notes
 
 [Added when moved to done/]

@@ -12,7 +12,8 @@ export type StageType =
   | "review"
   | "implementation"
   | "verification"
-  | "ideation";
+  | "ideation"
+  | "reflection";
 
 /** All valid stage type values */
 export const STAGE_TYPES: readonly StageType[] = [
@@ -22,6 +23,7 @@ export const STAGE_TYPES: readonly StageType[] = [
   "implementation",
   "verification",
   "ideation",
+  "reflection",
 ] as const;
 
 /** Overall workflow status */

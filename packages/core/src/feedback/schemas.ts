@@ -13,7 +13,11 @@ import {
   FEEDBACK_PRIORITIES,
   FEEDBACK_STATUSES,
   FEEDBACK_TYPES,
+  FEEDBACK_CATEGORIES,
+  FEEDBACK_SOURCES,
+  type FeedbackCategory,
   type FeedbackPriority,
+  type FeedbackSource,
   type FeedbackStatus,
   type FeedbackType,
 } from "./types.js";
@@ -69,6 +73,12 @@ const feedbackStatusValues: [FeedbackStatus, ...FeedbackStatus[]] = [
 const feedbackPriorityValues: [FeedbackPriority, ...FeedbackPriority[]] = [
   ...FEEDBACK_PRIORITIES,
 ];
+const feedbackCategoryValues = [
+  ...FEEDBACK_CATEGORIES,
+] as [FeedbackCategory, ...FeedbackCategory[]];
+const feedbackSourceValues = [
+  ...FEEDBACK_SOURCES,
+] as [FeedbackSource, ...FeedbackSource[]];
 
 export const feedbackTypeSchema = z.enum(feedbackTypeValues, {
   errorMap: enumErrorMap("Feedback type", FEEDBACK_TYPES),
@@ -80,6 +90,14 @@ export const feedbackStatusSchema = z.enum(feedbackStatusValues, {
 
 export const feedbackPrioritySchema = z.enum(feedbackPriorityValues, {
   errorMap: enumErrorMap("Feedback priority", FEEDBACK_PRIORITIES),
+});
+
+export const feedbackCategorySchema = z.enum(feedbackCategoryValues, {
+  errorMap: enumErrorMap("Feedback category", FEEDBACK_CATEGORIES),
+});
+
+export const feedbackSourceSchema = z.enum(feedbackSourceValues, {
+  errorMap: enumErrorMap("Feedback source", FEEDBACK_SOURCES),
 });
 
 export const feedbackCodeSnippetSchema = z
@@ -121,6 +139,9 @@ export const feedbackItemSchema = z.object({
   taskId: nonEmptyString("Task ID").optional(),
   chainId: nonEmptyString("Chain ID").optional(),
   type: feedbackTypeSchema,
+  source: feedbackSourceSchema.optional(),
+  category: feedbackCategorySchema.optional(),
+  promotedTo: nonEmptyString("Promoted change request ID").optional(),
   createdByRole: nonEmptyString("Creator role"),
   content: nonEmptyString("Feedback content"),
   context: feedbackContextSchema.optional(),

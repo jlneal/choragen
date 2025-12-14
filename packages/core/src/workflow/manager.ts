@@ -38,6 +38,7 @@ import {
   saveWorkflowIndex,
   type WorkflowIndex,
 } from "./persistence.js";
+import { runStageHandlers } from "./stage-handlers.js";
 export type { WorkflowTemplate, WorkflowTemplateStage } from "./templates.js";
 
 const exec = promisify(childExec);
@@ -139,6 +140,7 @@ export class WorkflowManager {
     };
 
     this.addGatePromptIfNeeded(workflow, workflow.currentStage);
+    await this.runStageHandlerForStage(workflow, workflow.currentStage);
     await this.persistWorkflow(workflow, updatedIndex);
     return workflow;
   }
@@ -210,6 +212,7 @@ export class WorkflowManager {
       if (nextStage.gate.type === "auto" && !nextStage.gate.satisfied) {
         this.markGateSatisfied(nextStage, "system");
       }
+      await this.runStageHandlerForStage(workflow, workflow.currentStage);
       await this.runHookAndRecord(
         "onEnter",
         hookRunner,
@@ -392,6 +395,22 @@ export class WorkflowManager {
       this.feedbackManager = new FeedbackManager(this.projectRoot);
     }
     return this.feedbackManager;
+  }
+
+  private async runStageHandlerForStage(
+    workflow: Workflow,
+    stageIndex: number
+  ): Promise<void> {
+    const stage = workflow.stages[stageIndex];
+    if (!stage) return;
+
+    await runStageHandlers({
+      projectRoot: this.projectRoot,
+      workflow,
+      stage,
+      stageIndex,
+      feedbackManager: this.getFeedbackManager(),
+    });
   }
 
   private async ensureNoBlockingFeedback(workflow: Workflow): Promise<void> {

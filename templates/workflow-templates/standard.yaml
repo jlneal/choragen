@@ -136,3 +136,17 @@ stages:
         command: "choragen request:close {{requestId}}"
       - type: command
         command: "choragen chain:archive {{chainIds}}"
+
+  - name: reflection
+    type: reflection
+    roleId: impl
+    initPrompt: |
+      You are performing a post-fix reflection for {{requestId}}.
+
+      Capture improvement suggestions by answering:
+      - Root cause analysis of the defect
+      - Escape analysis: why was this not caught earlier?
+      - Preventive measures and guardrails
+      - Categorize each idea using: lint, workflow, environment, documentation, testing, commit-hook, workflow-hook
+    gate:
+      type: auto

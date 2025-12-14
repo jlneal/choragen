@@ -74,6 +74,7 @@ import { requestChainChangesCommand } from "./commands/chain/request-changes.js"
 import { approveRequestCommand } from "./commands/request/approve.js";
 import { requestChangesCommand as requestChangesRequestCommand } from "./commands/request/request-changes.js";
 import { spawnAgents } from "./commands/chain/spawn-agents.js";
+import { promoteFeedbackCommand, createFeedbackPromoteContext } from "./commands/feedback/index.js";
 import { syncTools } from "./commands/tools/index.js";
 import { runMenuLoop } from "./menu/index.js";
 import * as readline from "node:readline";
@@ -1661,6 +1662,45 @@ const commands: Record<string, CommandDef> = {
         console.error(`❌ Failed to close CR: ${result.error}`);
         process.exit(1);
       }
+    },
+  },
+
+  "feedback:promote": {
+    description: "Promote a feedback item into a Change Request",
+    usage: "feedback:promote <feedback-id> --workflow <workflow-id>",
+    handler: async (args) => {
+      const positionalArgs: string[] = [];
+      let workflowId: string | undefined;
+
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === "--workflow" && args[i + 1]) {
+          workflowId = args[++i];
+        } else if (arg.startsWith("--workflow=")) {
+          workflowId = arg.slice("--workflow=".length);
+        } else {
+          positionalArgs.push(arg);
+        }
+      }
+
+      const [feedbackId] = positionalArgs;
+      if (!feedbackId || !workflowId) {
+        console.error("Usage: choragen feedback:promote <feedback-id> --workflow <workflow-id>");
+        process.exit(1);
+      }
+
+      const result = await promoteFeedbackCommand(
+        createFeedbackPromoteContext(projectRoot),
+        { feedbackId, workflowId }
+      );
+
+      if (!result.success || !result.crId || !result.crPath) {
+        console.error(`Failed to promote feedback: ${result.error || "unknown error"}`);
+        process.exit(1);
+      }
+
+      console.log(`Created ${result.crId} from feedback ${feedbackId}`);
+      console.log(`Path: ${result.crPath}`);
     },
   },
 

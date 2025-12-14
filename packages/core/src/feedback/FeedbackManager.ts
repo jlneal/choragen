@@ -18,8 +18,10 @@ import { ensureWorkflowDirs, getWorkflowsDir } from "../workflow/persistence.js"
 import {
   type FeedbackContext,
   type FeedbackItem,
+  type FeedbackCategory,
   type FeedbackPriority,
   type FeedbackResponse,
+  type FeedbackSource,
   type FeedbackStatus,
   type FeedbackType,
   FEEDBACK_TYPE_BEHAVIOR,
@@ -72,6 +74,9 @@ export interface CreateFeedbackInput {
   content: string;
   context?: FeedbackContext;
   priority?: FeedbackPriority;
+  source?: FeedbackSource;
+  category?: FeedbackCategory;
+  promotedTo?: string;
 }
 
 export interface FeedbackResponseInput
@@ -84,6 +89,8 @@ export interface ListFeedbackFilters {
   status?: FeedbackStatus;
   type?: FeedbackType;
   priority?: FeedbackPriority;
+  source?: FeedbackSource;
+  category?: FeedbackCategory;
 }
 
 export class FeedbackManager {
@@ -108,6 +115,9 @@ export class FeedbackManager {
       createdByRole: input.createdByRole,
       content: input.content,
       context: input.context,
+      source: input.source,
+      category: input.category,
+      promotedTo: input.promotedTo,
       status: "pending",
       priority,
       createdAt: now,
@@ -164,6 +174,8 @@ export class FeedbackManager {
         if (filters.status && item.status !== filters.status) continue;
         if (filters.type && item.type !== filters.type) continue;
         if (filters.priority && item.priority !== filters.priority) continue;
+        if (filters.source && item.source !== filters.source) continue;
+        if (filters.category && item.category !== filters.category) continue;
         results.push(item);
       }
     }

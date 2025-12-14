@@ -33,6 +33,33 @@ export const FEEDBACK_PRIORITIES = [
 ] as const;
 export type FeedbackPriority = (typeof FEEDBACK_PRIORITIES)[number];
 
+export type FeedbackCategory =
+  | "lint"
+  | "workflow"
+  | "environment"
+  | "documentation"
+  | "testing"
+  | "commit-hook"
+  | "workflow-hook";
+
+export const FEEDBACK_CATEGORIES: readonly FeedbackCategory[] = [
+  "lint",
+  "workflow",
+  "environment",
+  "documentation",
+  "testing",
+  "commit-hook",
+  "workflow-hook",
+] as const;
+
+export type FeedbackSource = "agent" | "reflection" | "audit";
+
+export const FEEDBACK_SOURCES: readonly FeedbackSource[] = [
+  "agent",
+  "reflection",
+  "audit",
+] as const;
+
 export interface FeedbackTypeBehavior {
   /** Default priority to assign when none is provided */
   defaultPriority: FeedbackPriority;
@@ -144,6 +171,12 @@ export interface FeedbackItem {
   taskId?: string;
   /** Chain ID if feedback is chain-specific */
   chainId?: string;
+  /** Source of the feedback item */
+  source?: FeedbackSource;
+  /** Category to group related feedback topics */
+  category?: FeedbackCategory;
+  /** Linked change request the feedback was promoted to */
+  promotedTo?: string;
   /** Type of feedback */
   type: FeedbackType;
   /** Role of the agent that created this feedback */

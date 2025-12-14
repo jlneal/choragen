@@ -44,7 +44,7 @@ describe("workflow templates", () => {
     expect(template.displayName).toBe("Standard Workflow");
     expect(template.builtin).toBe(true);
     expect(template.version).toBe(1);
-    expect(template.stages).toHaveLength(5);
+    expect(template.stages).toHaveLength(6);
     expect(template.stages[0].gate.type).toBe("human_approval");
     expect(template.stages[3].gate.commands).toEqual(["pnpm build", "pnpm test", "pnpm lint"]);
     expect(template.stages[0].gate.satisfied).toBe(false);

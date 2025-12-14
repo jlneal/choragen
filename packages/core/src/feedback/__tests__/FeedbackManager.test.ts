@@ -44,6 +44,28 @@ describe("FeedbackManager", () => {
     expect(stored).toContain(feedback.id);
   });
 
+  it("captures feedback source, category, and promotion metadata", async () => {
+    const feedback = await manager.create({
+      workflowId: "WF-011",
+      stageIndex: 1,
+      type: "idea",
+      createdByRole: "impl",
+      content: "Reflection suggested a workflow tweak.",
+      source: "reflection",
+      category: "workflow",
+      promotedTo: "CR-2025-001",
+    });
+
+    expect(feedback.source).toBe("reflection");
+    expect(feedback.category).toBe("workflow");
+    expect(feedback.promotedTo).toBe("CR-2025-001");
+
+    const reloaded = await manager.get(feedback.id, "WF-011");
+    expect(reloaded?.source).toBe("reflection");
+    expect(reloaded?.category).toBe("workflow");
+    expect(reloaded?.promotedTo).toBe("CR-2025-001");
+  });
+
   it("applies audit defaults and metadata for system-generated findings", async () => {
     const feedback = await manager.create({
       workflowId: "WF-010",
@@ -81,6 +103,8 @@ describe("FeedbackManager", () => {
       type: "question",
       createdByRole: "impl",
       content: "What is the target branch?",
+      source: "agent",
+      category: "workflow",
     });
 
     const acknowledged = await manager.create({
@@ -89,6 +113,8 @@ describe("FeedbackManager", () => {
       type: "clarification",
       createdByRole: "impl",
       content: "Which API version should we call?",
+      source: "audit",
+      category: "lint",
     });
     await manager.acknowledge(acknowledged.id, "WF-003");
 
@@ -98,6 +124,8 @@ describe("FeedbackManager", () => {
       type: "idea",
       createdByRole: "impl",
       content: "We could add telemetry here.",
+      source: "reflection",
+      category: "documentation",
     });
     await manager.dismiss(dismissed.id, "WF-004");
 
@@ -112,6 +140,16 @@ describe("FeedbackManager", () => {
     const workflowFiltered = await manager.list({ workflowId: "WF-004" });
     expect(workflowFiltered).toHaveLength(1);
     expect(workflowFiltered[0].id).toBe(dismissed.id);
+
+    const reflectionFeedback = await manager.list({ source: "reflection" });
+    expect(reflectionFeedback).toHaveLength(1);
+    expect(reflectionFeedback[0].id).toBe(dismissed.id);
+
+    const workflowCategoryFeedback = await manager.list({
+      category: "workflow",
+    });
+    expect(workflowCategoryFeedback).toHaveLength(1);
+    expect(workflowCategoryFeedback[0].id).toBe(pending.id);
   });
 
   it("acknowledges pending feedback and prevents double acknowledgement", async () => {

@@ -86,6 +86,13 @@ export const STAGE_TOOL_MATRIX: Record<StageType, readonly string[]> = {
     "list_files",
     "search_files",
   ],
+  reflection: [
+    "feedback:create",
+    "read_file",
+    "write_file",
+    "list_files",
+    "search_files",
+  ],
 } as const;
 
 /**

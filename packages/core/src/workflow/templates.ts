@@ -53,6 +53,14 @@ export const BUILTIN_TEMPLATE_NAMES = ["standard", "hotfix", "documentation", "i
 const WORKFLOW_TEMPLATE_DIR = ".choragen/workflow-templates";
 const BUILTIN_TEMPLATE_VERSION = 1;
 const BUILTIN_TEMPLATE_TIMESTAMP = new Date("2024-01-01T00:00:00Z");
+const REFLECTION_INIT_PROMPT = `You are performing a post-fix reflection for {{requestId}}.
+
+Your tasks:
+- Analyze the root cause of the fix and the contributing factors.
+- Identify the escape points: why was this not caught earlier?
+- Propose preventive measures or guardrails.
+- Categorize each suggestion using: lint, workflow, environment, documentation, testing, commit-hook, workflow-hook.
+- Capture actionable improvement ideas as feedback items.`;
 const TRANSITION_ACTION_TYPES: TransitionAction["type"][] = [
   "command",
   "task_transition",
@@ -108,6 +116,12 @@ const BUILTIN_TEMPLATES: Record<string, WorkflowTemplate> = {
         type: "review",
         gate: { type: "human_approval", prompt: "All checks pass. Approve and merge?" },
       },
+      {
+        name: "reflection",
+        type: "reflection",
+        gate: { type: "auto" },
+        initPrompt: REFLECTION_INIT_PROMPT,
+      },
     ],
     createdAt: BUILTIN_TEMPLATE_TIMESTAMP,
     updatedAt: BUILTIN_TEMPLATE_TIMESTAMP,
@@ -138,6 +152,12 @@ const BUILTIN_TEMPLATES: Record<string, WorkflowTemplate> = {
         name: "completion",
         type: "review",
         gate: { type: "human_approval", prompt: "Hotfix ready. Approve and merge?" },
+      },
+      {
+        name: "reflection",
+        type: "reflection",
+        gate: { type: "auto" },
+        initPrompt: REFLECTION_INIT_PROMPT,
       },
     ],
     createdAt: BUILTIN_TEMPLATE_TIMESTAMP,
