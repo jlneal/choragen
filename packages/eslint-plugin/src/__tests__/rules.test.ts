@@ -4,11 +4,14 @@
  * @user-intent "Verify ESLint rules correctly detect violations and pass valid code"
  */
 
-import { describe, it, beforeEach } from "vitest";
+import { describe, it, beforeEach, afterEach } from "vitest";
 import { RuleTester } from "eslint";
 import requireDesignContract from "../rules/require-design-contract.js";
 import noMagicNumbersHttp from "../rules/no-magic-numbers-http.js";
 import requireAdrReference from "../rules/require-adr-reference.js";
+import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 
 // Configure RuleTester for ES modules
 const ruleTester = new RuleTester({
@@ -16,6 +19,35 @@ const ruleTester = new RuleTester({
     ecmaVersion: 2022,
     sourceType: "module",
   },
+});
+
+const tempDirs: string[] = [];
+
+function createTempProject(options: {
+  withDesignDoc: boolean;
+  designDocPath: string;
+}) {
+  const root = mkdtempSync(join(tmpdir(), "choragen-contract-"));
+  tempDirs.push(root);
+
+  writeFileSync(join(root, "package.json"), "{}");
+
+  if (options.withDesignDoc) {
+    const fullDesignDocPath = join(root, options.designDocPath);
+    mkdirSync(dirname(fullDesignDocPath), { recursive: true });
+    writeFileSync(fullDesignDocPath, "# design doc");
+  }
+
+  return root;
+}
+
+afterEach(() => {
+  while (tempDirs.length > 0) {
+    const dir = tempDirs.pop();
+    if (dir) {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
 });
 
 describe("require-design-contract", () => {
@@ -104,6 +136,97 @@ describe("require-design-contract", () => {
           code: `const contract = DesignContract({ designDoc: "docs/design/feature.md" });`,
           filename: "/project/app/api/users/route.ts",
           errors: [{ messageId: "missingName" }],
+        },
+      ],
+    });
+  });
+
+  it("should validate existence of referenced design docs", () => {
+    const designDocPath = "docs/design/features/users.md";
+    const projectWithDoc = createTempProject({
+      withDesignDoc: true,
+      designDocPath,
+    });
+    const projectMissingDoc = createTempProject({
+      withDesignDoc: false,
+      designDocPath,
+    });
+    const projectSkipValidation = createTempProject({
+      withDesignDoc: false,
+      designDocPath,
+    });
+
+    const code = `const contract = DesignContract({
+  designDoc: "${designDocPath}",
+  name: "GET",
+  preconditions: [],
+  postconditions: []
+});
+export const GET = contract(async () => {});`;
+
+    ruleTester.run("require-design-contract", requireDesignContract, {
+      valid: [
+        {
+          code,
+          filename: join(projectWithDoc, "app/api/users/route.ts"),
+        },
+        {
+          code,
+          filename: join(projectSkipValidation, "app/api/users/route.ts"),
+          options: [{ validateDesignDocExists: false }],
+        },
+      ],
+      invalid: [
+        {
+          code,
+          filename: join(projectMissingDoc, "app/api/users/route.ts"),
+          errors: [
+            {
+              messageId: "designDocNotFound",
+              data: { path: designDocPath },
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("should validate template literal designDoc paths", () => {
+    const designDocPath = "docs/design/features/template.md";
+    const projectWithDoc = createTempProject({
+      withDesignDoc: true,
+      designDocPath,
+    });
+    const projectMissingDoc = createTempProject({
+      withDesignDoc: false,
+      designDocPath,
+    });
+
+    const code = `const contract = DesignContract({
+  designDoc: \`${designDocPath}\`,
+  name: "POST",
+  preconditions: [],
+  postconditions: []
+});
+export const POST = contract(async () => {});`;
+
+    ruleTester.run("require-design-contract", requireDesignContract, {
+      valid: [
+        {
+          code,
+          filename: join(projectWithDoc, "app/api/template/route.ts"),
+        },
+      ],
+      invalid: [
+        {
+          code,
+          filename: join(projectMissingDoc, "app/api/template/route.ts"),
+          errors: [
+            {
+              messageId: "designDocNotFound",
+              data: { path: designDocPath },
+            },
+          ],
         },
       ],
     });

@@ -10,6 +10,12 @@
 export interface DesignContractOptions<TRequest = Request, TResponse = Response> {
   /** Design document this handler implements */
   designDoc: string;
+  /** Optional operation name for governance traceability */
+  name?: string;
+  /** Optional preconditions metadata (enforced by linters) */
+  preconditions?: unknown;
+  /** Optional postconditions metadata (enforced by linters) */
+  postconditions?: unknown;
   /** The handler function to wrap */
   handler: (request: TRequest) => TResponse | Promise<TResponse>;
 }

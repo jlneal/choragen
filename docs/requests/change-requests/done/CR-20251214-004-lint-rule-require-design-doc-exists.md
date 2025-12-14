@@ -2,10 +2,11 @@
 
 **ID**: CR-20251214-004  
 **Domain**: eslint-plugin  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-14  
 **Priority**: medium  
 **Owner**: agent  
+**Chain**: CHAIN-074-design-doc-exists
 
 ---
 
@@ -56,13 +57,13 @@ Referenced in DesignContract at src/app/api/tasks/route.ts:5
 
 ## Acceptance Criteria
 
-- [ ] Rule extracts `designDoc` path from `DesignContract` calls
-- [ ] Rule resolves paths relative to project root
-- [ ] Rule verifies file exists on disk
-- [ ] Rule provides clear error with file location
-- [ ] Rule handles both string literals and template literals
-- [ ] Rule has comprehensive test coverage
-- [ ] Rule is enabled in `@choragen/web` eslint config
+- [x] Rule extracts `designDoc` path from `DesignContract` calls
+- [x] Rule resolves paths relative to project root
+- [x] Rule verifies file exists on disk
+- [x] Rule provides clear error with file location
+- [x] Rule handles both string literals and template literals
+- [x] Rule has comprehensive test coverage
+- [x] Rule is enabled in `@choragen/web` eslint config
 
 ---
 
@@ -86,4 +87,14 @@ Recommend option 2 (cached check) for balance of correctness and performance.
 
 ## Commits
 
-[Added when work is committed]
+[Pending commit by user]
+
+## Completion Notes
+
+Implemented via CHAIN-074-design-doc-exists:
+
+1. **Task 001**: Added filesystem-backed test fixtures for `designDocNotFound` scenarios
+2. **Task 002**: Added template literal support via `getDesignDocPath()` function
+3. **Task 003**: Enabled rule in `@choragen/web`, updated `DesignContractOptions` types, wrapped API routes
+
+The functionality was already partially implemented in `require-design-contract` rule. This CR completed the test coverage, template literal support, and web package enablement.

@@ -217,12 +217,9 @@ function validateContractConfig(
   if (!designDocProp) {
     context.report({ node: callNode, messageId: "missingDesignDoc" });
   } else if (validateDesignDocExists) {
-    if (
-      designDocProp.value &&
-      designDocProp.value.type === "Literal" &&
-      typeof designDocProp.value.value === "string"
-    ) {
-      const designDocPath = designDocProp.value.value;
+    const designDocPath = getDesignDocPath(designDocProp.value);
+
+    if (designDocPath) {
       const projectRoot = findProjectRoot(dirname(filename));
       const fullPath = join(projectRoot, designDocPath);
 
@@ -248,6 +245,36 @@ function validateContractConfig(
       context.report({ node: callNode, messageId: "missingValidation" });
     }
   }
+}
+
+function getDesignDocPath(node: any): string | null {
+  if (node?.type === "Literal" && typeof node.value === "string") {
+    return node.value;
+  }
+
+  if (node?.type === "TemplateLiteral") {
+    // If there are no expressions, combine all quasis (handles backtick strings)
+    if (!node.expressions || node.expressions.length === 0) {
+      return node.quasis.map((q: any) => q.value.cooked ?? "").join("");
+    }
+
+    // If all expressions are string literals, we can statically resolve the path
+    const parts: string[] = [];
+    for (let i = 0; i < node.quasis.length; i += 1) {
+      parts.push(node.quasis[i].value.cooked ?? "");
+      if (node.expressions[i]) {
+        const expr = node.expressions[i];
+        if (expr.type === "Literal" && typeof expr.value === "string") {
+          parts.push(expr.value);
+        } else {
+          return null;
+        }
+      }
+    }
+    return parts.join("");
+  }
+
+  return null;
 }
 
 export default rule;
