@@ -1,0 +1,57 @@
+roles:
+  - id: researcher
+    name: Researcher
+    description: Read-only access for exploration and analysis
+    toolIds:
+      - read_file
+      - list_files
+      - search_files
+      - chain:status
+      - task:status
+      - task:list
+    createdAt: 2025-12-14T17:59:06.332Z
+    updatedAt: 2025-12-14T17:59:06.332Z
+  - id: implementer
+    name: Implementer
+    description: Full implementation capabilities
+    toolIds:
+      - read_file
+      - write_file
+      - list_files
+      - search_files
+      - chain:status
+      - task:start
+      - task:complete
+      - task:status
+      - task:list
+      - run_command
+    createdAt: 2025-12-14T17:59:06.332Z
+    updatedAt: 2025-12-14T17:59:06.332Z
+  - id: reviewer
+    name: Reviewer
+    description: Review and approval capabilities
+    toolIds:
+      - read_file
+      - list_files
+      - search_files
+      - chain:status
+      - task:approve
+      - task:status
+      - task:list
+    createdAt: 2025-12-14T17:59:06.332Z
+    updatedAt: 2025-12-14T17:59:06.332Z
+  - id: controller
+    name: Controller
+    description: Orchestration and coordination
+    toolIds:
+      - read_file
+      - list_files
+      - search_files
+      - chain:status
+      - chain:new
+      - task:add
+      - task:status
+      - task:list
+      - spawn_impl_session
+    createdAt: 2025-12-14T17:59:06.332Z
+    updatedAt: 2025-12-14T17:59:06.332Z

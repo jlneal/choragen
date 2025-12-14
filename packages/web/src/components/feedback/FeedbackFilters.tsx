@@ -2,14 +2,36 @@
 // Design doc: docs/design/core/features/agent-feedback.md
 "use client";
 
-import {
-  FEEDBACK_PRIORITIES,
-  FEEDBACK_STATUSES,
-  FEEDBACK_TYPES,
-  type FeedbackPriority,
-  type FeedbackStatus,
-  type FeedbackType,
+import type {
+  FeedbackPriority,
+  FeedbackStatus,
+  FeedbackType,
 } from "@choragen/core";
+
+// Client-safe copies of constants from @choragen/core
+// (Cannot import runtime values from @choragen/core in client components)
+const FEEDBACK_STATUSES: readonly FeedbackStatus[] = [
+  "pending",
+  "acknowledged",
+  "resolved",
+  "dismissed",
+] as const;
+
+const FEEDBACK_TYPES: readonly FeedbackType[] = [
+  "clarification",
+  "question",
+  "idea",
+  "blocker",
+  "review",
+  "audit",
+] as const;
+
+const FEEDBACK_PRIORITIES: readonly FeedbackPriority[] = [
+  "low",
+  "medium",
+  "high",
+  "critical",
+] as const;
 import { Filter } from "lucide-react";
 
 import { Button } from "@/components/ui/button";

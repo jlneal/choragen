@@ -57,6 +57,44 @@ pnpm --filter @choragen/web build
 - UI components go in `src/components/ui/`
 - Follow shadcn/ui patterns for component structure
 
+## Package Import Rules
+
+**CRITICAL**: `@choragen/core` contains Node.js-specific APIs (`node:fs`, `node:path`, `node:crypto`) and **cannot be bundled for client-side rendering**.
+
+### Allowed Imports by Component Type
+
+| Component Type | `@choragen/core` | `@choragen/contracts` |
+|----------------|------------------|----------------------|
+| Server Components | ✅ Full imports | ✅ Full imports |
+| Client Components (`"use client"`) | ⚠️ `import type` only | ✅ Full imports |
+| tRPC Routers (`src/server/`) | ✅ Full imports | ✅ Full imports |
+
+### Client Component Examples
+
+```typescript
+// ✅ CORRECT: Type-only import (stripped at compile time)
+"use client";
+import type { WorkflowMessage, FeedbackItem } from "@choragen/core";
+
+// ✅ CORRECT: Use @choragen/contracts for runtime values
+"use client";
+import { HttpStatus } from "@choragen/contracts";
+
+// ❌ WRONG: Runtime import in client component
+"use client";
+import { FeedbackManager } from "@choragen/core"; // Will cause webpack error!
+```
+
+### Why This Matters
+
+Next.js bundles client components for browser execution. If a client component imports from `@choragen/core`, webpack tries to bundle Node.js APIs, causing:
+
+```
+TypeError: Cannot read properties of undefined (reading 'call')
+```
+
+The `next.config.mjs` uses `serverComponentsExternalPackages` to externalize `@choragen/core`, but this only works for server components. Client components must use `import type` only.
+
 ## API Design
 
 tRPC routers should mirror @choragen/core exports:

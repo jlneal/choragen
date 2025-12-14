@@ -4,6 +4,7 @@ import js from "@eslint/js";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsparser from "@typescript-eslint/parser";
 import globals from "globals";
+import choragen from "@choragen/eslint-plugin";
 
 export default [
   {
@@ -31,6 +32,7 @@ export default [
     },
     plugins: {
       "@typescript-eslint": tseslint,
+      "@choragen": choragen,
     },
     rules: {
       "@typescript-eslint/no-unused-vars": [
@@ -39,6 +41,7 @@ export default [
       ],
       "@typescript-eslint/no-explicit-any": "off",
       "no-unused-vars": "off", // Use TypeScript version instead
+      "@choragen/no-core-in-client-component": "error",
     },
   },
 ];
