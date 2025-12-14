@@ -32,6 +32,10 @@ Every piece of work is reviewed before being marked complete:
 2. **Chain Review** — Each chain reviewed for coherence
 3. **Request Review** — Full request reviewed for traceability
 
+### Chain Completion Gate
+
+Chain completion now includes an automatic validation gate that runs before a chain is considered done. The gate executes the chain completion validation runner (`runChainValidation`) via the chain hook system and fails fast with actionable feedback if required checks (task state, completion notes, acceptance criteria, design doc updates, test coverage) are not satisfied.
+
 ### Parallel Chains
 
 Chains are parallelizable sequences of tasks. File scopes prevent collisions:
@@ -154,7 +158,7 @@ Chains are parallelizable sequences of tasks. File scopes prevent collisions:
 | 4.13 | ⚙️ Hook | hook | All tasks done: Spawn Review agent for chain review |
 | 4.14 | 🤖 Review | agent | Reviews chain as a whole |
 | 4.15 | 🔧 Tool | tool | `chain:approve` or `chain:request_changes` |
-| 4.16 | 🚪 Gate | gate | `chain_complete`: All impl chains approved |
+| 4.16 | 🚪 Gate | gate | `chain_complete`: All impl chains approved (validation gate runs via `onComplete` hooks) |
 
 ---
 

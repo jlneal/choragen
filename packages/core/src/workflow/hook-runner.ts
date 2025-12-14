@@ -17,6 +17,7 @@ import type {
   ChainHookName,
 } from "./types.js";
 import type { CommandResult, CommandRunner } from "./manager.js";
+import { runChainCompletionGate } from "../chain/completion-gate.js";
 
 const exec = promisify(childExec);
 
@@ -50,6 +51,10 @@ export interface HookActionResultDetails {
     context?: Record<string, unknown>;
     sessionId?: string;
     result?: unknown;
+  };
+  validation?: {
+    chainId: string;
+    result: import("../chain/validation-types.js").ChainCompletionGateResult;
   };
 }
 
@@ -245,7 +250,11 @@ export class TransitionHookRunner {
     return runResult;
   }
 
-  private async runAction(action: TransitionAction, stage: WorkflowStage | undefined, context: TransitionHookContext): Promise<HookActionResult> {
+  private async runAction(
+    action: TransitionAction,
+    stage: WorkflowStage | undefined,
+    context: TransitionHookContext
+  ): Promise<HookActionResult> {
     const blocking = action.blocking !== false;
 
     try {
@@ -391,6 +400,41 @@ export class TransitionHookRunner {
 
         const result = await handler(action, context);
         return { action, blocking, success: true, details: { custom: result } };
+      }
+
+      if (action.type === "validation") {
+        const chainId = action.chainId ?? context.chainId;
+        if (!chainId) {
+          return { action, blocking, success: false, error: "Validation action requires chainId" };
+        }
+
+        const validationResult = await runChainCompletionGate({
+          projectRoot: this.projectRoot,
+          chainId,
+          chain: undefined,
+          taskConfig: action.taskConfig,
+          modifiedFiles: action.modifiedFiles,
+          designDocGlobs: action.designDocGlobs,
+          testFileGlobs: action.testFileGlobs,
+          defaultChecks: action.config?.defaultChecks,
+          chainOverrides: action.config?.chainOverrides,
+          requiredChecks: action.config?.requiredChecks,
+        });
+
+        const success = validationResult.valid;
+        const error = success
+          ? undefined
+          : validationResult.failedChecks && validationResult.failedChecks.length > 0
+            ? `Validation failed: ${validationResult.failedChecks.join(", ")}`
+            : "Validation failed";
+
+        return {
+          action,
+          blocking,
+          success,
+          error,
+          details: { validation: { chainId, result: validationResult } },
+        };
       }
 
       return { action, blocking, success: false, error: `Unsupported action type ${(action as TransitionAction).type}` };

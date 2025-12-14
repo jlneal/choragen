@@ -106,6 +106,7 @@ docs/tasks/
 - [ ] `task:rework` sends a task back to in-progress
 - [ ] `task:next` shows the next available task in a chain
 - [ ] Task files are organized in the correct directory structure
+- [ ] Chain completion hooks can run validation before marking chains done
 
 ---
 
@@ -113,3 +114,11 @@ docs/tasks/
 
 - `packages/core/src/tasks/`
 - `packages/cli/src/cli.ts`
+
+---
+
+## Chain Hooks and Validation
+
+- Chain lifecycle hooks (`ChainHooks.onComplete`) support a `validation` action type executed by `TransitionHookRunner`. The action invokes the chain completion gate (`runChainCompletionGate`), which delegates to the validation runner (`runChainValidation`) and returns a `ChainCompletionGateResult`.
+- Validation checks are configured via `ChainValidationConfig` / `ChainValidationCheck` and can be overridden per chain. Default checks cover task state, completion notes, acceptance criteria, design doc updates, and test coverage.
+- If required checks fail, the hook throws and blocks completion, surfacing actionable feedback from the validation results; passing checks allow chain completion to proceed.

@@ -2,7 +2,7 @@
 
 **ID**: CR-20251213-006  
 **Domain**: core  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-13  
 **Owner**: agent  
 
@@ -33,12 +33,12 @@ A chain completion gate provides a structured checkpoint before the control agen
 
 ## Acceptance Criteria
 
-- [ ] Chain completion triggers validation hooks
-- [ ] Gate verifies all tasks have completion notes (if required)
-- [ ] Gate can check acceptance criteria markers in task files
-- [ ] Gate validates design doc updates if chain scope includes them
-- [ ] Failed validations produce actionable feedback
-- [ ] Gate can be configured per-chain or globally
+- [x] Chain completion triggers validation hooks
+- [x] Gate verifies all tasks have completion notes (if required)
+- [x] Gate can check acceptance criteria markers in task files
+- [x] Gate validates design doc updates if chain scope includes them
+- [x] Failed validations produce actionable feedback
+- [x] Gate can be configured per-chain or globally
 
 ---
 
@@ -78,7 +78,14 @@ No commits yet.
 
 ## Task Chain
 
-[Created during implementation]
+**Chain**: CHAIN-076-chain-completion-gate
+
+| Task | Title | Status |
+|------|-------|--------|
+| 001 | Validation Types | done |
+| 002 | Validation Runner | done |
+| 003 | Hook Integration | done |
+| 004 | Design Doc Updates | done |
 
 ---
 
@@ -122,4 +129,19 @@ chainHooks:
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented chain completion gate with full validation support:
+
+**Core Implementation:**
+- `packages/core/src/chain/validation-types.ts` — Types for validation checks, results, and configuration
+- `packages/core/src/chain/validation-runner.ts` — Validation runner with 5 check types (task_state, completion_notes, acceptance_criteria, design_doc_updates, test_coverage)
+- `packages/core/src/chain/completion-gate.ts` — Gate orchestration via `runChainCompletionGate`
+- `packages/core/src/workflow/hook-runner.ts` — `ValidationAction` support in `TransitionHookRunner`
+- `packages/core/src/workflow/types.ts` — `ValidationAction` type definition
+
+**Tests:**
+- `packages/core/src/chain/__tests__/validation-runner.test.ts`
+- `packages/core/src/chain/__tests__/completion-gate.test.ts`
+
+**Design Docs Updated:**
+- `docs/design/core/features/standard-workflow.md`
+- `docs/design/core/features/task-chain-management.md`

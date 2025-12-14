@@ -87,7 +87,8 @@ export type TransitionAction =
   | CustomAction
   | SpawnAgentAction
   | PostMessageAction
-  | EmitEventAction;
+  | EmitEventAction
+  | ValidationAction;
 
 interface BaseTransitionAction {
   /** Whether failure blocks the transition (default: true) */
@@ -167,6 +168,30 @@ export interface EmitEventAction extends BaseTransitionAction {
 
   /** Arbitrary event payload */
   payload?: Record<string, unknown>;
+}
+
+/** Run chain completion validation */
+export interface ValidationAction extends BaseTransitionAction {
+  /** Action type */
+  type: "validation";
+
+  /** Chain to validate (defaults to context chainId) */
+  chainId?: string;
+
+  /** Validation configuration overrides */
+  config?: import("../chain/validation-types.js").ChainValidationConfig;
+
+  /** Optional list of modified files to use instead of git status */
+  modifiedFiles?: string[];
+
+  /** Optional task config overrides (e.g., custom tasksPath) */
+  taskConfig?: Partial<import("../tasks/types.js").TaskConfig>;
+
+  /** Globs that count as design docs for update checks */
+  designDocGlobs?: string[];
+
+  /** Globs that count as tests for coverage checks */
+  testFileGlobs?: string[];
 }
 
 /**
