@@ -2,7 +2,7 @@
 
 **ID**: CR-20251214-003  
 **Domain**: eslint-plugin  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-14  
 **Priority**: high  
 **Owner**: agent  
@@ -58,12 +58,12 @@ This package must remain client-safe. Move Node.js-specific code to @choragen/co
 
 ## Acceptance Criteria
 
-- [ ] Rule detects `node:*` protocol imports
-- [ ] Rule detects bare Node.js module imports (`fs`, `path`, etc.)
-- [ ] Rule only applies to files in `packages/contracts/`
-- [ ] Rule provides actionable error message suggesting `@choragen/core`
-- [ ] Rule has comprehensive test coverage
-- [ ] Rule is enabled in root eslint config for contracts package
+- [x] Rule detects `node:*` protocol imports
+- [x] Rule detects bare Node.js module imports (`fs`, `path`, etc.)
+- [x] Rule only applies to files in `packages/contracts/`
+- [x] Rule provides actionable error message suggesting `@choragen/core`
+- [x] Rule has comprehensive test coverage
+- [x] Rule is enabled in root eslint config for contracts package
 
 ---
 
@@ -82,4 +82,17 @@ This package must remain client-safe. Move Node.js-specific code to @choragen/co
 
 ## Commits
 
-[Added when work is committed]
+[Pending commit by user]
+
+---
+
+## Completion Notes
+
+**Completed**: 2025-12-14
+
+**Implementation**:
+- `packages/eslint-plugin/src/rules/no-node-imports-in-contracts.ts` — Rule implementation
+- `packages/eslint-plugin/src/rules/__tests__/no-node-imports-in-contracts.test.ts` — Test coverage
+- `packages/eslint-plugin/src/rules/index.ts` — Export added
+
+**Verification**: All tests pass, build succeeds
