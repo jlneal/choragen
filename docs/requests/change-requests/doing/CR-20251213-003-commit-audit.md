@@ -15,7 +15,8 @@ Introduce a **commit audit** mechanism that automatically creates an audit reque
 This CR introduces:
 1. **Audit Feedback Type** — A new feedback type for spot-check reviews (not QA, not bug fixes)
 2. **Post-Commit Gate** — A gate in the workflow that triggers after commit creation
-3. **Audit Agent Output** — Audit findings are surfaced as feedback items, not separate requests
+3. **Audit Chain Structure** — A chain of layered audit tasks (security, architecture, standards, etc.)
+4. **Feedback Compilation Task** — Final task that compiles individual task findings into actual feedback items
 
 ---
 
@@ -35,8 +36,9 @@ Commit audits provide a lightweight review layer that catches issues that slip t
 **In Scope**:
 - New `audit` feedback type in the Agent Feedback system
 - Post-commit gate concept in workflow stages
-- Audit agent spawned by post-commit gate
-- Audit findings output as feedback items (type: `audit`)
+- Audit chain with layered task types (security, architecture, standards, etc.)
+- Each audit task provides its own findings (internal)
+- Final feedback compilation task creates actual feedback items
 - Integration with standard workflow's commit stage
 
 **Out of Scope**:
@@ -91,12 +93,45 @@ The standard workflow has a commit stage (Stage 6). A post-commit gate would:
 2. Trigger automatic AR creation with commit metadata
 3. Not block workflow progression (async audit)
 
-### Audit Agent Flow
+### Audit Chain Structure
 
-Post-commit gate spawns an Audit Agent that:
-1. Reviews the commit against standards checklist
-2. Creates `audit` feedback items for any findings
-3. Optionally spawns FRs for significant issues
+The audit is not a single agent but a **chain of specialized audit tasks**, each focusing on a different layer:
+
+| Task | Type | Focus | Output |
+|------|------|-------|--------|
+| 1 | `security-audit` | Security vulnerabilities, secrets, permissions | Task-level findings |
+| 2 | `architecture-audit` | Design patterns, coupling, dependencies | Task-level findings |
+| 3 | `standards-audit` | Naming, structure, conventions | Task-level findings |
+| 4 | `traceability-audit` | CR/FR refs, scope compliance, commit format | Task-level findings |
+| 5 | `review` | Cross-cutting concerns, overall assessment | Task-level findings |
+| 6 | `feedback-compilation` | Compile all findings into feedback items | Actual `audit` feedback |
+
+### Task-Level Findings
+
+Each audit task (1-5) produces **internal findings** stored in the chain context, not actual feedback:
+
+```typescript
+interface AuditTaskFindings {
+  taskType: string;
+  findings: Array<{
+    severity: "critical" | "major" | "minor" | "info";
+    category: string;
+    description: string;
+    file?: string;
+    line?: number;
+    suggestion?: string;
+  }>;
+}
+```
+
+### Feedback Compilation Task
+
+The final task (6) reads all task-level findings and:
+1. Deduplicates overlapping findings
+2. Prioritizes by severity
+3. Groups related findings
+4. Creates actual `audit` feedback items
+5. Optionally spawns FRs for critical/major issues
 
 ### Audit Feedback Structure
 
@@ -119,16 +154,37 @@ await tools.feedback.create({
 });
 ```
 
-### Audit Checklist
+### Audit Checklists by Task Type
 
-The audit agent checks:
+**Security Audit:**
+- [ ] No secrets or credentials in code
+- [ ] No hardcoded API keys
+- [ ] Proper input validation
+- [ ] No obvious injection vulnerabilities
+
+**Architecture Audit:**
+- [ ] Follows established patterns
+- [ ] Appropriate coupling/cohesion
+- [ ] Dependencies are reasonable
+- [ ] No circular dependencies introduced
+
+**Standards Audit:**
+- [ ] Naming conventions followed
+- [ ] File structure conventions followed
+- [ ] Code style consistent
+- [ ] Documentation present where required
+
+**Traceability Audit:**
 - [ ] Commit message follows format
 - [ ] CR/FR reference present and valid
 - [ ] Changed files within declared scope
 - [ ] No unrelated changes bundled
-- [ ] Standards compliance (naming, structure)
 
-Each failed check produces an `audit` feedback item.
+**Review (Cross-cutting):**
+- [ ] Changes are coherent as a unit
+- [ ] No obvious bugs or logic errors
+- [ ] Test coverage appropriate
+- [ ] Overall quality assessment
 
 ---
 
