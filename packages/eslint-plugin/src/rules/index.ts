@@ -38,6 +38,7 @@ import requireTryCatchInAsync from "./require-try-catch-in-async.js";
 import requireErrorBoundary from "./require-error-boundary.js";
 import requireReadonlyProperties from "./require-readonly-properties.js";
 import noCoreInClientComponent from "./no-core-in-client-component.js";
+import noCircularImports from "./no-circular-imports.js";
 
 export const rules = {
   // Traceability rules
@@ -69,6 +70,7 @@ export const rules = {
   "require-error-boundary": requireErrorBoundary,
   "require-readonly-properties": requireReadonlyProperties,
   "no-core-in-client-component": noCoreInClientComponent,
+  "no-circular-imports": noCircularImports,
 
   // Test quality rules
   "no-trivial-assertions": noTrivialAssertions,

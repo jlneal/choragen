@@ -61,6 +61,7 @@ export const configs = {
       "@choragen/require-test-for-api-route": "warn",
       "@choragen/require-test-for-component": "warn",
       "@choragen/require-test-for-lib-export": "warn",
+      "@choragen/no-circular-imports": "warn",
     },
   },
 
@@ -110,6 +111,7 @@ export const configs = {
       "@choragen/require-test-for-api-route": "error",
       "@choragen/require-test-for-component": "error",
       "@choragen/require-test-for-lib-export": "error",
+      "@choragen/no-circular-imports": "error",
     },
   },
 };

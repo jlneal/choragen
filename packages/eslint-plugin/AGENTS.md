@@ -77,6 +77,23 @@ describe("TaskManager", () => {});
 describe("TaskManager", () => {});
 ```
 
+### `no-circular-imports`
+
+Detects circular import chains within a package.
+
+```typescript
+// ❌ Error: Circular import detected
+// a.ts imports b.ts, b.ts imports a.ts
+import { b } from "./b"; // Error: Circular import detected: a.ts -> b.ts -> a.ts
+
+// ✅ Correct: No circular dependencies
+import { helper } from "./utils";
+```
+
+**Options**:
+- `maxDepth` (number, default: 5): Maximum depth to traverse when searching for cycles
+- `ignoreTypeImports` (boolean, default: true): Ignore `import type` statements (they don't cause runtime issues)
+
 ## Directory Structure
 
 ```
