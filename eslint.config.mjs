@@ -50,6 +50,7 @@ export default [
       "@choragen/no-as-unknown": "error",
       "@choragen/no-magic-numbers-http": "error",
       "@choragen/no-untracked-todos": "error",
+      "@choragen/require-chain-design-dependency": "error",
       "@choragen/require-eslint-disable-justification": "error",
     },
   },

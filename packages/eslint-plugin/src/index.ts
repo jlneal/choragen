@@ -32,6 +32,7 @@ export const configs = {
       "@choragen/require-design-doc-completeness": "warn",
       "@choragen/require-adr-implementation": "warn",
       "@choragen/require-adr-relevance": "warn",
+      "@choragen/require-chain-design-dependency": "warn",
       "@choragen/require-significant-change-traceability": "warn",
 
       // Contracts
@@ -83,6 +84,7 @@ export const configs = {
       "@choragen/require-design-doc-completeness": "error",
       "@choragen/require-adr-implementation": "error",
       "@choragen/require-adr-relevance": "error",
+      "@choragen/require-chain-design-dependency": "error",
       "@choragen/require-significant-change-traceability": "error",
 
       // Contracts

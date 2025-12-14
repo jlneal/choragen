@@ -41,6 +41,7 @@ import noCoreInClientComponent from "./no-core-in-client-component.js";
 import noCircularImports from "./no-circular-imports.js";
 import noNodeImportsInContracts from "./no-node-imports-in-contracts.js";
 import requireSubscriptionLink from "./require-subscription-link.js";
+import requireChainDesignDependency from "./require-chain-design-dependency.js";
 
 export const rules = {
   // Traceability rules
@@ -54,6 +55,7 @@ export const rules = {
   "require-adr-implementation": requireAdrImplementation,
   "require-adr-relevance": requireAdrRelevance,
   "require-significant-change-traceability": requireSignificantChangeTraceability,
+  "require-chain-design-dependency": requireChainDesignDependency,
 
   // Contract rules
   "require-design-contract": requireDesignContract,

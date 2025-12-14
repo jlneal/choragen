@@ -2,7 +2,7 @@
 
 **ID**: CR-20251214-006  
 **Domain**: eslint-plugin  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-14  
 **Priority**: low  
 **Owner**: agent  
@@ -63,12 +63,12 @@ Example with skip:
 
 ## Acceptance Criteria
 
-- [ ] Rule detects `ChainManager.create()` calls with `type: "implementation"`
-- [ ] Rule requires `dependsOn` OR (`skipDesign` + `skipDesignJustification`)
-- [ ] Rule ignores design chains and chains without explicit type
-- [ ] Rule provides clear error with examples
-- [ ] Rule has comprehensive test coverage
-- [ ] Rule is enabled in `@choragen/core` and `@choragen/cli` eslint configs
+- [x] Rule detects `ChainManager.create()` calls with `type: "implementation"`
+- [x] Rule requires `dependsOn` OR (`skipDesign` + `skipDesignJustification`)
+- [x] Rule ignores design chains and chains without explicit type
+- [x] Rule provides clear error with examples
+- [x] Rule has comprehensive test coverage
+- [x] Rule is enabled in `@choragen/core` and `@choragen/cli` eslint configs
 
 ---
 
@@ -114,6 +114,19 @@ ChainManager.create({
 ## Linked FRs
 
 - FR-20251206-009 (Chain Type Validation Violations)
+
+---
+
+## Completion Notes
+
+Implemented `require-chain-design-dependency` ESLint rule:
+
+- **Rule**: `packages/eslint-plugin/src/rules/require-chain-design-dependency.ts`
+- **Tests**: `packages/eslint-plugin/src/rules/__tests__/require-chain-design-dependency.test.ts` (14 tests)
+- **Registration**: Added to rules index and recommended/strict configs
+- **Enabled**: Active in `eslint.config.mjs` for TypeScript sources
+
+All verification passes: build, lint, tests.
 
 ---
 
