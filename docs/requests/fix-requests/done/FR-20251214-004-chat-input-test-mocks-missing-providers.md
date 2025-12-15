@@ -2,7 +2,7 @@
 
 **ID**: FR-20251214-004  
 **Domain**: web  
-**Status**: doing  
+**Status**: done  
 **Created**: 2025-12-14  
 **Severity**: medium  
 **Owner**: agent  
@@ -68,15 +68,15 @@ Add `providers.listModels` and `workflow.currentModel` mocks to the affected tes
 
 ## Commits
 
-No commits yet.
+- `c9d34ec` fix(web): add missing providers and currentModel mocks to chat tests [FR-20251214-004]
 
 ---
 
 ## Verification
 
-- [ ] Bug no longer reproducible
-- [ ] All 4 previously failing tests pass
-- [ ] No new test failures introduced
+- [x] Bug no longer reproducible
+- [x] All 4 previously failing tests pass
+- [x] No new test failures introduced (307/307 pass)
 
 ---
 
@@ -99,4 +99,8 @@ Run full test suite before committing features that modify shared components.
 
 ## Completion Notes
 
-[Added when moved to done/]
+Added `providers.listModels` and `workflow.currentModel` mocks to the tRPC client mocks in:
+- `responsive.test.tsx`
+- `provider-status.test.tsx`
+
+All 307 tests now pass.
