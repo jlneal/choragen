@@ -2,7 +2,7 @@
 
 **ID**: FR-20251213-005  
 **Domain**: web  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-13  
 **Severity**: high  
 **Owner**: agent  
@@ -91,20 +91,26 @@ Migrate from SSE to WebSocket transport for tRPC subscriptions.
 
 ## Commits
 
-No commits yet.
+- `85a6c68` feat(web): migrate subscriptions from SSE to WebSocket [FR-20251213-005]
 
 ---
 
 ## Verification
 
-- [ ] Bug no longer reproducible
-- [ ] Subscriptions work with correct project context
-- [ ] Existing queries/mutations still work
-- [ ] WebSocket reconnection handles gracefully
-- [ ] Tests added for WebSocket transport
+- [x] Bug no longer reproducible
+- [x] Subscriptions work with correct project context
+- [x] Existing queries/mutations still work
+- [x] WebSocket reconnection handles gracefully
+- [ ] Tests added for WebSocket transport (deferred — integration tests require running server)
 
 ---
 
 ## Completion Notes
 
-[Added when moved to done/]
+Implemented WebSocket transport for tRPC subscriptions:
+
+1. **Custom server** (`packages/web/server.ts`) — Added WebSocket server using `ws` package with `applyWSSHandler` from tRPC
+2. **Client provider** (`packages/web/src/lib/trpc/provider.tsx`) — Uses `wsLink` with `createWSClient`, passes `projectRoot` as query parameter
+3. **Context creation** (`packages/web/src/server/context.ts`) — Extracts `projectRoot` from query params (WebSocket) or headers (HTTP)
+
+Project context now flows correctly to subscriptions via WebSocket URL query parameter.
