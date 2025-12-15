@@ -28,6 +28,12 @@ vi.mock("@/lib/trpc/client", () => ({
       list: {
         useQuery: () => ({ data: [], isLoading: false, error: null, refetch: vi.fn(), isRefetching: false }),
       },
+      currentModel: {
+        useQuery: () => ({
+          data: undefined,
+          isLoading: false,
+        }),
+      },
     },
     backlog: {
       list: {
@@ -37,6 +43,14 @@ vi.mock("@/lib/trpc/client", () => ({
           error: null,
           refetch: vi.fn(),
           isRefetching: false,
+        }),
+      },
+    },
+    providers: {
+      listModels: {
+        useQuery: () => ({
+          data: { providers: { anthropic: { configured: false, models: [] }, openai: { configured: false, models: [] } } },
+          isLoading: false,
         }),
       },
     },

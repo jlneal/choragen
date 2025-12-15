@@ -79,6 +79,20 @@ vi.mock("@/lib/trpc/client", () => ({
           isPending: false,
         }),
       },
+      currentModel: {
+        useQuery: () => ({
+          data: undefined,
+          isLoading: false,
+        }),
+      },
+    },
+    providers: {
+      listModels: {
+        useQuery: () => ({
+          data: { providers: { anthropic: { configured: true, models: [] }, openai: { configured: false, models: [] } } },
+          isLoading: false,
+        }),
+      },
     },
   },
 }));
