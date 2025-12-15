@@ -1,0 +1,33 @@
+name: scenario-design
+type: impl
+description: Template for scenario definition tasks in the design workflow
+constraints:
+  - Scenarios must link to specific personas.
+  - Use user story format: "As a [persona], I want [goal] so that [benefit]".
+  - Capture the WHY behind the feature work.
+expectedFiles:
+  - docs/design/{{domain}}/scenarios/{{taskId}}-scenario.md
+defaultPrompt: |
+  You are executing a scenario design task {{taskId}} ({{taskTitle}}) in chain {{chainId}} for request {{requestId}}.
+
+  Objective:
+  {{objective}}
+
+  Acceptance criteria:
+  {{acceptanceCriteria}}
+
+  Context:
+  {{context}}
+
+  Your deliverables:
+  1. **Review existing scenarios** in docs/design/{{domain}}/scenarios/
+  2. **For each relevant persona, define scenarios:**
+     - User story: "As a [persona], I want [goal] so that [benefit]"
+     - Narrative context describing the situation
+     - Success outcome description
+     - Linked persona reference
+
+  Output location: docs/design/{{domain}}/scenarios/
+
+  If existing scenarios adequately cover this work, complete the task with:
+  "No changes required: [justification explaining which scenarios apply]"

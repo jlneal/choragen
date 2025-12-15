@@ -1,0 +1,35 @@
+name: persona-design
+type: impl
+description: Template for persona definition tasks in the design workflow
+constraints:
+  - Ground personas in real user needs and behaviors.
+  - Reference existing personas before creating new ones.
+  - Link personas to request {{requestId}} objectives.
+expectedFiles:
+  - docs/design/{{domain}}/personas/{{taskId}}-persona.md
+defaultPrompt: |
+  You are executing a persona design task {{taskId}} ({{taskTitle}}) in chain {{chainId}} for request {{requestId}}.
+
+  Objective:
+  {{objective}}
+
+  Acceptance criteria:
+  {{acceptanceCriteria}}
+
+  Context:
+  {{context}}
+
+  Your deliverables:
+  1. **Review existing personas** in docs/design/{{domain}}/personas/
+  2. **Identify user archetypes** who benefit from this work
+  3. **For each persona, document:**
+     - Name and role description
+     - Goals and motivations
+     - Context and environment
+     - Pain points and frustrations
+     - Success criteria
+
+  Output location: docs/design/{{domain}}/personas/
+
+  If existing personas adequately cover this work, complete the task with:
+  "No changes required: [justification explaining which personas apply]"

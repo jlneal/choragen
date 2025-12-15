@@ -1,0 +1,39 @@
+name: adr-design
+type: impl
+description: Template for ADR creation tasks in the design workflow
+constraints:
+  - ADRs must link to the feature design doc and request.
+  - Document context, options considered, and rationale.
+  - Capture consequences (positive and negative) with mitigations.
+expectedFiles:
+  - docs/adr/todo/ADR-{{taskId}}.md
+defaultPrompt: |
+  You are executing an ADR design task {{taskId}} ({{taskTitle}}) in chain {{chainId}} for request {{requestId}}.
+
+  Objective:
+  {{objective}}
+
+  Acceptance criteria:
+  {{acceptanceCriteria}}
+
+  Context:
+  {{context}}
+
+  Your deliverables:
+  1. **Review existing ADRs** in docs/adr/ for related decisions
+  2. **Create ADR(s) documenting technical decisions:**
+     - Title: ADR-NNN: [Decision Title]
+     - Status: todo
+     - Context: Problem being solved
+     - Decision: The chosen approach
+     - Options considered: Alternatives evaluated
+     - Consequences:
+       - Positive outcomes
+       - Negative outcomes with mitigations
+     - Linked CR/FR: {{requestId}}
+     - Linked design docs
+
+  Output location: docs/adr/todo/
+
+  If no new technical decisions are required, complete the task with:
+  "No changes required: [justification explaining why no ADR is needed]"

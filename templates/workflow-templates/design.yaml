@@ -1,0 +1,97 @@
+name: design
+displayName: Design Workflow
+description: Execute the user value chain from Persona through ADR for structured design work
+stages:
+  - name: persona
+    type: design
+    roleId: design
+    taskTemplate: persona-design
+    initPrompt: |
+      You are defining or refining personas for request {{requestId}}.
+
+      Your tasks:
+      - Identify the user archetypes who benefit from this work.
+      - Document goals, context, and pain points for each persona.
+      - Output to docs/design/{{domain}}/personas/ if new personas are needed.
+      - If existing personas cover this work, note "No changes required: [justification]".
+    gate:
+      type: human_approval
+      prompt: "Persona stage complete. Proceed to scenarios?"
+
+  - name: scenario
+    type: design
+    roleId: design
+    taskTemplate: scenario-design
+    initPrompt: |
+      You are defining scenarios for request {{requestId}}.
+
+      Your tasks:
+      - For each relevant persona, define user stories: "As a [persona], I want [goal] so that [benefit]".
+      - Capture the WHY behind the feature work.
+      - Output to docs/design/{{domain}}/scenarios/ if new scenarios are needed.
+      - If existing scenarios cover this work, note "No changes required: [justification]".
+    gate:
+      type: human_approval
+      prompt: "Scenario stage complete. Proceed to use cases?"
+
+  - name: use-case
+    type: design
+    roleId: design
+    taskTemplate: use-case-design
+    initPrompt: |
+      You are defining use cases for request {{requestId}}.
+
+      Your tasks:
+      - Break each scenario into concrete, testable use cases.
+      - Document specific steps users take to accomplish their goals.
+      - Output to docs/design/{{domain}}/use-cases/ if new use cases are needed.
+      - If existing use cases cover this work, note "No changes required: [justification]".
+    gate:
+      type: human_approval
+      prompt: "Use case stage complete. Proceed to feature design?"
+
+  - name: feature
+    type: design
+    roleId: design
+    taskTemplate: feature-design
+    initPrompt: |
+      You are defining the feature for request {{requestId}}.
+
+      Your tasks:
+      - Define the buildable capability that enables the use cases.
+      - Document scope, acceptance criteria, and constraints.
+      - Output to docs/design/{{domain}}/features/ for new or updated feature docs.
+      - If an existing feature doc covers this work, note "No changes required: [justification]".
+    gate:
+      type: human_approval
+      prompt: "Feature design complete. Proceed to ADR?"
+
+  - name: adr
+    type: design
+    roleId: design
+    taskTemplate: adr-design
+    initPrompt: |
+      You are creating or updating ADRs for request {{requestId}}.
+
+      Your tasks:
+      - Document technical decisions with context, options, and rationale.
+      - Link ADR to the feature design doc and request.
+      - Output to docs/adr/todo/ for new ADRs.
+      - If no new technical decisions are required, note "No changes required: [justification]".
+    gate:
+      type: human_approval
+      prompt: "ADR stage complete. Design workflow finished?"
+
+  - name: completion
+    type: review
+    roleId: control
+    initPrompt: |
+      You are completing the design workflow for request {{requestId}}.
+
+      Your tasks:
+      - Review all design artifacts created during this workflow.
+      - Ensure traceability: Persona → Scenario → Use Case → Feature → ADR.
+      - Update the request with links to design outputs.
+      - Mark design chain as complete.
+    gate:
+      type: auto

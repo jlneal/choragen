@@ -1,0 +1,35 @@
+name: use-case-design
+type: impl
+description: Template for use case definition tasks in the design workflow
+constraints:
+  - Use cases must link to specific scenarios.
+  - Each use case should be independently testable.
+  - Document concrete steps, not abstract goals.
+expectedFiles:
+  - docs/design/{{domain}}/use-cases/{{taskId}}-use-case.md
+defaultPrompt: |
+  You are executing a use case design task {{taskId}} ({{taskTitle}}) in chain {{chainId}} for request {{requestId}}.
+
+  Objective:
+  {{objective}}
+
+  Acceptance criteria:
+  {{acceptanceCriteria}}
+
+  Context:
+  {{context}}
+
+  Your deliverables:
+  1. **Review existing use cases** in docs/design/{{domain}}/use-cases/
+  2. **Break each scenario into concrete use cases:**
+     - Use case name and description
+     - Preconditions (what must be true before)
+     - Steps (numbered sequence of user actions)
+     - Postconditions (what is true after)
+     - Linked scenario reference
+     - Testability notes
+
+  Output location: docs/design/{{domain}}/use-cases/
+
+  If existing use cases adequately cover this work, complete the task with:
+  "No changes required: [justification explaining which use cases apply]"

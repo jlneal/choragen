@@ -87,6 +87,11 @@ Task templates provide reusable prompts with variable interpolation for tasks cr
 | `generic.yaml` | impl | General-purpose implementation tasks |
 | `design.yaml` | impl | Design/architecture tasks |
 | `review.yaml` | control | Review and verification tasks |
+| `persona-design.yaml` | impl | Persona definition (design workflow) |
+| `scenario-design.yaml` | impl | Scenario definition (design workflow) |
+| `use-case-design.yaml` | impl | Use case definition (design workflow) |
+| `feature-design.yaml` | impl | Feature definition (design workflow) |
+| `adr-design.yaml` | impl | ADR creation (design workflow) |
 
 ### Task Template Schema
 
@@ -131,6 +136,54 @@ choragen task:add CHAIN-001-my-chain my-task "My Task Title" --template generic
 ```
 
 See `templates/task-templates/schema.md` for full schema documentation.
+
+## Design Workflow
+
+The design workflow (`workflow-templates/design.yaml`) provides structured design chains following the user value chain:
+
+```
+Persona → Scenario → Use Case → Feature → ADR
+```
+
+### Stages
+
+| Stage | Task Template | Output Location |
+|-------|---------------|-----------------|
+| `persona` | `persona-design.yaml` | `docs/design/{{domain}}/personas/` |
+| `scenario` | `scenario-design.yaml` | `docs/design/{{domain}}/scenarios/` |
+| `use-case` | `use-case-design.yaml` | `docs/design/{{domain}}/use-cases/` |
+| `feature` | `feature-design.yaml` | `docs/design/{{domain}}/features/` |
+| `adr` | `adr-design.yaml` | `docs/adr/todo/` |
+| `completion` | (none) | Review and finalize |
+
+### Skip Mechanism
+
+Stages can be skipped when not applicable:
+
+1. Agent marks task complete with note: `"No changes required: [justification]"`
+2. Gate advances automatically after human approval
+3. Audit trail preserved in task completion notes
+
+**Example skip justification:**
+```
+No changes required: Existing "Control Agent" persona in docs/design/core/personas/control-agent.md covers this work.
+```
+
+### Relationship to Standard Workflow
+
+The design workflow is **invoked by** the standard workflow's design stage:
+
+```
+Standard Workflow                    Design Workflow
+─────────────────                    ───────────────
+planning stage
+    ↓
+design stage ──────────────────────► Creates/executes design chain
+    ↓                                (persona → scenario → ... → adr)
+impl-planning stage
+    ↓
+...
+```
 
 ---
 

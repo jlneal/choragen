@@ -1,0 +1,36 @@
+name: feature-design
+type: impl
+description: Template for feature definition tasks in the design workflow
+constraints:
+  - Features must link to use cases they enable.
+  - Define clear scope and acceptance criteria.
+  - Document constraints and dependencies.
+expectedFiles:
+  - docs/design/{{domain}}/features/{{taskId}}-feature.md
+defaultPrompt: |
+  You are executing a feature design task {{taskId}} ({{taskTitle}}) in chain {{chainId}} for request {{requestId}}.
+
+  Objective:
+  {{objective}}
+
+  Acceptance criteria:
+  {{acceptanceCriteria}}
+
+  Context:
+  {{context}}
+
+  Your deliverables:
+  1. **Review existing features** in docs/design/{{domain}}/features/
+  2. **Define the buildable capability:**
+     - Feature name and description
+     - Use cases enabled (with links)
+     - Scope: what's in and out
+     - Acceptance criteria (testable conditions)
+     - Constraints and dependencies
+     - API or interface sketches (if applicable)
+     - Linked request reference
+
+  Output location: docs/design/{{domain}}/features/
+
+  If an existing feature doc adequately covers this work, complete the task with:
+  "No changes required: [justification explaining which feature applies]"

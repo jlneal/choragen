@@ -220,6 +220,28 @@ The existing pipeline (CR → Design → ADR → Implementation) fits into the *
 
 The User Value Layer provides the *justification* for everything in the Solution Layer. Without it, we risk building technically excellent solutions that don't serve real user needs.
 
+### Design Workflow
+
+The **design workflow** (`templates/workflow-templates/design.yaml`) provides a structured chain for executing the user value chain:
+
+```
+Persona → Scenario → Use Case → Feature → ADR
+```
+
+Each stage has a dedicated task template with prompts guiding the agent through that design artifact. Stages can be skipped with justification when existing artifacts cover the work.
+
+**When to use the design workflow:**
+- New features requiring user research
+- Complex changes spanning multiple use cases
+- Work that needs clear traceability to user value
+
+**When to skip:**
+- Hotfixes and trivial changes
+- Work where existing design artifacts apply
+- Documentation-only updates
+
+See `templates/AGENTS.md` for detailed design workflow documentation.
+
 ## Enforcement Layers
 
 ### Layer 1: ESLint Rules (Static Analysis)

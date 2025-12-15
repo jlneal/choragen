@@ -2,7 +2,7 @@
 
 **ID**: CR-20251214-009  
 **Domain**: core  
-**Status**: todo  
+**Status**: doing  
 **Created**: 2025-12-14  
 **Owner**: agent
 
@@ -59,13 +59,13 @@ A dedicated design workflow provides:
 
 ## Acceptance Criteria
 
-- [ ] `templates/workflow-templates/design.yaml` exists with five stages
-- [ ] Each stage references a task template via `taskTemplate` field
-- [ ] All five task templates exist with appropriate `defaultPrompt` content
-- [ ] Prompts reference correct output locations (e.g., `docs/design/{{domain}}/personas/`)
-- [ ] Stage skip mechanism documented (how to mark "No changes required")
-- [ ] `DEVELOPMENT_PIPELINE.md` updated to reference design workflow
-- [ ] `templates/AGENTS.md` updated with design workflow documentation
+- [x] `templates/workflow-templates/design.yaml` exists with five stages
+- [x] Each stage references a task template via `taskTemplate` field
+- [x] All five task templates exist with appropriate `defaultPrompt` content
+- [x] Prompts reference correct output locations (e.g., `docs/design/{{domain}}/personas/`)
+- [x] Stage skip mechanism documented (how to mark "No changes required")
+- [x] `DEVELOPMENT_PIPELINE.md` updated to reference design workflow
+- [x] `templates/AGENTS.md` updated with design workflow documentation
 - [ ] Example: running design workflow creates chain with 5 tasks in correct sequence
 
 ---
@@ -126,4 +126,22 @@ The design workflow is **invoked by** the standard workflow's design stage, not 
 
 ## Completion Notes
 
-_To be filled when complete._
+**Chain**: Skipped — documentation/template-only work, no code changes required
+
+### Deliverables
+
+- `templates/workflow-templates/design.yaml` — Design workflow with 6 stages (5 design + completion)
+- `templates/task-templates/persona-design.yaml` — Persona definition template
+- `templates/task-templates/scenario-design.yaml` — Scenario definition template
+- `templates/task-templates/use-case-design.yaml` — Use case definition template
+- `templates/task-templates/feature-design.yaml` — Feature definition template
+- `templates/task-templates/adr-design.yaml` — ADR creation template
+- `templates/AGENTS.md` — Updated with Design Workflow section and task template table
+- `docs/design/DEVELOPMENT_PIPELINE.md` — Updated with Design Workflow section
+
+### Notes
+
+- The workflow has 6 stages total: 5 design stages + 1 completion stage
+- Each design stage uses `human_approval` gate for flexibility
+- Skip mechanism documented: mark task "No changes required: [justification]"
+- Completion stage uses `auto` gate for seamless finalization
