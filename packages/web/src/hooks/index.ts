@@ -23,3 +23,4 @@ export {
   type UseSessionFiltersReturn,
 } from "./use-session-filters";
 export { ProjectProvider, useProject, type ProjectContextValue } from "./use-project";
+export { useSettings, type UseSettingsResult } from "./use-settings";

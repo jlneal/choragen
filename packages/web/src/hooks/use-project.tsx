@@ -1,13 +1,14 @@
 // ADR: ADR-011-web-api-architecture
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   addRecentProject,
   clearRecentProjects as clearStoredProjects,
   loadRecentProjects,
 } from "@/lib/project-storage";
+import { useSettings } from "./use-settings";
 
 const DEFAULT_PROJECT_PATH = process.env.NEXT_PUBLIC_CHORAGEN_PROJECT_ROOT || "";
 
@@ -23,6 +24,8 @@ const ProjectContext = createContext<ProjectContextValue | undefined>(undefined)
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [projectPath, setProjectPath] = useState<string>(DEFAULT_PROJECT_PATH);
   const [recentProjects, setRecentProjects] = useState<string[]>([]);
+  const { settings, isLoading: isSettingsLoading, setLastProject } = useSettings();
+  const hasInitializedFromSettings = useRef(false);
 
   useEffect(() => {
     const storedProjects = loadRecentProjects();
@@ -32,6 +35,18 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       setProjectPath(storedProjects[0]);
     }
   }, []);
+
+  useEffect(() => {
+    if (isSettingsLoading || hasInitializedFromSettings.current) {
+      return;
+    }
+
+    hasInitializedFromSettings.current = true;
+
+    if (settings.lastProject && !DEFAULT_PROJECT_PATH) {
+      setProjectPath(settings.lastProject);
+    }
+  }, [isSettingsLoading, settings.lastProject]);
 
   useEffect(() => {
     if (!projectPath) {
@@ -50,7 +65,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const selectProject = useCallback((nextProjectPath: string) => {
     setProjectPath(nextProjectPath);
     setRecentProjects((current) => addRecentProject(nextProjectPath, current));
-  }, []);
+    setLastProject(nextProjectPath).catch(() => {
+      // Settings persistence is best-effort; localStorage already saved
+    });
+  }, [setLastProject]);
 
   const clearHistory = useCallback(() => {
     setRecentProjects([]);

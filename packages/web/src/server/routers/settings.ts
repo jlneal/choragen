@@ -9,7 +9,7 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import { z } from "zod";
-import { loadProviderConfig } from "@choragen/core/config";
+import { loadProviderConfig, loadSettings, type Settings } from "@choragen/core/config";
 import { router, publicProcedure, TRPCError } from "../trpc";
 
 const providerSchema = z.enum(["anthropic", "openai", "google", "ollama"]);
@@ -39,6 +39,20 @@ const providerConfigSchema = z
   .default({ providers: {} });
 
 type ProviderConfigFile = z.infer<typeof providerConfigSchema>;
+
+const settingsUpdateSchema = z.object({
+  projectsFolder: z.string().trim().min(1).optional(),
+  lastProject: z.string().trim().min(1).optional(),
+  ui: z
+    .object({
+      theme: z.enum(["light", "dark", "system"]).optional(),
+      sidebarCollapsed: z.boolean().optional(),
+    })
+    .partial()
+    .optional(),
+});
+
+type SettingsUpdate = z.infer<typeof settingsUpdateSchema>;
 
 function getConfigPath(projectRoot: string): string {
   return path.join(projectRoot, ".choragen", "config.json");
@@ -79,6 +93,79 @@ async function writeConfigFile(projectRoot: string, config: ProviderConfigFile):
     });
   } finally {
     // Clean up tmp file if rename failed
+    await fs.rm(tmpPath, { force: true }).catch(() => {});
+  }
+}
+
+interface FullConfigFile extends ProviderConfigFile {
+  settings?: {
+    projectsFolder?: string;
+    lastProject?: string;
+    ui?: {
+      theme?: "light" | "dark" | "system";
+      sidebarCollapsed?: boolean;
+    };
+  };
+}
+
+async function readFullConfigFile(projectRoot: string): Promise<FullConfigFile> {
+  const configPath = getConfigPath(projectRoot);
+  try {
+    const raw = await fs.readFile(configPath, "utf-8");
+    return JSON.parse(raw) as FullConfigFile;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return { providers: {} };
+    }
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Failed to read config file",
+      cause: error,
+    });
+  }
+}
+
+async function saveSettings(projectRoot: string, update: SettingsUpdate): Promise<void> {
+  const configDir = path.join(projectRoot, ".choragen");
+  const targetPath = getConfigPath(projectRoot);
+  const tmpPath = `${targetPath}.tmp-${Date.now()}`;
+
+  try {
+    const existing = await readFullConfigFile(projectRoot);
+    const currentSettings = existing.settings ?? {};
+    const currentUi = currentSettings.ui ?? {};
+
+    const mergedSettings = {
+      ...currentSettings,
+      ...(update.projectsFolder !== undefined && { projectsFolder: update.projectsFolder }),
+      ...(update.lastProject !== undefined && { lastProject: update.lastProject }),
+      ...(update.ui && {
+        ui: {
+          ...currentUi,
+          ...(update.ui.theme !== undefined && { theme: update.ui.theme }),
+          ...(update.ui.sidebarCollapsed !== undefined && { sidebarCollapsed: update.ui.sidebarCollapsed }),
+        },
+      }),
+    };
+
+    const newConfig: FullConfigFile = {
+      ...existing,
+      settings: mergedSettings,
+    };
+
+    await fs.mkdir(configDir, { recursive: true });
+    await fs.writeFile(tmpPath, JSON.stringify(newConfig, null, 2), "utf-8");
+    await fs.rename(tmpPath, targetPath);
+  } catch (error) {
+    if (error instanceof TRPCError) {
+      throw error;
+    }
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Failed to save settings",
+      cause: error,
+    });
+  } finally {
     await fs.rm(tmpPath, { force: true }).catch(() => {});
   }
 }
@@ -200,6 +287,59 @@ export const settingsRouter = router({
     .input(testConnectionInput)
     .mutation(async ({ input }) => {
       await testProviderConnection(input.provider, input.apiKey);
+      return { success: true };
+    }),
+
+  /**
+   * Get all settings.
+   */
+  get: publicProcedure.query(async ({ ctx }): Promise<Settings> => {
+    return loadSettings(ctx.projectRoot);
+  }),
+
+  /**
+   * Partial update of settings.
+   */
+  update: publicProcedure
+    .input(settingsUpdateSchema)
+    .mutation(async ({ input, ctx }) => {
+      await saveSettings(ctx.projectRoot, input);
+      return { success: true };
+    }),
+
+  /**
+   * Get the projects folder path.
+   */
+  getProjectsFolder: publicProcedure.query(async ({ ctx }): Promise<string | undefined> => {
+    const settings = await loadSettings(ctx.projectRoot);
+    return settings.projectsFolder;
+  }),
+
+  /**
+   * Set the projects folder path.
+   */
+  setProjectsFolder: publicProcedure
+    .input(z.object({ projectsFolder: z.string().trim().min(1) }))
+    .mutation(async ({ input, ctx }) => {
+      await saveSettings(ctx.projectRoot, { projectsFolder: input.projectsFolder });
+      return { success: true };
+    }),
+
+  /**
+   * Get the last opened project path.
+   */
+  getLastProject: publicProcedure.query(async ({ ctx }): Promise<string | undefined> => {
+    const settings = await loadSettings(ctx.projectRoot);
+    return settings.lastProject;
+  }),
+
+  /**
+   * Set the last opened project path.
+   */
+  setLastProject: publicProcedure
+    .input(z.object({ lastProject: z.string().trim().min(1) }))
+    .mutation(async ({ input, ctx }) => {
+      await saveSettings(ctx.projectRoot, { lastProject: input.lastProject });
       return { success: true };
     }),
 });

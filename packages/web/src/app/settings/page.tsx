@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useProject } from "@/hooks";
+import { useProject, useSettings } from "@/hooks";
 
 const PROVIDERS = [
   {
@@ -51,7 +51,16 @@ const PROVIDERS = [
 export default function SettingsPage() {
   const { data, isLoading, isError, refetch } = trpc.settings.getProviders.useQuery();
   const { projectPath, selectProject } = useProject();
+  const { settings, isLoading: isSettingsLoading, setProjectsFolder } = useSettings();
   const [projectsDir, setProjectsDir] = useState("");
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  if (!isSettingsLoading && !hasInitialized) {
+    if (settings.projectsFolder) {
+      setProjectsDir(settings.projectsFolder);
+    }
+    setHasInitialized(true);
+  }
   
   const { data: projectsData, refetch: refetchProjects, isFetching: isLoadingProjects } = trpc.project.listProjects.useQuery(
     { directory: projectsDir },
@@ -106,7 +115,14 @@ export default function SettingsPage() {
             />
             <Button
               variant="outline"
-              onClick={() => refetchProjects()}
+              onClick={() => {
+                refetchProjects();
+                if (projectsDir && projectsDir !== settings.projectsFolder) {
+                  setProjectsFolder(projectsDir).catch(() => {
+                    // Best-effort persistence
+                  });
+                }
+              }}
               disabled={!projectsDir || isLoadingProjects}
             >
               {isLoadingProjects ? "Scanning..." : "Scan"}

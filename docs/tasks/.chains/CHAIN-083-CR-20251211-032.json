@@ -1,0 +1,10 @@
+{
+  "id": "CHAIN-083-CR-20251211-032",
+  "sequence": 83,
+  "slug": "CR-20251211-032",
+  "requestId": "CR-20251211-032",
+  "title": "Settings Persistence Implementation",
+  "description": "Persist user settings (projects folder, selected project, UI preferences) so they survive browser refresh and server restart.",
+  "createdAt": "2025-12-15T00:42:10.706Z",
+  "updatedAt": "2025-12-15T00:42:10.706Z"
+}

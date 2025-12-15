@@ -119,6 +119,118 @@ describe("settings router", () => {
       })
     ).rejects.toBeInstanceOf(TRPCError);
   });
+
+  describe("settings.get", () => {
+    it("returns default settings when config file is missing", async () => {
+      const caller = createCaller({ projectRoot });
+      const result = await caller.settings.get();
+
+      expect(result.ui.theme).toBe("system");
+      expect(result.ui.sidebarCollapsed).toBe(false);
+      expect(result.projectsFolder).toBeUndefined();
+      expect(result.lastProject).toBeUndefined();
+    });
+
+    it("returns persisted settings from config file", async () => {
+      await writeConfig(projectRoot, {
+        settings: {
+          projectsFolder: "/home/user/projects",
+          lastProject: "/home/user/projects/my-app",
+          ui: { theme: "dark", sidebarCollapsed: true },
+        },
+      });
+
+      const caller = createCaller({ projectRoot });
+      const result = await caller.settings.get();
+
+      expect(result.projectsFolder).toBe("/home/user/projects");
+      expect(result.lastProject).toBe("/home/user/projects/my-app");
+      expect(result.ui.theme).toBe("dark");
+      expect(result.ui.sidebarCollapsed).toBe(true);
+    });
+  });
+
+  describe("settings.update", () => {
+    it("creates settings when config file is missing", async () => {
+      const caller = createCaller({ projectRoot });
+
+      await caller.settings.update({ projectsFolder: "/new/folder" });
+
+      const configPath = path.join(projectRoot, ".choragen", "config.json");
+      const raw = await fs.readFile(configPath, "utf-8");
+      const config = JSON.parse(raw) as { settings?: { projectsFolder?: string } };
+
+      expect(config.settings?.projectsFolder).toBe("/new/folder");
+    });
+
+    it("merges partial updates with existing settings", async () => {
+      await writeConfig(projectRoot, {
+        settings: {
+          projectsFolder: "/existing/folder",
+          ui: { theme: "dark" },
+        },
+      });
+
+      const caller = createCaller({ projectRoot });
+      await caller.settings.update({ lastProject: "/new/project" });
+
+      const result = await caller.settings.get();
+      expect(result.projectsFolder).toBe("/existing/folder");
+      expect(result.lastProject).toBe("/new/project");
+      expect(result.ui.theme).toBe("dark");
+    });
+
+    it("updates nested UI settings without losing other UI fields", async () => {
+      await writeConfig(projectRoot, {
+        settings: {
+          ui: { theme: "dark", sidebarCollapsed: true },
+        },
+      });
+
+      const caller = createCaller({ projectRoot });
+      await caller.settings.update({ ui: { theme: "light" } });
+
+      const result = await caller.settings.get();
+      expect(result.ui.theme).toBe("light");
+      expect(result.ui.sidebarCollapsed).toBe(true);
+    });
+  });
+
+  describe("settings.getProjectsFolder / setProjectsFolder", () => {
+    it("returns undefined when not set", async () => {
+      const caller = createCaller({ projectRoot });
+      const result = await caller.settings.getProjectsFolder();
+
+      expect(result).toBeUndefined();
+    });
+
+    it("sets and retrieves projects folder", async () => {
+      const caller = createCaller({ projectRoot });
+
+      await caller.settings.setProjectsFolder({ projectsFolder: "/my/projects" });
+      const result = await caller.settings.getProjectsFolder();
+
+      expect(result).toBe("/my/projects");
+    });
+  });
+
+  describe("settings.getLastProject / setLastProject", () => {
+    it("returns undefined when not set", async () => {
+      const caller = createCaller({ projectRoot });
+      const result = await caller.settings.getLastProject();
+
+      expect(result).toBeUndefined();
+    });
+
+    it("sets and retrieves last project", async () => {
+      const caller = createCaller({ projectRoot });
+
+      await caller.settings.setLastProject({ lastProject: "/my/projects/app" });
+      const result = await caller.settings.getLastProject();
+
+      expect(result).toBe("/my/projects/app");
+    });
+  });
 });
 
 async function writeConfig(projectRoot: string, config: unknown): Promise<void> {
