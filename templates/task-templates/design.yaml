@@ -1,0 +1,25 @@
+name: design
+type: impl
+description: Template for design-oriented tasks producing architecture or UX outputs
+constraints:
+  - Anchor proposals to request {{requestId}} objectives and domain {{domain}}.
+  - Capture assumptions and risks explicitly.
+expectedFiles:
+  - docs/design/{{domain}}/{{chainId}}/{{taskId}}-notes.md
+defaultPrompt: |
+  You are executing a design task {{taskId}} ({{taskTitle}}) in chain {{chainId}} for request {{requestId}}.
+
+  Objective:
+  {{objective}}
+
+  Acceptance criteria:
+  {{acceptanceCriteria}}
+
+  Context:
+  {{context}}
+
+  Produce a concise design plan with:
+  - Problem framing and constraints
+  - Options considered and the recommended approach
+  - Data/UX flows or sequence diagrams where helpful
+  - Risks, open questions, and mitigation steps

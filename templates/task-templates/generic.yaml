@@ -1,0 +1,24 @@
+name: generic
+type: impl
+description: General-purpose implementation task template
+constraints:
+  - Keep acceptance criteria visible while working.
+  - Confirm file scope before editing code.
+expectedFiles:
+  - docs/tasks/todo/{{chainId}}/{{taskId}}.md
+defaultPrompt: |
+  You are implementing task {{taskId}} in chain {{chainId}} for request {{requestId}} (domain {{domain}}).
+
+  Objective:
+  {{objective}}
+
+  Acceptance criteria:
+  {{acceptanceCriteria}}
+
+  Context:
+  {{context}}
+
+  Execution checklist:
+  - Identify the minimal changes to satisfy the criteria.
+  - Update code and tests; keep changes scoped to the task.
+  - Validate locally and note any follow-ups in the task notes.

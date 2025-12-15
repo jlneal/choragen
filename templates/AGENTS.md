@@ -76,6 +76,64 @@ Tasks include a `**Type**` field that determines which agent handles the task:
 - Use `control` for tasks the control agent can complete directly without handoff
 - Control tasks typically involve: verification, approval workflows, documentation updates, chain/request closure
 
+## Task Templates
+
+Task templates provide reusable prompts with variable interpolation for tasks created via `choragen task:add --template <name>`. Templates live in `templates/task-templates/` as YAML files.
+
+### Available Task Templates
+
+| Template | Type | Purpose |
+|----------|------|---------|
+| `generic.yaml` | impl | General-purpose implementation tasks |
+| `design.yaml` | impl | Design/architecture tasks |
+| `review.yaml` | control | Review and verification tasks |
+
+### Task Template Schema
+
+**Required fields:**
+
+| Field | Description |
+|-------|-------------|
+| `name` | Template identifier (matches filename) |
+| `type` | Task category: `impl`, `control`, `review` |
+| `defaultPrompt` | Multi-line prompt with `{{variable}}` interpolation |
+
+**Optional fields:**
+
+| Field | Description |
+|-------|-------------|
+| `description` | When to use this template |
+| `constraints` | Array of constraints surfaced with the task |
+| `expectedFiles` | Array of expected output file paths |
+
+### Task Template Variables
+
+The `defaultPrompt` field supports these variables, resolved at task creation:
+
+| Variable | Description |
+|----------|-------------|
+| `{{taskId}}` | Task identifier (e.g., `001-my-task`) |
+| `{{taskTitle}}` | Task title |
+| `{{chainId}}` | Parent chain ID |
+| `{{requestId}}` | Linked request ID |
+| `{{domain}}` | Feature domain |
+| `{{acceptanceCriteria}}` | Formatted acceptance criteria |
+| `{{objective}}` | Task objective/description |
+| `{{context}}` | Chain context/description |
+
+### Using Task Templates
+
+```bash
+# Create task with template
+choragen task:add CHAIN-001-my-chain my-task "My Task Title" --template generic
+
+# Template prompt is interpolated and written to task notes
+```
+
+See `templates/task-templates/schema.md` for full schema documentation.
+
+---
+
 ### Rework-Task-Specific Variables
 
 | Variable | Description |

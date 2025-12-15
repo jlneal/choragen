@@ -80,6 +80,8 @@ import { runMenuLoop } from "./menu/index.js";
 import * as readline from "node:readline";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
+import { interpolateTaskPrompt } from "@choragen/core";
+import { loadTaskTemplate } from "./utils/task-templates.js";
 
 /**
  * Prompt user for text input with optional default
@@ -398,6 +400,39 @@ function parseTokens(tokensStr: string): TokenUsage | undefined {
     return undefined;
   }
   return { input, output };
+}
+
+function parseTaskAddArgs(
+  args: string[]
+): { templateName?: string; positional: string[]; templateFlagProvided: boolean } {
+  const positional: string[] = [];
+  let templateName: string | undefined;
+  let templateFlagProvided = false;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+
+    if (arg === "--template") {
+      templateFlagProvided = true;
+      templateName = args[i + 1];
+      i++;
+      continue;
+    }
+
+    if (arg.startsWith("--template=")) {
+      templateFlagProvided = true;
+      templateName = arg.slice("--template=".length);
+      continue;
+    }
+
+    positional.push(arg);
+  }
+
+  return {
+    templateName: templateName?.trim() || undefined,
+    positional,
+    templateFlagProvided,
+  };
 }
 
 /**
@@ -944,11 +979,16 @@ const commands: Record<string, CommandDef> = {
   // Task lifecycle
   "task:add": {
     description: "Add a task to a chain",
-    usage: "task:add <chain-id> <slug> <title>",
+    usage: "task:add <chain-id> <slug> <title> [--template <name>]",
     handler: async (args) => {
-      const [chainId, slug, ...titleParts] = args;
+      const { templateName, positional, templateFlagProvided } = parseTaskAddArgs(args);
+      const [chainId, slug, ...titleParts] = positional;
       if (!chainId || !slug || titleParts.length === 0) {
-        console.error("Usage: choragen task:add <chain-id> <slug> <title>");
+        console.error("Usage: choragen task:add <chain-id> <slug> <title> [--template <name>]");
+        process.exit(1);
+      }
+      if (templateFlagProvided && !templateName) {
+        console.error("Template name is required when using --template");
         process.exit(1);
       }
 
@@ -959,16 +999,51 @@ const commands: Record<string, CommandDef> = {
         process.exit(1);
       }
 
+      let template: Awaited<ReturnType<typeof loadTaskTemplate>> | undefined;
+      if (templateName) {
+        try {
+          template = await loadTaskTemplate(projectRoot, templateName);
+        } catch (error) {
+          console.error((error as Error).message);
+          process.exit(1);
+        }
+      }
+
       const title = titleParts.join(" ");
       const task = await chainManager.addTask(chainId, {
         slug,
         title,
-        description: "",
+        description: template?.description ?? "",
+        expectedFiles: template?.expectedFiles,
+        constraints: template?.constraints,
       });
+
+      if (template) {
+        const prompt = interpolateTaskPrompt(template.defaultPrompt, {
+          taskId: task.id,
+          taskTitle: task.title,
+          chainId: task.chainId,
+          requestId: chain.requestId,
+          domain: chain.type,
+          acceptanceCriteria: task.acceptance,
+          objective: task.description,
+          context: chain.description,
+        });
+
+        const updated = await taskManager.updateTask(chainId, task.id, { notes: prompt });
+        if (!updated) {
+          console.error("Failed to update task with template prompt");
+          process.exit(1);
+        }
+      }
+
       console.log(`Created task: ${task.id}`);
       console.log(`  Chain: ${task.chainId}`);
       console.log(`  Title: ${task.title}`);
       console.log(`  Status: ${task.status}`);
+      if (template) {
+        console.log(`  Template: ${template.name}`);
+      }
     },
   },
 

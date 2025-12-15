@@ -34,5 +34,6 @@ export * from "./roles/index.js";
 export * from "./tools/index.js";
 export * from "./providers/index.js";
 export * from "./workflow/index.js";
+export * from "./utils/index.js";
 export type { ModelReference } from "./workflow/types.js";
 export * from "./tasks/scope-utils.js";

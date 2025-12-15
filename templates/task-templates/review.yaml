@@ -1,0 +1,25 @@
+name: review
+type: control
+description: Template for review tasks verifying work against acceptance criteria
+constraints:
+  - Remain neutral; flag risks and regressions.
+  - Verify acceptance criteria and constraints before approval.
+expectedFiles:
+  - docs/tasks/in-review/{{chainId}}/{{taskId}}-review.md
+defaultPrompt: |
+  You are reviewing task {{taskId}} ({{taskTitle}}) in chain {{chainId}} for request {{requestId}}.
+
+  Objective:
+  {{objective}}
+
+  Acceptance criteria:
+  {{acceptanceCriteria}}
+
+  Context:
+  {{context}}
+
+  Review steps:
+  - Inspect changes for correctness, scope, and alignment with {{domain}} standards.
+  - Validate that acceptance criteria are fully met; note gaps explicitly.
+  - Check tests and tooling results; request fixes for any failures or risks.
+  - Provide a clear approval or change-request decision with actionable feedback.

@@ -275,6 +275,51 @@ describe("CLI Smoke Tests", () => {
       // Should fail because chain doesn't exist
       expect(result.exitCode).toBe(1);
     });
+
+    it("applies task template and interpolates prompt", async () => {
+      await createTaskDirs(tempDir);
+
+      const templateDir = path.join(tempDir, "templates", "task-templates");
+      await fs.mkdir(templateDir, { recursive: true });
+      await fs.writeFile(
+        path.join(templateDir, "generic.yaml"),
+        `name: generic
+type: impl
+description: Default task template objective
+constraints:
+  - follow template guidance
+expectedFiles:
+  - docs/tasks/backlog/{{chainId}}/{{taskId}}.md
+defaultPrompt: |
+  Task {{taskId}} in chain {{chainId}} for {{requestId}}
+  Title: {{taskTitle}}
+`
+      );
+
+      // Create chain first
+      runCli(["chain:new", "CR-123", "template-chain", "Template Chain"], tempDir);
+
+      const result = runCli(
+        ["task:add", "CHAIN-001-template-chain", "my-task", "My Task Title", "--template=generic"],
+        tempDir
+      );
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Template: generic");
+
+      const taskPath = path.join(
+        tempDir,
+        "docs/tasks/backlog/CHAIN-001-template-chain/001-my-task.md"
+      );
+      const content = await fs.readFile(taskPath, "utf-8");
+
+      expect(content).toContain("Task 001-my-task in chain CHAIN-001-template-chain for CR-123");
+      // Notes section should have interpolated prompt (no {{taskId}} in the prompt itself)
+      const notesSection = content.split("## Notes")[1]?.split("##")[0] ?? "";
+      expect(notesSection).toContain("Task 001-my-task");
+      expect(notesSection).not.toContain("{{taskId}}");
+      expect(content).toContain("follow template guidance");
+    });
   });
 
   describe("invalid commands", () => {
