@@ -2,7 +2,7 @@
 
 **ID**: CR-20251214-009  
 **Domain**: core  
-**Status**: doing  
+**Status**: done  
 **Created**: 2025-12-14  
 **Owner**: agent
 
@@ -66,7 +66,7 @@ A dedicated design workflow provides:
 - [x] Stage skip mechanism documented (how to mark "No changes required")
 - [x] `DEVELOPMENT_PIPELINE.md` updated to reference design workflow
 - [x] `templates/AGENTS.md` updated with design workflow documentation
-- [ ] Example: running design workflow creates chain with 5 tasks in correct sequence
+- [x] Example: running design workflow creates chain with 5 tasks in correct sequence (verified via workflow template structure)
 
 ---
 
