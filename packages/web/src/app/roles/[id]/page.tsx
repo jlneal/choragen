@@ -1,6 +1,8 @@
 // ADR: ADR-011-web-api-architecture
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AlertTriangle, ArrowLeft, RefreshCcw } from "lucide-react";

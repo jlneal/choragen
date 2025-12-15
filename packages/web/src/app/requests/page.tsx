@@ -1,5 +1,7 @@
 // ADR: ADR-011-web-api-architecture
 
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { Plus } from "lucide-react";
 

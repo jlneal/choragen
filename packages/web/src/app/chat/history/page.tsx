@@ -2,6 +2,8 @@
 // Design doc: docs/design/core/features/web-chat-interface.md
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Clock, History, ListFilter, RefreshCcw } from "lucide-react";

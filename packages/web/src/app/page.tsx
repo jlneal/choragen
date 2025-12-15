@@ -1,5 +1,7 @@
 // ADR: ADR-011-web-api-architecture
 
+export const dynamic = "force-dynamic";
+
 import { Activity, GitBranch, CheckCircle2, Clock, FileText, Bot } from "lucide-react";
 import {
   Card,

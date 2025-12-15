@@ -1,5 +1,7 @@
 // ADR: ADR-011-web-api-architecture
 
+export const dynamic = "force-dynamic";
+
 import { BacklogList } from "@/components/requests/backlog-list";
 
 export default function BacklogPage() {

@@ -1,5 +1,7 @@
 // ADR: ADR-011-web-api-architecture
 
+export const dynamic = "force-dynamic";
+
 import { ChainCreator } from "@/components/chains/chain-creator";
 
 export default function NewChainPage() {

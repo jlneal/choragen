@@ -1,6 +1,8 @@
 // ADR: ADR-011-web-api-architecture
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState } from "react";
 import { ShieldCheck, WifiOff, Zap, Brain, Home, FolderOpen, Folder, Check } from "lucide-react";
 import { toast } from "sonner";

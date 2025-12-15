@@ -1,6 +1,8 @@
 // ADR: ADR-011-web-api-architecture
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import {
   CheckCircle2,
   Clock,

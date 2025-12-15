@@ -1,5 +1,7 @@
 // ADR: ADR-011-web-api-architecture
 
+export const dynamic = "force-dynamic";
+
 import { SessionList } from "@/components/sessions/session-list";
 
 export default function SessionsPage() {

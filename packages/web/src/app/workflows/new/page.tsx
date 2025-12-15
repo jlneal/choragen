@@ -1,6 +1,8 @@
 // ADR: ADR-011-web-api-architecture
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useRouter } from "next/navigation";
 
 import { TemplateForm, type TemplateFormValues } from "@/components/workflows/template-form";

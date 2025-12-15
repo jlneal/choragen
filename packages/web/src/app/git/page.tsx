@@ -1,5 +1,7 @@
 // ADR: ADR-011-web-api-architecture
 
+export const dynamic = "force-dynamic";
+
 import { GitSection } from "@/components/git/git-section";
 
 export default function GitPage() {

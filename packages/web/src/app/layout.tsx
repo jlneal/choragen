@@ -1,5 +1,8 @@
 // ADR: ADR-011-web-api-architecture
 
+// Force dynamic rendering for all pages to ensure tRPC context is available
+export const dynamic = "force-dynamic";
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ProjectProvider } from "@/hooks";
