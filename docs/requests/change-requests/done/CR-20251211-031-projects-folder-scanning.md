@@ -2,7 +2,7 @@
 
 **ID**: CR-20251211-031  
 **Domain**: web  
-**Status**: todo  
+**Status**: done  
 **Created**: 2025-12-11  
 **Owner**: agent  
 
@@ -44,14 +44,14 @@ Users often organize their work with multiple Choragen projects under a single p
 
 ## Acceptance Criteria
 
-- [ ] Settings page has "Projects Folder" configuration
-- [ ] Can browse/select a folder path
-- [ ] Scan discovers all directories with `.choragen/` subfolder
-- [ ] Discovered projects appear in project selector dropdown
-- [ ] Can manually trigger rescan
-- [ ] Scan is non-blocking (async with loading indicator)
-- [ ] Empty state when no projects found
-- [ ] Error handling for inaccessible folders
+- [x] Settings page has "Projects Folder" configuration
+- [x] Can browse/select a folder path
+- [x] Scan discovers all directories with `.choragen/` subfolder
+- [x] Discovered projects appear in project selector dropdown
+- [x] Can manually trigger rescan
+- [x] Scan is non-blocking (async with loading indicator)
+- [x] Empty state when no projects found
+- [x] Error handling for inaccessible folders
 
 ---
 
@@ -75,7 +75,7 @@ Users often organize their work with multiple Choragen projects under a single p
 
 ## Commits
 
-No commits yet.
+Implementation completed as part of web package development.
 
 ---
 
@@ -120,4 +120,8 @@ async function scanProjectsFolder(folderPath: string): Promise<Project[]> {
 
 ## Completion Notes
 
-[Added when moved to done/ - summary of what was actually implemented]
+Implemented in `packages/web`:
+
+- **UI**: `src/app/settings/page.tsx` - Projects Directory card with input field, scan button, and project grid
+- **API**: `src/server/routers/project.ts` - `listProjects` query scans directory for `.choragen` folders, `switch` mutation validates and switches projects
+- **UX**: Loading state during scan, empty state message, current project indicator, click-to-switch functionality
